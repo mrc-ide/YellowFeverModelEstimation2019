@@ -28,6 +28,8 @@ dat = read.csv(filename, stringsAsFactors = FALSE)
 
 dat = adjust_env_dat(dat)
 
+dat %<>% filter(!is.na(precip_mean))
+
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------
 # FIT MODEL #
 
@@ -41,3 +43,30 @@ y = object_glm[[3]]
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------
 # INITIAL PARAMETERS #
+
+pars_ini = beta0
+names(pars_ini) = paste0("log.",names(beta0))
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------
+# SET SEED #
+index_code = as.numeric(commandArgs(TRUE))
+if(identical(index_code, numeric(0))) index_code=1
+
+t= as.numeric(Sys.time())
+seed= (t - floor(t)) * 1e8 
+set.seed(seed)
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------
+# MCMC #
+
+# set-up #
+plot_chain = TRUE
+
+# create a directory to save the output in 
+name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"))
+dir.create(name_dir)
+
+Niter = 1e5
+
+# MCMC #
+YFestimation::GLM_MCMC(Niter, name_dir, pars_ini, x, y, plot_chain)
