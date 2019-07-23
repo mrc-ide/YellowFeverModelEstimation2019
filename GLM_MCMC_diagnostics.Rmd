@@ -1,0 +1,168 @@
+---
+title: "GLM MCMC diagnostics"
+author: "Katy Gaythorpe"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+header-includes: 
+- \usepackage{placeins}
+output: 
+  pdf_document:
+    df_print: "kable"
+---
+
+```{r knitsetup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(
+  dev = "png",
+  fig.path = "images/",
+  dpi = 300,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+Here, we process the output of the GLM estimation.
+
+```{r setup}
+library(mcmcplots)
+library(ggmcmc)
+library(gridExtra)
+library(maptools)
+library(readr)
+library(fields)
+library(rgdal)
+library(R.utils)
+library(magrittr)
+
+library(snapalette)
+library(YFestimation)
+library(KsetupR)
+
+glm_mcmc_out=get_chains("GLM_MCMC_chain_20190723", burnin = 1, thin = 1)
+
+
+glm_mcmc_out2 = ggs( convert.mcmc.list( subset( glm_mcmc_out, select = -c(posteriorProb, acceptRate))) )
+
+snapal = "BudapestCitadel"
+```
+
+First we plot the posterior.
+
+```{r posterior,   fig.cap = "Posterior.", fig.align='center', fig.pos = 'h', strip.white=F }
+plot(glm_mcmc_out$posteriorProb, type = "l", xlab = "Iteration", ylab = "Posterior probability")
+```
+
+
+To assess the convergence of the MCMC chains we shall plot a selection of the outputs for two parameters.
+
+```{r trace_glm,   fig.cap = "\\label{fig:trace_glm}Trace plot.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10 }
+
+
+for(i in 1:20){
+  
+  assign(paste0("f",i),
+         ggs_traceplot(glm_mcmc_out2, family = as.character(unique(glm_mcmc_out2$Parameter)[i]))+theme(legend.position = "none") )
+  
+}
+
+grid.arrange(f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18,f19,f20, nrow=5, ncol=4)
+```
+
+```{r density_glm, fig.cap = "\\label{fig:density_glm}Density plot of entire chain (grey) and last 10\\% of the chain (green).", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10}
+
+for(i in 1:20){
+  
+  assign(paste0("f",i),
+         ggs_compare_partial(glm_mcmc_out2, family = as.character(unique(glm_mcmc_out2$Parameter)[i]))+theme(legend.position = "none") )
+  
+}
+
+grid.arrange(f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18,f19,f20, nrow=5, ncol=4)
+```
+
+Finally, we examine the values of all parameters through a caterpillar plot and compare the prior and posterior distributions.
+
+```{r caterpillar_glm,   fig.cap = "\\label{fig:caterpillar_glm}Caterpillar plot of all parameters.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10}
+
+ggs_caterpillar(glm_mcmc_out2)
+```
+
+```{r priorpost_glm,   fig.cap = "\\label{fig:priorpost_glm}Prior (maroon) and posterior (grey) distributions for all parameters.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10}
+
+plot_prior_post(glm_mcmc_out, prior_col = snapalette(snapal, 5, type="discrete")[1], "GLM")
+```
+
+\FloatBarrier 
+
+## Assessing the fit
+
+We now collect the estimates to produce the posterior predictive distribution of yellow fever reports.
+
+```{r glm_predict,  fig.cap = "\\label{fig:predict_glm}Prediction of glm. The scale indicates the probability of  YF report over the observation period.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10, fig.width=8}
+
+
+Est_beta =  apply(glm_mcmc_out[,1:49], 2, median)
+
+#########################################################################################################
+### LOADING SHAPEFILES AND COUNTRIES ###
+
+
+#read shapefiles in
+shp0 = rgdal::readOGR("../../shapefiles/Africa_SAmerica_0_smooth.shp",
+                          stringsAsFactors = FALSE,
+                          encoding = "UTF-8",
+                          use_iconv = TRUE)
+shp1 = rgdal::readOGR("../../shapefiles/Africa_SAmerica_1_smooth.shp",
+                          stringsAsFactors = FALSE,
+                          encoding = "UTF-8",
+                          use_iconv = TRUE)
+
+
+#sort age vector
+maxAge = 100
+ageVec = c(0:maxAge)
+
+#########################################################################################################
+### LOAD ENVIRONMENTAL DATA ###
+#########################################################################################################
+Env_Table_path = "../Data/Environment/global_dat"
+
+filename = KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat")
+
+dat = read.csv(filename, stringsAsFactors = FALSE)
+
+R.utils::sourceDirectory("Functions", modifiedOnly = FALSE)
+
+dat = adjust_env_dat(dat)
+
+dat %<>% filter(!is.na(precip_mean))
+
+#########################################################################################################
+### FIT GLM ###
+#########################################################################################################
+
+#read in models
+object_glm = YFestimation::fit_glm(dat = dat, 
+                                   depi = match("cases_or_outbreaks", names(dat)), 
+                                   models = "cases_or_outbreaks~surv.qual.adm0+adm05+logpop+temp_max+precip_mean" )  
+
+beta0 = object_glm[[1]]
+x = object_glm[[2]]
+y = object_glm[[3]]
+
+#########################################################################################################
+plot_glm_map2(shp0, shp1,  dat, Est_beta, x, colours = snapalette(snapal, 1000, type="continuous"))
+
+```
+
+
+```{r AUC}
+
+library(pROC)
+
+glmpreds = fun_calcPred( Est_beta ,x,type="response")
+
+ROC_out = roc(response = dat$cases_or_outbreaks, predictor = glmpreds)
+
+auc(ROC_out)
+
+```
