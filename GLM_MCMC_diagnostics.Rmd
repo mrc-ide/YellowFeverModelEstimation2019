@@ -10,7 +10,7 @@ output:
 ---
 
 ```{r knitsetup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 knitr::opts_chunk$set(
   dev = "png",
   fig.path = "images/",
@@ -37,7 +37,7 @@ library(snapalette)
 library(YFestimation)
 library(KsetupR)
 
-glm_mcmc_out=get_chains("GLM_MCMC_chain_20190723", burnin = 1, thin = 1)
+glm_mcmc_out=get_chains("GLM_MCMC_chain_20190723", burnin = 1e5, thin = 1)
 
 
 glm_mcmc_out2 = ggs( convert.mcmc.list( subset( glm_mcmc_out, select = -c(posteriorProb, acceptRate))) )
@@ -49,6 +49,9 @@ First we plot the posterior.
 
 ```{r posterior,   fig.cap = "Posterior.", fig.align='center', fig.pos = 'h', strip.white=F }
 plot(glm_mcmc_out$posteriorProb, type = "l", xlab = "Iteration", ylab = "Posterior probability")
+
+maxind = which.max(glm_mcmc_out$posteriorProb )
+write.csv(glm_mcmc_out[maxind, 1:(ncol(glm_mcmc_out)-2)], paste0("GLM_parameters_", Sys.Date(), ".csv"), row.names = FALSE)
 ```
 
 
