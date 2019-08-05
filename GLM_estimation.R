@@ -35,7 +35,7 @@ dat %<>% filter(!is.na(precip_mean))
 
 object_glm = YFestimation::fit_glm(dat = dat, 
                                    depi = match("cases_or_outbreaks", names(dat)), 
-                                   models = "cases_or_outbreaks~surv.qual.adm0+adm05+logpop+temp_max+precip_mean+altitude" )  
+                                   models = "cases_or_outbreaks~surv.qual.adm0+adm05+logpop+temp_max+precip_mean+altitude+continent_factor" )  
 
 beta0 = object_glm[[1]]
 x = object_glm[[2]]
@@ -44,13 +44,14 @@ y = object_glm[[3]]
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------
 # INITIAL PARAMETERS #
 
-#pars_ini = beta0
+pars_ini = beta0
+
+pars_ini = as.numeric(read.csv("GLM_parameters_2019-08-02.csv", stringsAsFactors = TRUE))
 
 
-pars_ini = as.numeric(read.csv("GLM_parameters_2019-07-23.csv", stringsAsFactors = TRUE))
-pars_ini = c(pars_ini, beta0[length(beta0)])
-names(pars_ini) = paste0("log.",names(beta0))
+names(pars_ini) = paste0("log.", names(beta0))
 
+pars_ini[is.na(pars_ini)] = 0
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------
 # SET SEED #
 index_code = as.numeric(commandArgs(TRUE))
@@ -64,7 +65,7 @@ set.seed(seed)
 # MCMC #
 
 # set-up #
-plot_chain = FALSE
+plot_chain = TRUE
 
 # create a directory to save the output in 
 name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"))
