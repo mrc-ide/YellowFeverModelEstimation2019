@@ -24,7 +24,7 @@ library(corrplot)
 
 Env_Table_path = "../Data/Environment/global_dat"
 
-filename = get_latest_file(path = Env_Table_path, pattern = "dat")
+filename = get_latest_file(path = Env_Table_path, pattern = "dat_6")
 
 dat = read.csv(filename, stringsAsFactors = FALSE)
 
@@ -61,7 +61,7 @@ covar_to_test = covar_to_test[ind_to_keep]
 
 Look at correlations.
 
-```{r corr}
+```{r corr, fig.height=12}
 
 cor_out = cor(dat[, covar_to_test])
 
@@ -78,58 +78,106 @@ corrplot::corrplot(cor_out, col =  col2(7), diag = FALSE, type = "upper")
 tab_cor = cor(dat$cases_or_outbreaks, dat[, covar_to_test])
 corrplot::corrplot(tab_cor)
 
-data.frame(correlation = t(tab_cor))
+df = data.frame(param = colnames(tab_cor),
+                correlation = t(tab_cor))
+df %>% arrange(-abs(correlation))
 ```
 
-Look at clusters
 
-```{r cluster}
 
-# get clusters where pair-wise correlations are > 0.75
 
-diag(cor_out) = 0
+## Clusters
 
-#anything that does not have any correlations higher than 0.75 is a cluster on its own
-max_cors = apply(cor_out, 2, max)
+```{r, fig.height=12, fig.width=10}
 
-clusters = list()
-j = 1
-for(i in 1:length(max_cors)){
-  if(max_cors[i]<0.75){
-    clusters[[j]] = names(max_cors)[i]
-    j = j+1
-  }
+x = as.dist( 1-abs(cor(na.omit(
+  dat[, covar_to_test]
+))))
+
+out =  hclust(x)
+
+plot(
+  out
+)
+
+parm = list()
+
+ind = 1
+for(i in 2:20){
+  y = cutree(out, k = i)
+  
+  df$cluster = as.numeric(y[match(names(y), as.character(df$param) )])
+  
+  df %>% arrange(-abs(correlation))
+  
+  parm[[ind]] = df %>% 
+    arrange(-abs(correlation)) %>% 
+    group_by(cluster) %>% 
+    summarise(parms = first(param))
+  
+  ind = ind+1
 }
 
-max_cors = max_cors[max_cors>=0.75]
-cor_out_subs = cor_out[rownames(cor_out) %in% names(max_cors), colnames(cor_out) %in% names(max_cors)]
 
-# for each get the correlations that are larger than 0.75 and compare sets
-cor_sets = NULL
-for(i in 1:nrow(cor_out_subs)){
-  cor_sets[[i]] =  stringr::str_sort(c(rownames(cor_out_subs)[i], names(which(cor_out_subs[i, ]>0.75))))
-}
-
-cor_sets = cor_sets[!duplicated(cor_sets)]
-
-clusters = c(clusters, cor_sets)
-
-clusters
 
 ```
 
-Then we can choose the most correlated element of each cluster.
+# Check fits
 
-```{r clust_cor}
 
-tab_cor = as.data.frame(tab_cor)
-
-covar_out = NULL
-for(i in 1:length(clusters)){
-  covar_out = c(covar_out,
-    names( which.max( tab_cor[ names(tab_cor) %in% clusters[[i]] ] ) )
-  )
+```{r fits}
+mod = list()
+AICs = rep(NA, length(parm))
+LLs = rep(NA, length(parm))
+for(i in 1:length(parm)){
+  
+  model_form = paste0("cases_or_outbreaks~", paste(parm[[i]]$parms, collapse = "+") )
+  
+  mod[[i]] = glm( model_form, data = dat, family=binomial(link="cloglog"))
+  AICs[i] = AIC(mod[[i]])
+  
+  LLs[i] = logLik(mod[[i]])
+  
 }
 
-covar_out
+par(mfrow = c(1,2))
+plot(LLs)
+plot(AICs)
+
+parm[[which.min(AICs)]]
+
+
+write.csv(data.frame(x = paste0("cases_or_outbreaks~", 
+                                paste(parm[[which.min(AICs)]]$parms, 
+                                      collapse = "+"))),
+                 "Model_form.csv",
+                 row.names = FALSE)
+```
+
+
+
+
+# Land cover types
+
+```{r, echo=FALSE}
+
+data.frame( Name = c("Evergreen Needleleaf Forests",
+                     "Evergreen Broadleaf Forests",
+                     "Deciduous Needleleaf Forests",
+                     "Deciduous Broadleaf Forests",
+                     "Mixed Forests",
+                     "Closed Shrublands",
+                     "Open Shrublands",
+                     "Woody Savannas",
+                     "Savannas",
+                     "Grasslands",
+                     "Permanent Wetlands",
+                     "Croplands",
+                     "Urban and Built-up Lands",
+                     "Cropland/Natural Vegetation Mosaics",
+                     "Permanent Snow and Ice",
+                     "Barren",
+                     "Water Bodies"),
+Landcover = c(1:16, 17) )
+
 ```
