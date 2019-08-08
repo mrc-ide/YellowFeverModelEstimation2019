@@ -12,10 +12,10 @@ adjust_env_dat = function(dat) {
   # ex_i = match(c("LC1","LC3","LC5","LC15"), names(dat))
   # dat = dat[,-ex_i]
   # 
-  # # adding a categorical "dominant land cover" variable:
-  # LC_i = grep("LC",names(dat))
-  # LC_dom = names(dat)[LC_i][ apply(dat[,LC_i],1, which.max )]
-  # dat = cbind(dat, LC_dom) # 37 potential covariates/levels
+  # adding a categorical "dominant land cover" variable:
+  LC_i = grep("LC",names(dat))
+  LC_dom = names(dat)[LC_i][ apply(dat[,LC_i],1, which.max )]
+  dat = cbind(dat, LC_dom) # 37 potential covariates/levels
   
   #setting NA to 0
   dat$surv.qual.adm0[is.na(dat$surv.qual.adm0)] = 0

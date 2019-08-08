@@ -37,7 +37,7 @@ library(snapalette)
 library(YFestimation)
 library(KsetupR)
 
-glm_mcmc_out=get_chains("GLM_MCMC_chain_20190723", burnin = 1e5, thin = 1)
+glm_mcmc_out=get_chains("GLM_MCMC_chain_20190807", burnin =1e5, thin = 1)
 
 
 glm_mcmc_out2 = ggs( convert.mcmc.list( subset( glm_mcmc_out, select = -c(posteriorProb, acceptRate))) )
@@ -51,7 +51,7 @@ First we plot the posterior.
 plot(glm_mcmc_out$posteriorProb, type = "l", xlab = "Iteration", ylab = "Posterior probability")
 
 maxind = which.max(glm_mcmc_out$posteriorProb )
-write.csv(glm_mcmc_out[maxind, 1:(ncol(glm_mcmc_out)-2)], paste0("GLM_parameters_", Sys.Date(), ".csv"), row.names = FALSE)
+#write.csv(glm_mcmc_out[maxind, 1:(ncol(glm_mcmc_out)-2)], paste0("GLM_parameters_", Sys.Date(), ".csv"), row.names = FALSE)
 ```
 
 
@@ -103,7 +103,7 @@ We now collect the estimates to produce the posterior predictive distribution of
 ```{r glm_predict,  fig.cap = "\\label{fig:predict_glm}Prediction of glm. The scale indicates the probability of  YF report over the observation period.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10, fig.width=8}
 
 
-Est_beta =  apply(glm_mcmc_out[,1:49], 2, median)
+Est_beta =  apply(glm_mcmc_out[,1:64], 2, median)
 
 #########################################################################################################
 ### LOADING SHAPEFILES AND COUNTRIES ###
@@ -129,7 +129,7 @@ ageVec = c(0:maxAge)
 #########################################################################################################
 Env_Table_path = "../Data/Environment/global_dat"
 
-filename = KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat")
+filename = KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_6")
 
 dat = read.csv(filename, stringsAsFactors = FALSE)
 
@@ -142,11 +142,12 @@ dat %<>% filter(!is.na(precip_mean))
 #########################################################################################################
 ### FIT GLM ###
 #########################################################################################################
+model_form = read.csv("Model_form.csv", stringsAsFactors = FALSE)$x
 
 #read in models
 object_glm = YFestimation::fit_glm(dat = dat, 
                                    depi = match("cases_or_outbreaks", names(dat)), 
-                                   models = "cases_or_outbreaks~surv.qual.adm0+adm05+logpop+temp_max+precip_mean" )  
+                                   models = paste0(model_form, "+adm05") )  
 
 beta0 = object_glm[[1]]
 x = object_glm[[2]]
