@@ -37,7 +37,7 @@ library(snapalette)
 library(YFestimation)
 library(KsetupR)
 
-glm_mcmc_out=get_chains("GLM_MCMC_chain_20190807", burnin =1e5, thin = 1)
+glm_mcmc_out=get_chains("GLM_MCMC_chain_20190808", burnin =1.4e6, thin = 1)
 
 
 glm_mcmc_out2 = ggs( convert.mcmc.list( subset( glm_mcmc_out, select = -c(posteriorProb, acceptRate))) )

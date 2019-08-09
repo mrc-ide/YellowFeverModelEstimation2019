@@ -1,7 +1,7 @@
 
 library(parallelsugar)
 
-source("GLM_estimation")
+source("GLM_estimation.R")
 
 run_id = 1:4
 
