@@ -34,11 +34,11 @@ run_estimation = function(run_id =1){
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
   # FIT MODEL #
   
-  model_form = read.csv("Model_form.csv", stringsAsFactors = FALSE)$x
+  model_form = read.csv("Model_form1.csv", stringsAsFactors = FALSE)$x
   
   object_glm = YFestimation::fit_glm(dat = dat, 
                                      depi = match("cases_or_outbreaks", names(dat)), 
-                                     models = paste0(model_form, "+adm05"))  
+                                     models = paste0(model_form, "+adm05", "+log.surv.qual.adm0"))  
   
   beta0 = object_glm[[1]]
   x = object_glm[[2]]
@@ -49,7 +49,7 @@ run_estimation = function(run_id =1){
   
   pars_ini = beta0
   # 
-  pars_ini = as.numeric(read.csv("GLM_parameters_2019-08-09.csv", stringsAsFactors = TRUE))
+  #pars_ini = as.numeric(read.csv("GLM_parameters_2019-08-09.csv", stringsAsFactors = TRUE))
   # 
   
   names(pars_ini) = paste0("log.", names(beta0))

@@ -104,7 +104,7 @@ plot(
 parm = list()
 
 ind = 1
-for(i in 2:20){
+for(i in 2:10){
   y = cutree(out, k = i)
   
   df$cluster = as.numeric(y[match(names(y), as.character(df$param) )])
@@ -151,7 +151,7 @@ parm[[which.min(AICs)]]
 write.csv(data.frame(x = paste0("cases_or_outbreaks~", 
                                 paste(parm[[which.min(AICs)]]$parms, 
                                       collapse = "+"))),
-                 "Model_form.csv",
+                 "Model_form1.csv",
                  row.names = FALSE)
 ```
 

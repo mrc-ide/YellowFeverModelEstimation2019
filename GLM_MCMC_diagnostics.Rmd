@@ -37,7 +37,7 @@ library(snapalette)
 library(YFestimation)
 library(KsetupR)
 
-glm_mcmc_out=get_chains("GLM_MCMC_chain_20190808", burnin =1.4e6, thin = 1)
+glm_mcmc_out=get_chains("GLM_MCMC_chain_20190809", burnin =1e3, thin = 1)
 
 
 glm_mcmc_out2 = ggs( convert.mcmc.list( subset( glm_mcmc_out, select = -c(posteriorProb, acceptRate))) )
@@ -103,7 +103,7 @@ We now collect the estimates to produce the posterior predictive distribution of
 ```{r glm_predict,  fig.cap = "\\label{fig:predict_glm}Prediction of glm. The scale indicates the probability of  YF report over the observation period.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10, fig.width=8}
 
 
-Est_beta =  apply(glm_mcmc_out[,1:64], 2, median)
+Est_beta =  apply(glm_mcmc_out[,1:55], 2, median)
 
 #########################################################################################################
 ### LOADING SHAPEFILES AND COUNTRIES ###
@@ -142,12 +142,12 @@ dat %<>% filter(!is.na(precip_mean))
 #########################################################################################################
 ### FIT GLM ###
 #########################################################################################################
-model_form = read.csv("Model_form.csv", stringsAsFactors = FALSE)$x
+model_form = read.csv("Model_form1.csv", stringsAsFactors = FALSE)$x
 
 #read in models
 object_glm = YFestimation::fit_glm(dat = dat, 
                                    depi = match("cases_or_outbreaks", names(dat)), 
-                                   models = paste0(model_form, "+adm05") )  
+                                   models = paste0(model_form, "+adm05", "+log.surv.qual.adm0"))  
 
 beta0 = object_glm[[1]]
 x = object_glm[[2]]
