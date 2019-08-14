@@ -34,11 +34,11 @@ run_estimation = function(run_id =1){
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
   # FIT MODEL #
   
-  model_form = read.csv("Model_form3.csv", stringsAsFactors = FALSE)$x
+  model_form = read.csv("Model_form4.csv", stringsAsFactors = FALSE)$x
   
   object_glm = YFestimation::fit_glm(dat = dat, 
                                      depi = match("cases_or_outbreaks", names(dat)), 
-                                     models = paste0(model_form, "+predicted_surv_qual"))  
+                                     models = paste0(model_form, "+adm05", "+surv.qual.adm0")) #"+predicted_surv_qual"))  
   
   beta0 = object_glm[[1]]
   x = object_glm[[2]]
@@ -73,12 +73,12 @@ run_estimation = function(run_id =1){
   plot_chain = FALSE
   
   # create a directory to save the output in 
-  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"))
+  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_4_all")
   dir.create(name_dir)
   
   Niter = 1e6
   
   # MCMC #
-  GLM_MCMC(Niter, name_dir, pars_ini, x, y, plot_chain, run_id)
+  YFestmation::GLM_MCMC(Niter, name_dir, pars_ini, x, y, plot_chain, run_id)
   
 }
