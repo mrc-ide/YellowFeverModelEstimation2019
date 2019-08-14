@@ -24,21 +24,25 @@ library(corrplot)
 
 Env_Table_path = "../Data/Environment/global_dat"
 
-filename = get_latest_file(path = Env_Table_path, pattern = "dat_6")
+filename = get_latest_file(path = Env_Table_path, pattern = "dat_8")
 
 dat = read.csv(filename, stringsAsFactors = FALSE)
 
 dat = adjust_env_dat(dat)
 
 dat %<>% filter(!is.na(precip_mean))
+
+
 ```
 
 ```{r fit models}
 
 covar_to_test = names(dat)[9:(ncol(dat))]
 
-covar_to_test = covar_to_test[grep("surv.qual", covar_to_test, invert = TRUE)]
-covar_to_test = covar_to_test[grep("LC_dom", covar_to_test, invert = TRUE)]
+covar_to_test = covar_to_test[grep("surv\\.qual", covar_to_test, invert = TRUE)]
+#covar_to_test = covar_to_test[grep("LC_dom", covar_to_test, invert = TRUE)]
+covar_to_test = covar_to_test[grep("risk", covar_to_test, invert = TRUE)]
+covar_to_test = covar_to_test[grep("population", covar_to_test, invert = TRUE)]
 
 mod = list()
 pvalues = rep(NA, length(covar_to_test))
@@ -53,7 +57,7 @@ names(pvalues) = covar_to_test
 
 plot(pvalues)
 
-ind_to_keep = which(pvalues < 0.1)
+ind_to_keep = which(pvalues < 0.05)
 
 covar_to_test = covar_to_test[ind_to_keep]
 ```
@@ -82,6 +86,10 @@ corrplot::corrplot(tab_cor)
 df = data.frame(param = colnames(tab_cor),
                 correlation = t(tab_cor))
 df %>% arrange(-abs(correlation))
+
+covar_to_test <- as.character( df$param[abs(df$correlation)>0.1])
+
+df %<>% filter(param %in% covar_to_test)
 ```
 
 
@@ -104,7 +112,7 @@ plot(
 parm = list()
 
 ind = 1
-for(i in 2:10){
+for(i in 2:length(covar_to_test)){
   y = cutree(out, k = i)
   
   df$cluster = as.numeric(y[match(names(y), as.character(df$param) )])
@@ -148,14 +156,27 @@ plot(AICs)
 parm[[which.min(AICs)]]
 
 
-write.csv(data.frame(x = paste0("cases_or_outbreaks~", 
-                                paste(parm[[which.min(AICs)]]$parms, 
-                                      collapse = "+"))),
-                 "Model_form1.csv",
-                 row.names = FALSE)
+
 ```
+```{r remove insiginficant}
+
+final_mod = mod[[which.min(AICs)]]
+
+pvalues = coef(summary(final_mod))[,4]
+
+parm = names(pvalues)[pvalues < 0.05]
+parm = parm[-1]
+
+model_form = paste0("cases_or_outbreaks~", paste(parm, collapse = "+") )
+  
+mod = glm( model_form, data = dat, family=binomial(link="cloglog"))
 
 
+write.csv(data.frame(x = model_form),
+                 "Model_form3.csv",
+                 row.names = FALSE)
+parm
+```
 
 
 # Land cover types
@@ -181,4 +202,21 @@ data.frame( Name = c("Evergreen Needleleaf Forests",
                      "Water Bodies"),
 Landcover = c(1:16, 17) )
 
+```
+
+# Step AIC
+
+```{r stepAIC, eval = FALSE}
+
+dat_subs = select(dat, -c(country,adm0,Province,adm1, 
+                          lon, lat , continent , 
+                          surv.qual.adm0 , population , 
+                          adm05, LC_dom, log.surv.qual.adm0))
+
+library(MASS)
+
+alt_mod = MASS::stepAIC(glm("cases_or_outbreaks~.", data = dat_subs, 
+                            family=binomial(link="cloglog")))
+
+alt_mod$formula
 ```

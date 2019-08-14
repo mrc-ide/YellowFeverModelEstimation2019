@@ -16,6 +16,7 @@ adjust_env_dat = function(dat) {
   LC_i = grep("LC",names(dat))
   LC_dom = names(dat)[LC_i][ apply(dat[,LC_i],1, which.max )]
   dat = cbind(dat, LC_dom) # 37 potential covariates/levels
+  dat$LC_dom = as.numeric(as.factor(dat$LC_dom))
   
   #setting NA to 0
   dat$surv.qual.adm0[is.na(dat$surv.qual.adm0)] = 0
@@ -38,6 +39,18 @@ adjust_env_dat = function(dat) {
                       continent_factor = ifelse(continent=="Africa",
                                                 1,
                                                 0))
+  
+  # sorting risk
+  dat = dplyr::mutate(dat, risk = as.numeric(as.factor(risk)))
+  dat$risk[is.na(dat$risk)] = 0
+  
+  # ESH and GUF missing from predicted surv qual
+  dat$predicted_surv_qual[dat$adm0 == "ESH"] = mean(c(unique(dat$predicted_surv_qual[dat$adm0 == "MAR"]),
+                                                    unique(dat$predicted_surv_qual[dat$adm0 == "MRT"])))
+  dat$predicted_surv_qual[dat$adm0 == "GUF"] = mean(c(unique(dat$predicted_surv_qual[dat$adm0 == "SUR"]), 
+                                                           unique(dat$predicted_surv_qual[dat$adm0 == "BRA"])))
+  
+  dat$predicted_surv_qual = log(dat$predicted_surv_qual)
 
   # If we fit the model on dat and if we want to project estimates on dat, variable from dat
   # need to be expressed on the same scale than those from dat , thus we normalize dat relatively to dat
