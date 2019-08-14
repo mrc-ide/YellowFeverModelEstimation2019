@@ -32,13 +32,15 @@ library(fields)
 library(rgdal)
 library(R.utils)
 library(magrittr)
+library(viridis)
 
 library(snapalette)
 library(YFestimation)
 library(KsetupR)
 
-glm_mcmc_out=get_chains("GLM_MCMC_chain_20190809", burnin =1e3, thin = 1)
+glm_mcmc_out=get_chains("GLM_MCMC_chain_20190814", burnin =1e4, thin = 1)
 
+names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
 
 glm_mcmc_out2 = ggs( convert.mcmc.list( subset( glm_mcmc_out, select = -c(posteriorProb, acceptRate))) )
 
@@ -59,27 +61,22 @@ To assess the convergence of the MCMC chains we shall plot a selection of the ou
 
 ```{r trace_glm,   fig.cap = "\\label{fig:trace_glm}Trace plot.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10 }
 
-
-for(i in 1:20){
-  
-  assign(paste0("f",i),
-         ggs_traceplot(glm_mcmc_out2, family = as.character(unique(glm_mcmc_out2$Parameter)[i]))+theme(legend.position = "none") )
-  
+cols = viridis_pal(option = "magma")(12)
+par(mfrow = c(3,4))
+for(i in 1:11){
+  plot(glm_mcmc_out[, i], type = "l", main = names(glm_mcmc_out)[i], col = cols[i])
 }
 
-grid.arrange(f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18,f19,f20, nrow=5, ncol=4)
 ```
 
 ```{r density_glm, fig.cap = "\\label{fig:density_glm}Density plot of entire chain (grey) and last 10\\% of the chain (green).", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10}
-
-for(i in 1:20){
+par(mfrow = c(3,4))
+for(i in 1:11){
   
-  assign(paste0("f",i),
-         ggs_compare_partial(glm_mcmc_out2, family = as.character(unique(glm_mcmc_out2$Parameter)[i]))+theme(legend.position = "none") )
-  
+  plot(density(glm_mcmc_out[, i]), main = names(glm_mcmc_out)[i], col = cols[i])
+  polygon(density(glm_mcmc_out[, i]), col = cols[i])
 }
 
-grid.arrange(f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18,f19,f20, nrow=5, ncol=4)
 ```
 
 Finally, we examine the values of all parameters through a caterpillar plot and compare the prior and posterior distributions.
@@ -89,7 +86,7 @@ Finally, we examine the values of all parameters through a caterpillar plot and 
 ggs_caterpillar(glm_mcmc_out2)
 ```
 
-```{r priorpost_glm,   fig.cap = "\\label{fig:priorpost_glm}Prior (maroon) and posterior (grey) distributions for all parameters.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10}
+```{r priorpost_glm,   fig.cap = "\\label{fig:priorpost_glm}Prior (maroon) and posterior (grey) distributions for all parameters.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10, eval = FALSE}
 
 plot_prior_post(glm_mcmc_out, prior_col = snapalette(snapal, 5, type="discrete")[1], "GLM")
 ```
@@ -103,7 +100,7 @@ We now collect the estimates to produce the posterior predictive distribution of
 ```{r glm_predict,  fig.cap = "\\label{fig:predict_glm}Prediction of glm. The scale indicates the probability of  YF report over the observation period.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10, fig.width=8}
 
 
-Est_beta =  apply(glm_mcmc_out[,1:55], 2, median)
+Est_beta =  apply(subset( glm_mcmc_out, select = -c(posteriorProb, acceptRate)), 2, median)
 
 #########################################################################################################
 ### LOADING SHAPEFILES AND COUNTRIES ###
@@ -129,7 +126,7 @@ ageVec = c(0:maxAge)
 #########################################################################################################
 Env_Table_path = "../Data/Environment/global_dat"
 
-filename = KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_6")
+filename = KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_8")
 
 dat = read.csv(filename, stringsAsFactors = FALSE)
 
@@ -142,22 +139,48 @@ dat %<>% filter(!is.na(precip_mean))
 #########################################################################################################
 ### FIT GLM ###
 #########################################################################################################
-model_form = read.csv("Model_form1.csv", stringsAsFactors = FALSE)$x
+model_form = read.csv("Model_form3.csv", stringsAsFactors = FALSE)$x
 
 #read in models
 object_glm = YFestimation::fit_glm(dat = dat, 
                                    depi = match("cases_or_outbreaks", names(dat)), 
-                                   models = paste0(model_form, "+adm05", "+log.surv.qual.adm0"))  
+                                   models = paste0(model_form))#, "+predicted_surv_qual"))  
 
 beta0 = object_glm[[1]]
 x = object_glm[[2]]
 y = object_glm[[3]]
 
 #########################################################################################################
-plot_glm_map2(shp0, shp1,  dat, Est_beta, x, colours = snapalette(snapal, 1000, type="continuous"))
+plot_glm_map2(shp0, shp1,  dat, Est_beta, x, colours = viridis_pal(option = "magma")(1000))
 
 ```
 
+
+```{r plot_wo_adm05}
+
+x_wo_adm05 = x[, grep("predicted", colnames(x), invert = TRUE)]
+Est_beta_wo_adm05 = Est_beta[grep("predicted", names(Est_beta), invert = TRUE)]
+
+colours = viridis_pal(option = "magma")(1000)
+### model ###
+eta =  x_wo_adm05 %*% Est_beta_wo_adm05
+preds = 1-exp(-exp(eta)) # 
+
+
+shp1$predictions  = preds[match( shp1$GID_1, dat$adm1)]
+
+
+mybreaks = seq(0, 1.0001, length.out=1001)
+mycols =  colours
+vcols = findInterval(shp1$predictions, mybreaks)
+
+
+plot(shp0)
+plot(shp1, col=mycols[vcols] , lty=0, add=TRUE)
+plot(shp0, add=TRUE)
+fields::image.plot(legend.only=TRUE, breaks=mybreaks, col=mycols, zlim=c(0,1), horizontal = TRUE)
+
+```
 
 ```{r AUC}
 

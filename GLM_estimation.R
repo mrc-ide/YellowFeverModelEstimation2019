@@ -23,7 +23,7 @@ run_estimation = function(run_id =1){
   
   Env_Table_path = "../Data/Environment/global_dat"
   
-  filename = get_latest_file(path = Env_Table_path, pattern = "dat_6")
+  filename = get_latest_file(path = Env_Table_path, pattern = "dat_8")
   
   dat = read.csv(filename, stringsAsFactors = FALSE)
   
@@ -34,27 +34,29 @@ run_estimation = function(run_id =1){
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
   # FIT MODEL #
   
-  model_form = read.csv("Model_form1.csv", stringsAsFactors = FALSE)$x
+  model_form = read.csv("Model_form3.csv", stringsAsFactors = FALSE)$x
   
   object_glm = YFestimation::fit_glm(dat = dat, 
                                      depi = match("cases_or_outbreaks", names(dat)), 
-                                     models = paste0(model_form, "+adm05", "+log.surv.qual.adm0"))  
+                                     models = paste0(model_form, "+predicted_surv_qual"))  
   
   beta0 = object_glm[[1]]
   x = object_glm[[2]]
   y = object_glm[[3]]
-  
+
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
   # INITIAL PARAMETERS #
   
   pars_ini = beta0
   # 
-  #pars_ini = as.numeric(read.csv("GLM_parameters_2019-08-09.csv", stringsAsFactors = TRUE))
+  #pars_ini = as.numeric(read.csv("GLM_parameters_2019-08-12.csv", stringsAsFactors = TRUE))
   # 
   
   names(pars_ini) = paste0("log.", names(beta0))
   
   pars_ini[is.na(pars_ini)] = 0
+  
+  pars_ini[ grep("predicted_surv_qual", names(pars_ini))] = 0.5
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
   # SET SEED #
   index_code = as.numeric(commandArgs(TRUE))
@@ -77,6 +79,6 @@ run_estimation = function(run_id =1){
   Niter = 1e6
   
   # MCMC #
-  YFestimation::GLM_MCMC(Niter, name_dir, pars_ini, x, y, plot_chain, run_id)
+  GLM_MCMC(Niter, name_dir, pars_ini, x, y, plot_chain, run_id)
   
 }

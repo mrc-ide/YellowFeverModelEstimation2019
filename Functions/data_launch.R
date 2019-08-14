@@ -50,16 +50,13 @@ adjust_env_dat = function(dat) {
   dat$predicted_surv_qual[dat$adm0 == "GUF"] = mean(c(unique(dat$predicted_surv_qual[dat$adm0 == "SUR"]), 
                                                            unique(dat$predicted_surv_qual[dat$adm0 == "BRA"])))
   
-  dat$predicted_surv_qual = log(dat$predicted_surv_qual)
+  #dat$predicted_surv_qual = log(dat$predicted_surv_qual)
 
-  # If we fit the model on dat and if we want to project estimates on dat, variable from dat
-  # need to be expressed on the same scale than those from dat , thus we normalize dat relatively to dat
   v1 = apply(dat,2,var, na.rm = TRUE)
   for(i in 9:(ncol(dat))) {
-    
+
     if(!is.factor(dat[,i]) & !is.character(dat[,i])) {
-      
-      dat[,i] = dat[,i]/sqrt(v1[i])
+
       dat[,i] = dat[,i]/sqrt(v1[i])
     }
   }

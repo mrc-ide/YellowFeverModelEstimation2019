@@ -26,14 +26,16 @@ plot_glm_map2 = function(shp0,
   ### model ###
   glmpreds_tmp = fun_calcPred( Est_beta,x,type="response")
   
+  shp1$predictions  = glmpreds_tmp[match( shp1$GID_1, dat$adm1)]
+  
+  
   mybreaks = seq(0, 1.0001, length.out=1001)
   mycols =  colours
-  mm = match(shp1$GID_1, dat$adm1)
-  vcols = findInterval(glmpreds_tmp, mybreaks)
+  vcols = findInterval(shp1$predictions, mybreaks)
   
   
   plot(shp0)
-  plot(shp1[!is.na(mm),], col=mycols[vcols] , lty=0, add=TRUE)
+  plot(shp1, col=mycols[vcols] , lty=0, add=TRUE)
   plot(shp0, add=TRUE)
   fields::image.plot(legend.only=TRUE, breaks=mybreaks, col=mycols, zlim=c(0,1), horizontal = TRUE)
   

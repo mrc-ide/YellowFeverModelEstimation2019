@@ -24,7 +24,7 @@ library(corrplot)
 
 Env_Table_path = "../Data/Environment/global_dat"
 
-filename = get_latest_file(path = Env_Table_path, pattern = "dat_8")
+filename = get_latest_file(path = Env_Table_path, pattern = "dat_9")
 
 dat = read.csv(filename, stringsAsFactors = FALSE)
 
@@ -39,8 +39,8 @@ dat %<>% filter(!is.na(precip_mean))
 
 covar_to_test = names(dat)[9:(ncol(dat))]
 
-covar_to_test = covar_to_test[grep("surv\\.qual", covar_to_test, invert = TRUE)]
-#covar_to_test = covar_to_test[grep("LC_dom", covar_to_test, invert = TRUE)]
+covar_to_test = covar_to_test[grep("surv.qual", covar_to_test, invert = TRUE)]
+covar_to_test = covar_to_test[grep("LC_dom", covar_to_test, invert = TRUE)]
 covar_to_test = covar_to_test[grep("risk", covar_to_test, invert = TRUE)]
 covar_to_test = covar_to_test[grep("population", covar_to_test, invert = TRUE)]
 
@@ -87,9 +87,9 @@ df = data.frame(param = colnames(tab_cor),
                 correlation = t(tab_cor))
 df %>% arrange(-abs(correlation))
 
-covar_to_test <- as.character( df$param[abs(df$correlation)>0.1])
-
-df %<>% filter(param %in% covar_to_test)
+# covar_to_test <- as.character( df$param[abs(df$correlation)>0.1])
+# 
+# df %<>% filter(param %in% covar_to_test)
 ```
 
 
