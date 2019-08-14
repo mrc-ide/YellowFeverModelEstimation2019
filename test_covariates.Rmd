@@ -162,6 +162,8 @@ parm[[which.min(AICs)]]
 
 final_mod = mod[[which.min(AICs)]]
 
+summary(final_mod)
+
 pvalues = coef(summary(final_mod))[,4]
 
 parm = names(pvalues)[pvalues < 0.05]
