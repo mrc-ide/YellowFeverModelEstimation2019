@@ -41,7 +41,7 @@ plot_glm_map2 = function(shp0,
   
 }
 
-#------------------------------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------------------------------
 plot_sero = function(seroout,
                      hpd_sero,
                      pop_agg3d,
@@ -112,7 +112,7 @@ plot_sero = function(seroout,
   
   
   ### PLOT ###
-  par(mfrow=c(7,7),  oma = c(4, 4, 0, 0), mar = c(2, 2, 1, 1))
+  par(mfrow=c(6,7),  oma = c(4, 4, 0, 0), mar = c(2, 2, 1, 1))
   for (i in 1:seroout$no_sero_surveys){
     #get upper bound for plot axes
     maxsero = max(as.numeric(f_sero_predictions_hi[i,1:86]),
@@ -153,4 +153,58 @@ plot_sero = function(seroout,
   }
   mtext('Age', side = 1, outer = TRUE, line = 2)
   mtext('Seroprevalence', side = 2, outer = TRUE, line = 2)
+}
+
+#------------------------------------------------------------------------------------------------------#
+get_hpd = function(mcmc_out,
+         glm_mcmc_out){
+  
+  if(!anyNA(mcmc_out)){
+    ### hpd for serology ###
+    #full uncertainty for shared parameters
+    hpd_sero = hpd_out(mcmc_out[,grep("^vac", names(mcmc_out))])
+    
+    
+    #hpd by model type
+    hpd_sero = rbind(hpd_sero, hpd_out(mcmc_out[,grep("^Foi", names(mcmc_out))]) )
+    
+    #last shared parameter
+    hpd_sero = rbind(hpd_sero, hpd_out(mcmc_out[,grep("^vc", names(mcmc_out))]))
+  }
+  
+  if(!anyNA(glm_mcmc_out)){
+    ### hpd for glm ###
+    hpd_glm = hpd_out( subset( glm_mcmc_out, select = -c(posteriorProb, acceptRate)),
+                       log_scale = FALSE)
+  }
+  
+  if(!anyNA(mcmc_out) & !anyNA(glm_mcmc_out)){
+    
+    rownames(hpd_sero)[c(1, nrow(hpd_sero))] = c("vac_eff", "vc_factor_CMRs")
+    
+    ### bind all together for each model ###
+    R0_param = rbind(hpd_sero[grep("^vac", rownames(hpd_sero)),],
+                     hpd_glm,
+                     hpd_sero[ grep("^R0", rownames(hpd_sero) ),],
+                     hpd_sero[grep("^vc", rownames(hpd_sero)),])
+    
+    Foi_param = rbind(hpd_sero[grep("^vac", rownames(hpd_sero)),],
+                      hpd_glm,
+                      hpd_sero[ grep("^Foi", rownames(hpd_sero) ),],
+                      hpd_sero[grep("^vc", rownames(hpd_sero)),])
+    
+    rownames(R0_param)[c(1,nrow(R0_param))] =
+      rownames(Foi_param)[c(1,nrow(Foi_param))] = c("vac_eff", "vc_factor_CMRs")
+    
+    
+    
+    out = list(Foi_param = Foi_param, R0_param = R0_param, hpd_sero = hpd_sero, hpd_glm)
+  } else if(anyNA(glm_mcmc_out)){
+    rownames(hpd_sero)[c(1, nrow(hpd_sero))] = c("vac_eff", "vc_factor_CMRs")
+    out = list(hpd_sero = hpd_sero)
+  } else {
+    out = list(hpd_glm = hpd_glm)
+  }
+  
+  return(out)
 }

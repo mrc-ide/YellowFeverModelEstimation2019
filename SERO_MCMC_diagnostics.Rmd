@@ -44,7 +44,7 @@ snapal = "Fjord"
 
 mcmc_out = get_chains(
   "multi_model_MCMC_chain_20190819", 
-  burnin = 7e3, thin = 1)
+  burnin = 1e4, thin = 1)
 
 mcmc_out %<>% select(-starts_with("R0"))
 
@@ -214,16 +214,7 @@ P_tot_survey = list_pop_at_survey$P_tot_survey_2d
 
 ```{r hpd, message=F, warning=F}
 
-hpd_sero = hpd_out(mcmc_out[,grep("^vac", names(mcmc_out))])
-
-
-#hpd by model type
-hpd_sero = rbind(hpd_sero, hpd_out(mcmc_out[,grep("^Foi", names(mcmc_out))]) )
-
-#last shared parameter
-hpd_sero = rbind(hpd_sero, hpd_out(mcmc_out[,grep("^vc", names(mcmc_out))]))
-
-rownames(hpd_sero)[c(1, nrow(hpd_sero))] = c("vac_eff", "vc_factor_CMRs")
+hpd_sero = get_hpd(mcmc_out = mcmc_out, glm_mcmc_out = NA)
 
 ```
 
