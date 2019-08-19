@@ -25,11 +25,6 @@ run_estimation = function(run_id=1){
   R.utils::sourceDirectory("Functions", modifiedOnly = FALSE)
   
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
-  ### LOADING COUNTRIES ###
-  
-  Countries = read_csv(paste0("../Data/","Countries.csv"))
-  
-  # ------------------------------------------------------------------------------------------------------------------------------------------------------------
   ### LOADING SEROLOGY DATA ###
   
   Serology = read.csv(paste0("../Data/","Serology/Serology_newgadm_2019.csv"), stringsAsFactors = FALSE)

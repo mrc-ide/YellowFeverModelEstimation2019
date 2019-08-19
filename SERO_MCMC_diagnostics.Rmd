@@ -1,0 +1,245 @@
+---
+title: "SERO MCMC diagnostics"
+author: "Katy Gaythorpe"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+header-includes: 
+- \usepackage{placeins}
+output: 
+  pdf_document:
+    df_print: "kable"
+---
+
+```{r knitsetup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  dev = "png",
+  fig.path = "images2_revised/",
+  dpi = 300,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+Here we process the output of the product space MCMC on the seroprevalence models. 
+
+```{r setup, fig.cap = "\\label{fig:trace}Trace plot of model indicator.", fig.align='center', fig.pos = 'h', strip.white=F, fig.width = 8 }
+library(mcmcplots)
+library(ggmcmc)
+library(gridExtra)
+library(maptools)
+library(readr)
+library(fields)
+library(Hmisc)
+library(dplyr)
+library(magrittr)
+library(R.utils)
+
+library(YFestimation)
+library(snapalette)
+library(KsetupR)
+
+sourceDirectory("Functions", modifiedOnly = FALSE)
+ 
+snapal = "Fjord"
+
+mcmc_out = get_chains(
+  "multi_model_MCMC_chain_20190819", 
+  burnin = 1e3, thin = 1)
+
+mcmc_out %<>% select(-starts_with("R0"))
+
+#plot model chain
+plot(mcmc_out$model_chain, type="l", ylim=c(0,1), 
+     ylab="Model indicator")
+```
+
+The only shared parameters are the vaccine efficacy and vc factor for CMRs, the traceplots for these are as follows.
+
+```{r trace,  message = F, warning=F, fig.cap = "\\label{fig:trace}Trace plot.", fig.align='center', fig.pos = 'h', strip.white=F, fig.width = 8 }
+P <- data.frame(
+  Parameter=c("vac_eff", "vc_factor_CMRs"),
+  Label=c("Vaccine efficacy", "Vaccine factor CMRs"))
+mcmc_out2 = ggs( convert.mcmc.list( mcmc_out[,1:44]), par_labels = P)
+
+f1 = ggs_traceplot(mcmc_out2, family = "Vaccine efficacy")
+
+f2 = ggs_traceplot(mcmc_out2, family = "Vaccine factor CMRs")
+
+grid.arrange(f1, f2, nrow=1)
+```
+
+```{r partial,  message = F, warning=F, fig.cap = "\\label{fig:partial}Density plot of entire chain (grey) and last 10\\% of the chain (green).", fig.align='center', fig.pos = 'h', strip.white=F, fig.width = 8 }
+
+
+f1 = ggs_compare_partial(mcmc_out2, family = "Vaccine efficacy")+
+  theme(legend.position = "none")
+
+f2 = ggs_compare_partial(mcmc_out2, family = "Vaccine factor CMRs")+ 
+  theme(legend.position = "none")
+
+grid.arrange(f1, f2, nrow=1)
+```
+
+```{r prior_posterior_vac_eff,  message = F, warning=F, fig.cap = "\\label{fig:priorposterior}Prior and posterior densities for vaccine efficacy and vc factor for CMRs.", fig.align='center', fig.pos = 'h', strip.white=F, fig.width = 8}
+
+plot_prior_post(mcmc_out, 
+                snapalette(snapal, 
+                           3, 
+                           type="discrete")[2], 
+                "SERO")
+```
+
+```{r crosscor,  message = F, warning=F, fig.cap = "\\label{fig:crosscor}Crosscorrelations.", fig.align='center', fig.pos = 'h', strip.white=F, fig.width = 10, fig.height = 10 }
+
+
+ggs_crosscorrelation(mcmc_out2)+  theme(legend.position = "none")
+
+```
+
+\FloatBarrier 
+
+
+##Assessing the fit
+
+We will now plot the Hpd interval predictions of both transmission models.
+
+```{r setup_fit,  message = F, warning=F}
+
+### LOADING SEROLOGY DATA ###
+Serology = read.csv(paste0("../Data/","Serology/Serology_newgadm_2019.csv"), stringsAsFactors = FALSE)
+
+Serology$gadm36 = gsub("_", "." ,Serology$gadm36)
+
+seroout = process_serology(Serology, adm = "gadm36")
+for(s in 1:seroout$no_sero_surveys){
+  seroout$adm1s[[s]] = paste(seroout$adm1s[[s]], "_1", sep = "")
+}
+
+# LOAD ENVIRONMENTAL DATA #
+Env_Table_path = "../Data/Environment/global_dat"
+
+filename = get_latest_file(path = Env_Table_path, pattern = "dat_10")
+
+dat = read.csv(filename, stringsAsFactors = FALSE)
+
+dat = adjust_env_dat(dat)
+
+dat %<>% filter(!is.na(precip_mean))
+
+### POPULATION AND VACCINATION DATA ###
+
+all_res_pop_3d = get_pop_data_3d() 
+
+pop1 = all_res_pop_3d$pop1                                      
+P_tot = all_res_pop_3d$P_tot                                   #total populations for each adm and year
+p_prop = all_res_pop_3d$p_prop                                   #proportions of population
+
+pop1 %<>% rename(adm0_adm1 = adm1)
+
+pop1 %<>% arrange(year) %>% select(-c(country_code, country))
+
+names(pop1)[3:ncol(pop1)] = paste0("a", 0:100)
+
+pop1 %<>% filter(year<2051)
+
+
+# VACCINATION DATA #
+vc2d = readRDS("vacc_1940_1950.RDS")
+vc2d = as.data.frame(vc2d)
+
+#-------------------------------------------------------
+#vc3d
+vc2d %<>% mutate(year = as.numeric(as.character(year)))
+vc3d = transform_into_vc3d(vc2d) 
+#------------------------------------------------------
+
+# t0_vac_africa #
+t0_vac_africa = calc_t0_vac_africa(vc3d)
+
+# inc_v3d #
+inc_v3d = calc_incidence_vac_general(vc3d)
+    
+# CALCULATE population moments #
+p_prop_3d = array( data = p_prop$population,
+                   dim = c(length(unique(p_prop$adm1)),
+                           length(unique(p_prop$year)),
+                           length(unique(p_prop$age))),
+                   dimnames = list(unique(p_prop$adm1),
+                                   unique(p_prop$year),
+                                   unique(p_prop$age)))
+
+pop_moments_whole = calc_pop_moments(p_prop_3d, 
+                                     t0_vac_africa,
+                                     dim_adm = dimnames(vc3d)[[1]],
+                                     dim_year = dimnames(vc3d)[[2]],
+                                     dim_age = dimnames(vc3d)[[3]])
+
+load("agg_pop_vc.RData")
+    
+
+# CREATE R0 LOOKUP TABLE #
+if(!file.exists(paste0("../YellowFeverModelEstimation2017/",
+                       "R0_lookup_table.Rdata") )){
+    
+    ptm = proc.time()
+    create_R0_lookup(dim_adm, 
+                     envdat$dat, 
+                     dim_year,
+                     dim_age,
+                     p_prop_3d,
+                     P_tot_2d,
+                     inc_v3d,
+                     pop_moments_whole,
+                     pop_moments_agg, 
+                     vac_eff_arg = 0.975)
+    proc.time()-ptm
+  } else {
+    load(paste0("../YellowFeverModelEstimation2017/",
+                "R0_lookup_table.Rdata") )
+  }
+
+
+# pop at survey #
+foi_const_surv = rep(0, seroout$no_sero_surveys)
+
+list_pop_at_survey = create_pop_at_survey(pop_agg3d, 
+                                          seroout$sero_studies, 
+                                          dim_year = unique(pop1$year))
+p_at_survey = list_pop_at_survey$p_at_survey_3d
+P_tot_survey = list_pop_at_survey$P_tot_survey_2d
+
+
+```
+
+
+```{r hpd, message=F, warning=F}
+
+hpd_sero = hpd_out(mcmc_out[,grep("^vac", names(mcmc_out))])
+
+
+#hpd by model type
+hpd_sero = rbind(hpd_sero, hpd_out(mcmc_out[,grep("^Foi", names(mcmc_out))]) )
+
+#last shared parameter
+hpd_sero = rbind(hpd_sero, hpd_out(mcmc_out[,grep("^vc", names(mcmc_out))]))
+
+rownames(hpd_sero)[c(1, nrow(hpd_sero))] = c("vac_eff", "vc_factor_CMRs")
+
+```
+
+```{r sero_predict1,  message = F, warning=F, fig.cap = "\\label{fig:sero_predict1}Seroprevalence predictions from $R_0$ model (red) and Foi model (blue).", fig.align='center', fig.pos = 'h', fig.height = 10, fig.width = 20, strip.white=F}
+
+#ignore CAF
+
+plot_sero(seroout, 
+          hpd_sero, 
+          pop_agg3d, 
+          dim_year = unique(pop1$year), 
+          dim_age =  unique(pop1$age), 
+          inc_v3d, 
+          pop_moments_agg, 
+          vc_agg3d)
+
+```
+
+
