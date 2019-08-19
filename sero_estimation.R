@@ -1,7 +1,7 @@
 #transdimensional mcmc for estimating both r0 and foi models 
 
 
-#run_estimation = function(run_id=1){
+run_estimation = function(run_id=1){
   
 
   library(dplyr)
@@ -293,4 +293,4 @@
                   Niter = Niter,
                   run_id = run_id)
   
-#}
+}
