@@ -102,3 +102,80 @@ Make_Ptot_Pprop = function(pop2d){
   return(list( P_tot = P_tot, p_prop = p_prop))
   
 }
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------
+# aggregate_pop_vc = function(pop1,
+#                             vc2d,
+#                             sero_studies,
+#                             adm1s){
+#   pop_agg = vc_agg = NULL
+#   for (surveyIndex in 1: length(sero_studies)){
+#     
+#     pop_tmp = filter(pop1, adm0_adm1  %in% adm1s[[surveyIndex]])
+#     
+#     vc_tmp = filter(vc2d, adm0_adm1  %in% adm1s[[surveyIndex]] )
+#     
+#     pop_tmp_sum = pop_tmp %>% group_by(year) %>% summarise_if(is.numeric, sum)
+#     
+#     doses_tmp = pop_tmp
+#     doses_tmp[, 3:ncol(doses_tmp) ] = doses_tmp[, 3:ncol(doses_tmp) ] * vc_tmp[, 3:ncol(doses_tmp) ] 
+#     doses_tmp_sum = doses_tmp %>% group_by(year) %>% summarise_if(is.numeric, sum)
+#     
+#     vc_tmp_sum = doses_tmp_sum
+#     vc_tmp_sum[, 3:ncol(vc_tmp_sum)] = doses_tmp_sum[, 3:ncol(vc_tmp_sum)] / pop_tmp_sum[, 3:ncol(vc_tmp_sum)]
+#     
+#     # add details
+#     pop_tmp_sum %<>% mutate(adm0 = sero_studies[surveyIndex],
+#                             adm0_adm1 = NA)
+#     vc_tmp_sum %<>% mutate(adm0 = sero_studies[surveyIndex],
+#                             adm0_adm1 = NA)
+#     
+#     pop_agg %<>% bind_rows(pop_tmp)
+#     vc_agg %<>% bind_rows(vc_tmp)
+#   }
+#   
+#   pop_agg %<>% unique()
+#   vc_agg %<>% unique()
+#   
+#   return(list(pop_agg = pop_agg, vc_agg = vc_agg))
+# }
+# 
+# 
+# # ------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Make_aggregate_pop_vc_3d = function(pop1,
+#                                     vc2d,
+#                                     sero_studies,
+#                                     adm1s){
+#   
+#   agg=aggregate_pop_vc(pop1, vc2d, sero_studies, adm1s)
+#   
+#   pop_agg=agg$pop_agg
+#   vc_agg=agg$vc_agg
+#   
+#   dim_survey = sero_studies
+#   dim_year = unique(pop_agg$year)
+#   dim_age = names(pop1)[3:length(names(pop_agg))]
+#   
+#   length_survey=length(dim_survey);   length_year=length(dim_year);   length_age=length(dim_age)
+#   
+#   ## pass in 3d
+#   pop_agg3d=rep(NA, nrow(pop_agg)*length_age)
+#   dim(pop_agg3d)=c(length_survey, length_year, length_age)
+#   vc_agg3d=rep(NA, nrow(vc_agg)*length_age)
+#   dim(vc_agg3d)=c(length(table(vc_agg$adm0)), length(table(vc_agg$year)),length_age)
+#   
+#   for(ageIndex in 1:length_age) { # dim_age
+#     for(yearIndex in min(dim_year):max(dim_year)) {
+#       
+#       mm = match(pop_agg$adm0[pop_agg$year == yearIndex], dim_survey)
+#       pop_agg3d[mm,yearIndex-min(dim_year)+1,ageIndex] = pop_agg[pop_agg$year==yearIndex, ageIndex+3]
+#       vc_agg3d[mm,yearIndex-min(dim_year)+1,ageIndex] = vc_agg[vc_agg$year==yearIndex, ageIndex+3]
+#     }
+#   }
+#   
+#   dimnames(pop_agg3d)[[1]] = dimnames(vc_agg3d)[[1]] = dim_survey
+#   dimnames(pop_agg3d)[[2]] = dimnames(vc_agg3d)[[2]] = dim_year
+#   dimnames(pop_agg3d)[[3]] = dimnames(vc_agg3d)[[3]] = dim_age
+#   
+#   return(list(pop_agg3d = pop_agg3d, vc_agg3d = vc_agg3d))
+#   
+# }
