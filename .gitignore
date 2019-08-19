@@ -7,3 +7,4 @@ GLM_MCMC_chain_*
 *.pdf
 *.csv
 images
+contexts

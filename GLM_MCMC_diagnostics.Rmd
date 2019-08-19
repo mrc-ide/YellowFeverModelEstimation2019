@@ -38,11 +38,11 @@ library(snapalette)
 library(YFestimation)
 library(KsetupR)
 
-glm_mcmc_out=get_chains("GLM_MCMC_chain_20190814_4", burnin =1e4, thin = 1)
+glm_mcmc_out=get_chains("GLM_MCMC_chain_20190816_5_all", burnin =4e5, thin = 1)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
 
-glm_mcmc_out2 = ggs( convert.mcmc.list( subset( glm_mcmc_out, select = -c(posteriorProb, acceptRate))) )
+glm_mcmc_out2 = ggs( convert.mcmc.list(  glm_mcmc_out %>% select(-c(posteriorProb, acceptRate, starts_with("adm05")))) )
 
 snapal = "BudapestCitadel"
 ```
@@ -61,8 +61,8 @@ To assess the convergence of the MCMC chains we shall plot a selection of the ou
 
 ```{r trace_glm,   fig.cap = "\\label{fig:trace_glm}Trace plot.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10 }
 
-cols = viridis_pal(option = "magma")(12)
-par(mfrow = c(3,4))
+cols = viridis_pal(option = "magma")(ncol(glm_mcmc_out)-2)
+par(mfrow = c(4,3))
 for(i in 1:(ncol(glm_mcmc_out)-2)){
   plot(glm_mcmc_out[, i], type = "l", main = names(glm_mcmc_out)[i], col = cols[i])
 }
@@ -70,7 +70,7 @@ for(i in 1:(ncol(glm_mcmc_out)-2)){
 ```
 
 ```{r density_glm, fig.cap = "\\label{fig:density_glm}Density plot of entire chain (grey) and last 10\\% of the chain (green).", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10}
-par(mfrow = c(3,4))
+par(mfrow = c(4,3))
 for(i in 1:(ncol(glm_mcmc_out)-2)){
   
   plot(density(glm_mcmc_out[, i]), main = names(glm_mcmc_out)[i], col = cols[i])
@@ -97,7 +97,7 @@ ggs_caterpillar(glm_mcmc_out2)
 
 We now collect the estimates to produce the posterior predictive distribution of yellow fever reports.
 
-```{r glm_predict,  fig.cap = "\\label{fig:predict_glm}Prediction of glm. The scale indicates the probability of  YF report over the observation period.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10, fig.width=8}
+```{r glm_predict,  fig.cap = "\\label{fig:predict_glm}Prediction of glm. The scale indicates the probability of  YF report over the observation period.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10, fig.width=10}
 
 
 Est_beta =  apply(subset( glm_mcmc_out, select = -c(posteriorProb, acceptRate)), 2, median)
@@ -126,7 +126,7 @@ ageVec = c(0:maxAge)
 #########################################################################################################
 Env_Table_path = "../Data/Environment/global_dat"
 
-filename = KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_8")
+filename = KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_10")
 
 dat = read.csv(filename, stringsAsFactors = FALSE)
 
@@ -139,12 +139,12 @@ dat %<>% filter(!is.na(precip_mean))
 #########################################################################################################
 ### FIT GLM ###
 #########################################################################################################
-model_form = read.csv("Model_form4.csv", stringsAsFactors = FALSE)$x
+model_form = read.csv("Model_form5.csv", stringsAsFactors = FALSE)$x
 
 #read in models
 object_glm = YFestimation::fit_glm(dat = dat, 
                                    depi = match("cases_or_outbreaks", names(dat)), 
-                                   models = paste0(model_form, "+predicted_surv_qual"))  
+                                   models = paste0(model_form, "+adm05", "+surv.qual.adm0")) #"+predicted_surv_qual"))  
 
 beta0 = object_glm[[1]]
 x = object_glm[[2]]
@@ -168,8 +168,8 @@ auc(ROC_out)
 
 ```{r plot_wo_adm05}
 
-x_wo_adm05 = x[, grep("predicted", colnames(x), invert = TRUE)]
-Est_beta_wo_adm05 = Est_beta[grep("predicted", names(Est_beta), invert = TRUE)]
+x_wo_adm05 = x[, grep("adm05|surv", colnames(x), invert = TRUE)]
+Est_beta_wo_adm05 = Est_beta[grep("adm05|surv", names(Est_beta), invert = TRUE)]
 
 colours = viridis_pal(option = "magma")(1000)
 ### model ###

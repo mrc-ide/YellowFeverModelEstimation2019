@@ -23,7 +23,7 @@ run_estimation = function(run_id =1){
   
   Env_Table_path = "../Data/Environment/global_dat"
   
-  filename = get_latest_file(path = Env_Table_path, pattern = "dat_8")
+  filename = get_latest_file(path = Env_Table_path, pattern = "dat_10")
   
   dat = read.csv(filename, stringsAsFactors = FALSE)
   
@@ -34,7 +34,7 @@ run_estimation = function(run_id =1){
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
   # FIT MODEL #
   
-  model_form = read.csv("Model_form4.csv", stringsAsFactors = FALSE)$x
+  model_form = read.csv("Model_form5.csv", stringsAsFactors = FALSE)$x
   
   object_glm = YFestimation::fit_glm(dat = dat, 
                                      depi = match("cases_or_outbreaks", names(dat)), 
@@ -49,14 +49,12 @@ run_estimation = function(run_id =1){
   
   pars_ini = beta0
   # 
-  #pars_ini = as.numeric(read.csv("GLM_parameters_2019-08-12.csv", stringsAsFactors = TRUE))
+  #pars_ini = as.numeric(read.csv("GLM_parameters_2019-08-15.csv", stringsAsFactors = TRUE))
   # 
   
   names(pars_ini) = paste0("log.", names(beta0))
   
   pars_ini[is.na(pars_ini)] = 0
-  
-  pars_ini[ grep("predicted_surv_qual", names(pars_ini))] = 0.5
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
   # SET SEED #
   index_code = as.numeric(commandArgs(TRUE))
@@ -73,12 +71,12 @@ run_estimation = function(run_id =1){
   plot_chain = FALSE
   
   # create a directory to save the output in 
-  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_4_all")
+  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_5_all")
   dir.create(name_dir)
   
   Niter = 1e6
   
   # MCMC #
-  YFestmation::GLM_MCMC(Niter, name_dir, pars_ini, x, y, plot_chain, run_id)
+  YFestimation::GLM_MCMC(Niter, name_dir, pars_ini, x, y, plot_chain, run_id)
   
 }
