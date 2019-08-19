@@ -227,7 +227,7 @@ rownames(hpd_sero)[c(1, nrow(hpd_sero))] = c("vac_eff", "vc_factor_CMRs")
 
 ```
 
-```{r sero_predict1,  message = F, warning=F, fig.cap = "\\label{fig:sero_predict1}Seroprevalence predictions from $R_0$ model (red) and Foi model (blue).", fig.align='center', fig.pos = 'h', fig.height = 10, fig.width = 20, strip.white=F}
+```{r sero_predict1,  message = F, warning=F, fig.cap = "\\label{fig:sero_predict1}Seroprevalence predictions from $R_0$ model (red) and Foi model (blue).", fig.align='center', fig.pos = 'h', fig.height = 12, fig.width = 20, strip.white=F}
 
 #ignore CAF
 

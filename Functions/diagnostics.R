@@ -112,7 +112,7 @@ plot_sero = function(seroout,
   
   
   ### PLOT ###
-  par(mfrow=c(4,10),  oma = c(4, 4, 0, 0), mar = c(2, 2, 1, 1))
+  par(mfrow=c(7,7),  oma = c(4, 4, 0, 0), mar = c(2, 2, 1, 1))
   for (i in 1:seroout$no_sero_surveys){
     #get upper bound for plot axes
     maxsero = max(as.numeric(f_sero_predictions_hi[i,1:86]),
