@@ -44,13 +44,13 @@ snapal = "Fjord"
 
 mcmc_out = get_chains(
   "multi_model_MCMC_chain_20190819", 
-  burnin = 1e3, thin = 1)
+  burnin = 7e3, thin = 1)
 
 mcmc_out %<>% select(-starts_with("R0"))
 
-#plot model chain
-plot(mcmc_out$model_chain, type="l", ylim=c(0,1), 
-     ylab="Model indicator")
+
+plot(mcmc_out$posteriorProb, type="l", 
+     ylab="Posterior")
 ```
 
 The only shared parameters are the vaccine efficacy and vc factor for CMRs, the traceplots for these are as follows.
