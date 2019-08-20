@@ -157,7 +157,7 @@ plot_sero = function(seroout,
 
 #------------------------------------------------------------------------------------------------------#
 get_hpd = function(mcmc_out,
-         glm_mcmc_out){
+                   glm_mcmc_out){
   
   if(!anyNA(mcmc_out)){
     ### hpd for serology ###
@@ -207,4 +207,69 @@ get_hpd = function(mcmc_out,
   }
   
   return(out)
+}
+
+#------------------------------------------------------------------------------------------------------#
+plot_transmission_intensity2 = function(x,
+                                        ii,
+                                        seroout,
+                                        params,
+                                        dat,
+                                        t0_vac_africa,
+                                        dim_year,
+                                        dim_age,
+                                        p_prop_3d,
+                                        P_tot_2d,
+                                        inc_v3d,
+                                        pop1,
+                                        vc2d,
+                                        varsin_nc,
+                                        polydeg,
+                                        R0_lookup,
+                                        model_type,
+                                        shp1,
+                                        shp0,
+                                        colours){
+  
+  
+  runs = fun_calc_transmission_Africa(x,
+                                      ii ,
+                                      seroout ,
+                                      params ,
+                                      dat ,
+                                      t0_vac_africa ,
+                                      dim_year ,
+                                      dim_age ,
+                                      p_prop_3d ,
+                                      P_tot_2d ,
+                                      inc_v3d ,
+                                      pop1,
+                                      vc2d,
+                                      varsin_nc,
+                                      polydeg,
+                                      R0_lookup,
+                                      model_type)
+  
+  runs = switch(model_type,
+                "R0" = runs -1,
+                "Foi" = runs)
+  
+  shp1$runs = NA 
+  shp1$runs = runs[match(shp1$GID_1,dat$adm0_adm1)]
+  
+  mybreaks= seq(min(log10(shp1$runs), na.rm = TRUE), max(log10(shp1$runs), na.rm = TRUE)+0.01, length.out=101)
+
+  vcols = findInterval(log10(shp1$runs),mybreaks)
+  
+  plot(shp0)
+  plot(shp1,col=colours[vcols], lty=0, add=T)
+  
+  plot(shp0, lwd=2, add=T)
+  
+  
+  
+  image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), horizontal = TRUE,
+             axis.args = list(at = c(-5:1), labels =c("1e-05","1e-04", "0.001", "0.01", "0.1","1","10"), las =2),
+             legend.mar = 3.5)
+  
 }

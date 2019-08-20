@@ -43,8 +43,8 @@ sourceDirectory("Functions", modifiedOnly = FALSE)
 snapal = "Fjord"
 
 mcmc_out = get_chains(
-  "multi_model_MCMC_chain_20190819", 
-  burnin = 1e4, thin = 1)
+  "multi_model_MCMC_chain_20190820", 
+  burnin = 1.6e4, thin = 1)
 
 mcmc_out %<>% select(-starts_with("R0"))
 
@@ -150,7 +150,7 @@ vc2d = as.data.frame(vc2d)
 #-------------------------------------------------------
 #vc3d
 vc2d %<>% mutate(year = as.numeric(as.character(year)))
-vc3d = transform_into_vc3d(vc2d) 
+vc3d = transform_into_vc3d(vc2d, adm = "adm1") 
 #------------------------------------------------------
 
 # t0_vac_africa #
@@ -174,8 +174,28 @@ pop_moments_whole = calc_pop_moments(p_prop_3d,
                                      dim_year = dimnames(vc3d)[[2]],
                                      dim_age = dimnames(vc3d)[[3]])
 
-load("agg_pop_vc.RData")
-    
+#aggregate
+list_aggregate_pop_vc = YFestimation::Make_aggregate_pop_vc_3d(pop1=pop1, 
+                                                               vc2d=vc2d, 
+                                                               sero_studies=seroout$sero_studies, 
+                                                               adm1s=seroout$adm1s) 
+pop_agg3d = list_aggregate_pop_vc$pop_agg3d 
+vc_agg3d = list_aggregate_pop_vc$vc_agg3d 
+
+pop_agg3d[is.na(pop_agg3d)] = 0
+vc_agg3d[is.na(vc_agg3d)] = 0
+
+#calculate aggregated incidence (same function as before)
+class(vc_agg3d) = "numeric"
+inc_v3d_agg = calc_incidence_vac_general(vc_agg3d)  
+
+#calculate aggregated moments (different fucntion before)
+class(pop_agg3d) = "numeric"
+pop_moments_agg = calc_pop_moments_agg(pop_agg3d,
+                                       seroout$t0_vac,
+                                       dim_year = unique(pop1$year),
+                                       seroout$study_years) 
+
 
 # CREATE R0 LOOKUP TABLE #
 if(!file.exists(paste0("../YellowFeverModelEstimation2017/",
@@ -214,7 +234,7 @@ P_tot_survey = list_pop_at_survey$P_tot_survey_2d
 
 ```{r hpd, message=F, warning=F}
 
-hpd_sero = get_hpd(mcmc_out = mcmc_out, glm_mcmc_out = NA)
+hpd_sero = get_hpd(mcmc_out = mcmc_out, glm_mcmc_out = NA)$hpd_sero
 
 ```
 

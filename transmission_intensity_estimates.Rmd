@@ -1,0 +1,392 @@
+---
+title: "Transmission intensity estimates"
+author: "Katy Gaythorpe"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+header-includes: 
+- \usepackage{placeins}
+output: 
+  pdf_document:
+    df_print: "kable"
+---
+
+```{r knitsetup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  dev = "png",
+  fig.path = "images2/",
+  dpi = 300,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+In the following we construct yellow fever transmission intensity estimates across the African endemic region. We assume at this stage that you have folders of posterior samples from both the GLM of yellow fever occurrence and the transmission models for seroprevalence.
+
+```{r setup}
+library(mcmcplots)
+library(ggmcmc)
+library(gridExtra)
+library(maptools)
+library(readr)
+library(fields)
+library(Hmisc)
+library(viridis)
+library(R.utils)
+library(magrittr)
+
+library(YFestimation)
+library(snapalette)
+library(KsetupR)
+
+sourceDirectory("Functions", modifiedOnly = FALSE)
+
+mcmc_out = get_chains("multi_model_MCMC_chain_20190820", 
+                      burnin = 1.2e4, thin = 1)
+
+glm_mcmc_out = get_chains("GLM_MCMC_chain_20190816_5_all", 
+                          burnin =4e5, thin = 1)
+names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
+
+```
+
+```{r setup_fit,  message = F, warning=F}
+
+### LOADING SEROLOGY DATA ###
+Serology = read.csv(paste0("../Data/","Serology/Serology_newgadm_2019.csv"), stringsAsFactors = FALSE)
+
+Serology$gadm36 = gsub("_", "." ,Serology$gadm36)
+
+seroout = process_serology(Serology, adm = "gadm36")
+for(s in 1:seroout$no_sero_surveys){
+  seroout$adm1s[[s]] = paste(seroout$adm1s[[s]], "_1", sep = "")
+}
+
+# LOAD ENVIRONMENTAL DATA #
+Env_Table_path = "../Data/Environment/global_dat"
+
+filename = get_latest_file(path = Env_Table_path, pattern = "dat_10")
+
+dat = read.csv(filename, stringsAsFactors = FALSE)
+
+dat = adjust_env_dat(dat)
+
+dat %<>% filter(!is.na(precip_mean))
+
+dat %<>% rename(adm0_adm1 = adm1)
+
+### POPULATION AND VACCINATION DATA ###
+
+all_res_pop_3d = get_pop_data_3d() 
+
+pop1 = all_res_pop_3d$pop1                                      
+P_tot = all_res_pop_3d$P_tot                                   #total populations for each adm and year
+p_prop = all_res_pop_3d$p_prop                                   #proportions of population
+
+pop1 %<>% rename(adm0_adm1 = adm1)
+
+pop1 %<>% arrange(year) %>% select(-c(country_code, country))
+
+names(pop1)[3:ncol(pop1)] = paste0("a", 0:100)
+
+pop1 %<>% filter(year<2051)
+p_prop %<>% filter(year<2051)
+P_tot %<>% filter(year<2051)
+
+# VACCINATION DATA #
+vc2d = readRDS("vacc_1940_1950.RDS")
+vc2d = as.data.frame(vc2d)
+
+# expand vc2d to match pop1
+vc2d %<>% mutate(year = as.numeric(as.character(year)))
+vc_tmp = pop1 %>% filter(!adm0_adm1 %in% vc2d$adm0_adm1)
+vc_tmp[, grep("adm0_adm1|year", names(vc_tmp), invert = TRUE)] = 0
+
+vc2d %<>% bind_rows(vc_tmp)
+vc2d %<>% unique()
+vc2d %<>% filter(!is.na(adm0_adm1))
+
+#-------------------------------------------------------
+#vc3d
+vc3d = transform_into_vc3d(vc2d) 
+#------------------------------------------------------
+
+# t0_vac_africa #
+t0_vac_africa = calc_t0_vac_africa(vc3d)
+
+# inc_v3d #
+inc_v3d = calc_incidence_vac_general(vc3d)
+    
+# CALCULATE population moments #
+p_prop_3d = array( data = p_prop$population,
+                   dim = c(length(unique(p_prop$adm1)),
+                           length(unique(p_prop$year)),
+                           length(unique(p_prop$age))),
+                   dimnames = list(unique(p_prop$adm1),
+                                   unique(p_prop$year),
+                                   unique(p_prop$age)))
+
+pop_moments_whole = calc_pop_moments(p_prop_3d, 
+                                     t0_vac_africa,
+                                     dim_adm = dimnames(vc3d)[[1]],
+                                     dim_year = dimnames(vc3d)[[2]],
+                                     dim_age = dimnames(vc3d)[[3]])
+
+#aggregate
+list_aggregate_pop_vc = YFestimation::Make_aggregate_pop_vc_3d(pop1=pop1, 
+                                                               vc2d=vc2d, 
+                                                               sero_studies=seroout$sero_studies, 
+                                                               adm1s=seroout$adm1s) 
+pop_agg3d = list_aggregate_pop_vc$pop_agg3d 
+vc_agg3d = list_aggregate_pop_vc$vc_agg3d 
+
+pop_agg3d[is.na(pop_agg3d)] = 0
+vc_agg3d[is.na(vc_agg3d)] = 0
+
+#calculate aggregated incidence (same function as before)
+class(vc_agg3d) = "numeric"
+inc_v3d_agg = calc_incidence_vac_general(vc_agg3d)  
+
+#calculate aggregated moments (different fucntion before)
+class(pop_agg3d) = "numeric"
+pop_moments_agg = calc_pop_moments_agg(pop_agg3d,
+                                       seroout$t0_vac,
+                                       dim_year = unique(pop1$year),
+                                       seroout$study_years) 
+
+    
+
+# CREATE R0 LOOKUP TABLE #
+if(!file.exists(paste0("../YellowFeverModelEstimation2017/",
+                       "R0_lookup_table.Rdata") )){
+    
+    ptm = proc.time()
+    create_R0_lookup(dim_adm, 
+                     envdat$dat, 
+                     dim_year,
+                     dim_age,
+                     p_prop_3d,
+                     P_tot_2d,
+                     inc_v3d,
+                     pop_moments_whole,
+                     pop_moments_agg, 
+                     vac_eff_arg = 0.975)
+    proc.time()-ptm
+  } else {
+    load(paste0("../YellowFeverModelEstimation2017/",
+                "R0_lookup_table.Rdata") )
+  }
+
+
+# pop at survey #
+foi_const_surv = rep(0, seroout$no_sero_surveys)
+
+list_pop_at_survey = create_pop_at_survey(pop_agg3d, 
+                                          seroout$sero_studies, 
+                                          dim_year = unique(pop1$year))
+p_at_survey = list_pop_at_survey$p_at_survey_3d
+P_tot_survey = list_pop_at_survey$P_tot_survey_2d
+
+#read in models
+model_form = read.csv("Model_form5.csv", stringsAsFactors = FALSE)$x
+
+#read in models
+object_glm = YFestimation::fit_glm(dat = dat, 
+                                   depi = match("cases_or_outbreaks", names(dat)), 
+                                   models = paste0(model_form, "+adm05", "+surv.qual.adm0")) #"+predicted_surv_qual"))  
+
+beta0 = object_glm[[1]]
+x = object_glm[[2]]
+y = object_glm[[3]]
+
+# read shapefiles in #
+shp0 = rgdal::readOGR("../../shapefiles/Africa_SAmerica_0_smooth.shp",
+                          stringsAsFactors = FALSE,
+                          encoding = "UTF-8",
+                          use_iconv = TRUE)
+shp1 = rgdal::readOGR("../../shapefiles/Africa_SAmerica_1_smooth.shp",
+                          stringsAsFactors = FALSE,
+                          encoding = "UTF-8",
+                          use_iconv = TRUE)
+
+
+```
+
+
+```{r hpd, message=F, warning=F}
+
+out = get_hpd(mcmc_out, glm_mcmc_out)
+
+Foi_param = out$Foi_param
+
+```
+
+
+```{r Foi_map,  message = F, warning=F, fig.cap = "\\label{fig:Foi_map}Map of FOI values.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 5 }
+
+ii = c(2:57)
+varsin_nc = grep("adm05|surv|posterior|acc", names(glm_mcmc_out), invert = TRUE)
+
+colours = viridis_pal(option = "magma")(100)
+
+vc2d %<>% arrange( adm0_adm1)
+dat %<>% arrange(adm0_adm1)
+
+plot_transmission_intensity2(x,
+                             ii,
+                             seroout,
+                             params = Foi_param[,2],
+                             dat ,
+                             t0_vac_africa,
+                             dim_year,
+                             dim_age,
+                             p_prop_3d,
+                             P_tot_2d,
+                             inc_v3d,
+                             pop1,
+                             vc2d,
+                             varsin_nc,
+                             polydeg = 5,
+                             R0_lookup,
+                             model_type = "Foi",
+                             shp1,
+                             shp0,
+                             colours)
+
+
+```
+
+
+## Producing average model predictions
+
+
+```{r setting_up_burden, eval=FALSE}
+
+# Bayes factor #
+out = calculate_bootstrap_Bayes(mcmc_out, plotout = FALSE)
+
+
+n_samples = 10
+### we would like n_samples samples of the model output proportional to the model evidence ###
+# first take n_samples samples of glm param #
+glm_samples = glm_mcmc_out[sample(nrow(glm_mcmc_out), n_samples, replace =TRUE), 1:20 ]
+
+#calculate model evidence with equal model prior assumption
+model_ev = as.numeric( exp(out$log_Bayes_R0_FOI[2])/(1+exp(out$log_Bayes_R0_FOI[2])) ) #for R0
+
+#then we would like n_samples of R0 and foi proportional to model evidence
+#filter by model type
+mcmc_out_r = mcmc_out %>% filter(model_chain ==1)
+mcmc_out_f = mcmc_out %>% filter(model_chain ==0)
+
+multimodel_samples = NULL
+for (i in 1:n_samples){
+  
+  if(runif(1)<model_ev){ 
+    tmp = mcmc_out_r[sample(nrow(mcmc_out_r), 1, replace = TRUE), 1:83]
+  } else {
+    tmp = mcmc_out_f[sample(nrow(mcmc_out_f), 1, replace = TRUE), 1:83] 
+  }
+  
+  multimodel_samples = rbind(multimodel_samples, tmp)
+}
+
+
+#now we calculate the transmission param based on the model type and glm samples
+transmission_out = NULL
+for (i in 1:n_samples){
+  #check which model for that row
+  model_type = ifelse(multimodel_samples$model_chain[i] , "R0","Foi")
+  
+  ind = grep(model_type, names(multimodel_samples))
+  
+  params = unlist( cbind(exp( multimodel_samples[i,1] ), 
+                         glm_samples[i,], 
+                         exp( multimodel_samples[i,  ind[1]:ind[length(ind)] ] ),
+                         exp( multimodel_samples[i, grep("vc", names(multimodel_samples))]) ) )
+  
+  names(params)[c(1, length(params))] = c("vac_eff", "vc_factor_CMRs")
+  
+  
+  out = fun_calc_transmission_Africa(x, 
+                                     ii, 
+                                     seroout,
+                                     params, 
+                                     envdat$dat, 
+                                     t0_vac_africa,  
+                                     dim_year, 
+                                     dim_age, 
+                                     p_prop_3d, 
+                                     P_tot_2d, 
+                                     inc_v3d, 
+                                     pop1, 
+                                     vc2d,
+                                     varsin_nc, 
+                                     polydeg=5,
+                                     R0_lookup,
+                                     model_type)
+  
+
+  
+  transmission_out = rbind(transmission_out, c(out, model_type))
+  
+
+}
+
+colnames(transmission_out) = c(dim_adm, "model_type")
+
+head(transmission_out[,c(1:5, 475:480)])
+
+write.csv(transmission_out, paste0("MultiModel_parameter_samples_equalprior_", 
+                                   Sys.Date(), ".csv"), row.names = FALSE)
+
+
+##### also work out including model priors #####
+
+#then we would like n_samples of R0 and foi proportional to model evidence
+multimodel_samples = mcmc_out[sample(nrow(mcmc_out), n_samples, replace =TRUE),]
+
+#now we calculate the transmission param based on the model type and glm samples
+transmission_out = NULL
+for (i in 1:n_samples){
+  #check which model for that row
+  model_type = ifelse(multimodel_samples$model_chain[i] , "R0","Foi")
+  
+  ind = grep(model_type, names(multimodel_samples))
+  
+  params = unlist( cbind(exp( multimodel_samples[i,1] ), 
+                         glm_samples[i,], 
+                         exp( multimodel_samples[i,  ind[1]:ind[length(ind)] ] ),
+                         exp( multimodel_samples[i,grep("vc", names(multimodel_samples))]) ) )
+  
+  
+  
+  out = fun_calc_transmission_Africa(x, 
+                                     ii, 
+                                     seroout,
+                                     params, 
+                                     envdat$dat, 
+                                     t0_vac_africa,  
+                                     dim_year, 
+                                     dim_age, 
+                                     p_prop_3d, 
+                                     P_tot_2d, 
+                                     inc_v3d, 
+                                     pop1, 
+                                     vc2d,
+                                     varsin_nc, 
+                                     polydeg=5,
+                                     R0_lookup,
+                                     model_type)
+  
+  transmission_out = rbind(transmission_out, c(out, model_type))
+}
+
+colnames(transmission_out) = c(dim_adm, "model_type")
+
+head(transmission_out[,c(1:5, 475:480)])
+
+write.csv(transmission_out, paste0("MultiModel_parameter_samples_", 
+                                   Sys.Date(), ".csv"), row.names = FALSE)
+
+
+```
