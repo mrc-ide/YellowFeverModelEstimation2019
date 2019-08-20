@@ -88,7 +88,7 @@ plot_sero = function(seroout,
       sero_ag$x = sero_ag$x/aggregate(pop, by=list(age_group=0:100), sum)$x
       sero_ag$x[is.na(sero_ag$x)]=0
       
-      res_out = 1 - (1-sero_ag$x[sero_ag$age_group>0])*(1-vc)
+      res_out = 1 - (1-sero_ag$x[sero_ag$age_group>=0])*(1-vc)
       
       seroprev_predict_survey_f = rbind(seroprev_predict_survey_f,  res_out)
       
@@ -271,5 +271,9 @@ plot_transmission_intensity2 = function(x,
   image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), horizontal = TRUE,
              axis.args = list(at = c(-5:1), labels =c("1e-05","1e-04", "0.001", "0.01", "0.1","1","10"), las =2),
              legend.mar = 3.5)
+  
+  return(data.frame(adm0 = shp1$GID_0,
+                    adm0_adm1 = shp1$GID_1,
+                    FOI = shp1$runs))
   
 }

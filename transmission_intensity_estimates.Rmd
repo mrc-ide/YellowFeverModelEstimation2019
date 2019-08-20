@@ -41,7 +41,7 @@ library(KsetupR)
 sourceDirectory("Functions", modifiedOnly = FALSE)
 
 mcmc_out = get_chains("multi_model_MCMC_chain_20190820", 
-                      burnin = 1.2e4, thin = 1)
+                      burnin = 1.8e4, thin = 1)
 
 glm_mcmc_out = get_chains("GLM_MCMC_chain_20190816_5_all", 
                           burnin =4e5, thin = 1)
@@ -231,35 +231,51 @@ colours = viridis_pal(option = "magma")(100)
 vc2d %<>% arrange( adm0_adm1)
 dat %<>% arrange(adm0_adm1)
 
-plot_transmission_intensity2(x,
-                             ii,
-                             seroout,
-                             params = Foi_param[,2],
-                             dat ,
-                             t0_vac_africa,
-                             dim_year,
-                             dim_age,
-                             p_prop_3d,
-                             P_tot_2d,
-                             inc_v3d,
-                             pop1,
-                             vc2d,
-                             varsin_nc,
-                             polydeg = 5,
-                             R0_lookup,
-                             model_type = "Foi",
-                             shp1,
-                             shp0,
-                             colours)
+foi = plot_transmission_intensity2(x,
+                                   ii,
+                                   seroout,
+                                   params = Foi_param[,2],
+                                   dat ,
+                                   t0_vac_africa,
+                                   dim_year,
+                                   dim_age,
+                                   p_prop_3d,
+                                   P_tot_2d,
+                                   inc_v3d,
+                                   pop1,
+                                   vc2d,
+                                   varsin_nc,
+                                   polydeg = 5,
+                                   R0_lookup,
+                                   model_type = "Foi",
+                                   shp1,
+                                   shp0,
+                                   colours)
 
 
 ```
 
+```{r FOI_by_country, fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10}
 
+library(ggplot2)
+
+ggplot(foi %>% group_by(adm0) %>% summarise(mean_FOI = mean(FOI, na.rm = TRUE))) + 
+  geom_col(aes(x = reorder(adm0, -mean_FOI), y =mean_FOI, fill = mean_FOI)) + 
+  xlab("Country") + 
+  ylab("Mean FOI")+
+  theme_bw()+
+  scale_fill_viridis(option = "magma") +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 90, hjust = 1))
+
+```
 ## Producing average model predictions
 
 
+
 ```{r setting_up_burden, eval=FALSE}
+
+# NOT EDITED YET #
+
 
 # Bayes factor #
 out = calculate_bootstrap_Bayes(mcmc_out, plotout = FALSE)
