@@ -90,7 +90,7 @@ run_estimation = function(run_id=1){
     }
     
     # restrict to lines in dat
-    vc2d %<>% filter(adm0_adm1 %in% dat$adm0_adm1)
+    #vc2d %<>% filter(adm0_adm1 %in% dat$adm0_adm1)
     
     saveRDS(vc2d, "vacc_1940_1950.RDS")
   } else {
@@ -98,6 +98,7 @@ run_estimation = function(run_id=1){
   }
   
   vc2d = as.data.frame(vc2d)
+  vc2d %<>% filter(!is.na(adm0_adm1))
   
   #########################################################################################################
   ### AGGREGATE POPULATION AND VACCINATION DATA ###
@@ -127,12 +128,15 @@ run_estimation = function(run_id=1){
                                            dim_year = unique(pop1$year),
                                            seroout$study_years) 
     
+    pop_agg3d[is.na(pop_agg3d)] = 0
+    vc_agg3d[is.na(vc_agg3d)] = 0
+    
     save(pop_agg3d, vc_agg3d, inc_v3d_agg, pop_moments_agg, file = "agg_pop_vc.RData", compress = "xz")
   } else {
     load("agg_pop_vc.RData")
   }
   
-  
+  print("agg_pop_vc")
   #########################################################################################################
   ### CREATE R0 LOOKUP TABLE ###
   #########################################################################################################
@@ -245,19 +249,7 @@ run_estimation = function(run_id=1){
   
   ign = NA
   
-  prob_Foi = log(1) #setup_modelprior(pars_ini = pars_ini,
-                              # seroout = seroout,
-                              # foi_const_surv = foi_const_surv,
-                              # vc_agg3d = vc_agg3d,
-                              # pop_agg3d = pop_agg3d,
-                              # pop_moments_agg=pop_moments_agg,
-                              # dim_year = dim_year,
-                              # dim_age = dim_age,
-                              # p_at_survey = p_at_survey,
-                              # P_tot_survey = P_tot_survey,
-                              # inc_v3d_agg = inc_v3d_agg,
-                              # parameter_type = parameter_type,
-                              # ign = ign)
+  prob_Foi = log(1) 
   
   #create a directory to save the output in
   name_dir = paste0("multi_model_MCMC_chain", "_", 
