@@ -28,20 +28,28 @@ run_estimation = function(run_id =1){
   
   dat = read.csv(filename, stringsAsFactors = FALSE)
   
+  # remove families of NHP that are not to be included
+  model_form_whole = read.csv("Model_form6.csv", stringsAsFactors = FALSE)$x
+  covar = unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
+  
+  dat = dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] # remove family which are not covariates
+  
+  # make extra elements and normalise
   dat = adjust_env_dat(dat)
   
   dat %<>% filter(!is.na(precip_mean))
   
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
   # FIT MODEL #
+  covar = covar[grep("cases_or_outbreaks|family", covar, invert = TRUE)]
   
-  model_form = "cases_or_outbreaks~logpop+temp_mean+EVI.mean+EVI.max+LC7+LC12+LC16+LC17+aggregate_family"
-  #read.csv("Model_form6.csv", stringsAsFactors = FALSE)$x
+  model_form = paste0("cases_or_outbreaks~", paste(covar, collapse = "+") , "+adm05", "+surv.qual.adm0")
+
   
   
   object_glm = YFestimation::fit_glm(dat = dat, 
                                      depi = match("cases_or_outbreaks", names(dat)), 
-                                     models = paste0(model_form, "+adm05", "+surv.qual.adm0")) #"+predicted_surv_qual"))  
+                                     models = model_form) #"+predicted_surv_qual"))  
   
   beta0 = object_glm[[1]]
   x = object_glm[[2]]
