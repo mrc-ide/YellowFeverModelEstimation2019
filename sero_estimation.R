@@ -185,9 +185,9 @@ run_estimation = function(run_id=1){
   P_tot_survey = out_p$P_tot_survey_2d
   
   
-  # StartParamFoi=read.csv(paste0("../YellowFeverModelEstimation2017/","StartParam_","Foi",".csv"),
-  #                        header = TRUE)
-  # 
+  StartParamFoi=read.csv("sero_hpd_2019-08-21.csv",
+                         header = TRUE)
+
   ## initialising parameters for MCMC
   parnames =  c("vac_eff",
                 paste("Foi", seroout$sero_studies, sep = "_"),
@@ -202,14 +202,14 @@ run_estimation = function(run_id=1){
   pars_ini[1] =log(0.975) 
   
   # foi for each survey 
-  pars_ini[grep("Foi", parnames)] = rep(log(0.01), seroout$no_sero_surveys) 
+  pars_ini[grep("Foi", parnames)] = rep(log(0.01), seroout$no_sero_surveys)  #StartParamFoi[grep("Foi", StartParamFoi$X), "X.1"] #
   
   # R0 for each survey KATY IS LOG TRANSFORMING THESE
   #this is the max post prob values of R0 from trial run
   pars_ini[grep("R0", parnames)] = rep(0.1, seroout$no_sero_surveys) 
   
   #vc.factor.CMRs 
-  pars_ini[length(pars_ini)]= -0.3184868 #
+  pars_ini[length(pars_ini)]= -0.3 #
   
   
   ## declare vector to identify different parameter types: vacc eff=1, Foi/R0=3, vc.factor.CMRs =4
@@ -238,10 +238,10 @@ run_estimation = function(run_id=1){
   posterior_distributions = rbind(FOI_posterior_distributions, R0_posterior_distributions)
   
   #tweak posterior distributions 
-  scale_factor = setup_pseudoprior(pars_ini, posterior_distributions, "R0")
-  
+  scale_factor =  setup_pseudoprior(pars_ini, posterior_distributions, "R0") # 0.3250546 # 
+  # 
   posterior_distributions$sd[posterior_distributions$model_type == "R0"] = 
-    scale_factor * posterior_distributions$sd[posterior_distributions$model_type == "R0"]
+  scale_factor * posterior_distributions$sd[posterior_distributions$model_type == "R0"]
   #########################################################################################################
   ### MCMC ###
   #########################################################################################################

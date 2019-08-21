@@ -43,8 +43,8 @@ sourceDirectory("Functions", modifiedOnly = FALSE)
 snapal = "Fjord"
 
 mcmc_out = get_chains(
-  "multi_model_MCMC_chain_20190820", 
-  burnin = 2.2e4, thin = 1)
+  "multi_model_MCMC_chain_20190821", 
+  burnin = 1.7e4, thin = 1)
 
 mcmc_out %<>% select(-starts_with("R0"))
 
@@ -240,7 +240,6 @@ hpd_sero = get_hpd(mcmc_out = mcmc_out, glm_mcmc_out = NA)$hpd_sero
 
 ```{r sero_predict1,  message = F, warning=F, fig.cap = "\\label{fig:sero_predict1}Seroprevalence predictions from $R_0$ model (red) and Foi model (blue).", fig.align='center', fig.pos = 'h', fig.height = 12, fig.width = 20, strip.white=F}
 
-#ignore CAF
 
 plot_sero(seroout, 
           hpd_sero, 

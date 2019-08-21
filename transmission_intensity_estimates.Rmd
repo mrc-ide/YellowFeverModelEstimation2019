@@ -41,7 +41,7 @@ library(KsetupR)
 sourceDirectory("Functions", modifiedOnly = FALSE)
 
 mcmc_out = get_chains("multi_model_MCMC_chain_20190820", 
-                      burnin = 1.8e4, thin = 1)
+                      burnin = 4e4, thin = 1)
 
 glm_mcmc_out = get_chains("GLM_MCMC_chain_20190816_5_all", 
                           burnin =4e5, thin = 1)
@@ -259,15 +259,53 @@ foi = plot_transmission_intensity2(x,
 
 library(ggplot2)
 
-ggplot(foi %>% group_by(adm0) %>% summarise(mean_FOI = mean(FOI, na.rm = TRUE))) + 
-  geom_col(aes(x = reorder(adm0, -mean_FOI), y =mean_FOI, fill = mean_FOI)) + 
+ggplot(foi %>% 
+         left_join(dat, by = c("adm0_adm1")) %>% 
+         group_by(adm0.x) %>% 
+         summarise(median_FOI = median(FOI, na.rm = TRUE), risk = median(risk))) + 
+  geom_col(aes(x = reorder(adm0.x, -median_FOI), y =(median_FOI), fill = risk)) + 
   xlab("Country") + 
-  ylab("Mean FOI")+
+  ylab("Median FOI")+
   theme_bw()+
   scale_fill_viridis(option = "magma") +
   theme(legend.position = "none", axis.text.x = element_text(angle = 90, hjust = 1))
 
 ```
+
+```{r FOI_by_country, fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10}
+
+
+
+ggplot(foi %>% 
+         left_join(dat, by = c("adm0_adm1")), 
+       aes(x = reorder(adm0.x, -FOI), y = log10(FOI), fill = risk)) + 
+  geom_boxplot() + 
+  xlab("Country") + 
+  ylab("FOI")+
+  theme_bw()+
+  scale_fill_viridis(option = "magma") +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 90, hjust = 1))
+
+```
+
+```{r FOI_by_risk, fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10}
+
+
+
+ggplot(foi %>% 
+         left_join(dat, by = c("adm0_adm1")) %>%
+         mutate(risk = as.numeric(risk)), 
+       aes(x = risk, y = log10(FOI), fill = risk)) + 
+  geom_point() + 
+  stat_smooth(method = "lm", col = "red")+
+  xlab("risk") + 
+  ylab("FOI")+
+  theme_bw()+
+  scale_fill_viridis(option = "magma") +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 90, hjust = 1))
+
+```
+
 ## Producing average model predictions
 
 
