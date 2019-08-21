@@ -42,7 +42,7 @@ adjust_env_dat = function(dat) {
   
   # sorting risk
   dat = dplyr::mutate(dat, risk = as.numeric(as.factor(risk)))
-  dat$risk[is.na(dat$risk)] = 0
+  dat$risk[is.na(dat$risk)] = max(dat$risk, na.rm = TRUE)+1
   
   # ESH and GUF missing from predicted surv qual
   dat$predicted_surv_qual[dat$adm0 == "ESH"] = mean(c(unique(dat$predicted_surv_qual[dat$adm0 == "MAR"]),

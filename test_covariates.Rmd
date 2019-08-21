@@ -24,7 +24,7 @@ library(corrplot)
 
 Env_Table_path = "../Data/Environment/global_dat"
 
-filename = get_latest_file(path = Env_Table_path, pattern = "dat_10")
+filename = get_latest_file(path = Env_Table_path, pattern = "dat_11")
 
 dat = read.csv(filename, stringsAsFactors = FALSE)
 
@@ -175,7 +175,7 @@ mod = glm( model_form, data = dat, family=binomial(link="cloglog"))
 
 
 write.csv(data.frame(x = model_form),
-                 "Model_form5.csv",
+                 "Model_form6.csv",
                  row.names = FALSE)
 parm
 ```

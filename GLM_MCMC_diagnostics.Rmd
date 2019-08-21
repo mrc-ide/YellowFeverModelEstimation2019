@@ -38,7 +38,7 @@ library(snapalette)
 library(YFestimation)
 library(KsetupR)
 
-glm_mcmc_out=get_chains("GLM_MCMC_chain_20190816_5_all", burnin =4e5, thin = 1)
+glm_mcmc_out=get_chains("GLM_MCMC_chain_20190821_6_all", burnin =3e4, thin = 1)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
 
@@ -86,6 +86,11 @@ Finally, we examine the values of all parameters through a caterpillar plot and 
 ggs_caterpillar(glm_mcmc_out2)
 ```
 
+```{r crosscor_glm,   fig.cap = "Crosscorrelation of all parameters.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10}
+
+ggs_crosscorrelation(glm_mcmc_out2)
+```
+
 ```{r priorpost_glm,   fig.cap = "\\label{fig:priorpost_glm}Prior (maroon) and posterior (grey) distributions for all parameters.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10, eval = FALSE}
 
 #plot_prior_post(glm_mcmc_out, prior_col = snapalette(snapal, 5, type="discrete")[1], "GLM")
@@ -126,7 +131,7 @@ ageVec = c(0:maxAge)
 #########################################################################################################
 Env_Table_path = "../Data/Environment/global_dat"
 
-filename = KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_10")
+filename = KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_11")
 
 dat = read.csv(filename, stringsAsFactors = FALSE)
 
@@ -139,7 +144,7 @@ dat %<>% filter(!is.na(precip_mean))
 #########################################################################################################
 ### FIT GLM ###
 #########################################################################################################
-model_form = read.csv("Model_form5.csv", stringsAsFactors = FALSE)$x
+model_form = read.csv("Model_form6.csv", stringsAsFactors = FALSE)$x
 
 #read in models
 object_glm = YFestimation::fit_glm(dat = dat, 
