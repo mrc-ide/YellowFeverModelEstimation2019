@@ -40,6 +40,10 @@ adjust_env_dat = function(dat) {
                                                 1,
                                                 0))
   
+  # aggregate monkeys
+  dat = dplyr::mutate(dat,
+                      aggregate_family = rowSums(dat[, grep("family", names(dat))]))
+  
   # sorting risk
   dat = dplyr::mutate(dat, risk = as.numeric(as.factor(risk)))
   dat$risk[is.na(dat$risk)] = max(dat$risk, na.rm = TRUE)+1

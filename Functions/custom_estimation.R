@@ -100,7 +100,7 @@ GLMprior = function(param) {
   
   Prior[1] =  - 0.5 * sum((param[jj] / sd.prior) ^ 2) # adjustment for reduced variation between countries?
   
-  Prior[2] =  sum(dnorm(param[grep("^log.adm05|log.family", names(param), invert = TRUE)],
+  Prior[2] =  sum(dnorm(param[grep("^log.adm05|family", names(param), invert = TRUE)],
                         mean = 0,
                         sd = 30,
                         log = TRUE))

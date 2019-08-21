@@ -35,7 +35,9 @@ run_estimation = function(run_id =1){
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
   # FIT MODEL #
   
-  model_form = read.csv("Model_form6.csv", stringsAsFactors = FALSE)$x
+  model_form = "cases_or_outbreaks~logpop+temp_mean+EVI.mean+EVI.max+LC7+LC12+LC16+LC17+aggregate_family"
+  #read.csv("Model_form6.csv", stringsAsFactors = FALSE)$x
+  
   
   object_glm = YFestimation::fit_glm(dat = dat, 
                                      depi = match("cases_or_outbreaks", names(dat)), 
@@ -73,7 +75,7 @@ run_estimation = function(run_id =1){
   plot_chain = FALSE
   
   # create a directory to save the output in 
-  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_6_all")
+  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_6_all_agg")
   dir.create(name_dir)
   
   Niter = 1e6
