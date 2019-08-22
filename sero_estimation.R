@@ -37,22 +37,7 @@ run_estimation = function(run_id=1){
   }
   
 
-  # ------------------------------------------------------------------------------------------------------------------------------------------------------------
-  ### LOAD ENVIRONMENTAL DATA that we don't need here ###
-  
-  Env_Table_path = "../Data/Environment/global_dat"
-  
-  filename = KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_10")
-  
-  dat = read.csv(filename, stringsAsFactors = FALSE)
-  
-  dat = adjust_env_dat(dat)
-  
-  dat %<>% filter(!is.na(precip_mean))
-  
-  dat %<>% rename(adm0_adm1 = adm1)
-  
-  
+
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
   ### POPULATION AND VACCINATION DATA ###
   
@@ -137,41 +122,7 @@ run_estimation = function(run_id=1){
   }
   
   print("agg_pop_vc")
-  #########################################################################################################
-  ### CREATE R0 LOOKUP TABLE ###
-  #########################################################################################################
-  #don't need this for estimation- consider moving
-  
-  if(!file.exists(paste0("../YellowFeverModelEstimation2017/","R0_lookup_table.Rdata") )){
-    
-    vc3d = transform_into_vc3d(vc2d,  adm="adm1")
-    
-    inc_v3d = calc_incidence_vac_general(vc3d)
-    
-    t0_vac_africa = calc_t0_vac_africa(vc3d)
-    
-    pop_moments_whole = calc_pop_moments(p_prop_3d, 
-                                         t0_vac_africa,
-                                         dim_adm,
-                                         dim_year,
-                                         dim_age)
-    
-    ptm = proc.time()
-    create_R0_lookup(dim_adm, 
-                     envdat$dat, 
-                     dim_year,
-                     dim_age,
-                     p_prop_3d,
-                     P_tot_2d,
-                     inc_v3d,
-                     pop_moments_whole,
-                     pop_moments_agg, 
-                     vac_eff_arg = 0.975)
-    proc.time()-ptm
-  } else {
-    load(paste0("../YellowFeverModelEstimation2017/","R0_lookup_table.Rdata") )
-  }
-  print("loaded R0 table")
+
   #########################################################################################################
   ### CREATE STATUS ###
   #########################################################################################################

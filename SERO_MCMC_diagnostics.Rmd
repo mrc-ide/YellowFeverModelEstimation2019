@@ -44,7 +44,7 @@ snapal = "Fjord"
 
 mcmc_out = get_chains(
   "multi_model_MCMC_chain_20190821", 
-  burnin = 1.7e4, thin = 1)
+  burnin = 2.3e4, thin = 1)
 
 mcmc_out %<>% select(-starts_with("R0"))
 
@@ -115,16 +115,7 @@ for(s in 1:seroout$no_sero_surveys){
   seroout$adm1s[[s]] = paste(seroout$adm1s[[s]], "_1", sep = "")
 }
 
-# LOAD ENVIRONMENTAL DATA #
-Env_Table_path = "../Data/Environment/global_dat"
 
-filename = get_latest_file(path = Env_Table_path, pattern = "dat_10")
-
-dat = read.csv(filename, stringsAsFactors = FALSE)
-
-dat = adjust_env_dat(dat)
-
-dat %<>% filter(!is.na(precip_mean))
 
 ### POPULATION AND VACCINATION DATA ###
 
