@@ -43,6 +43,7 @@ covar_to_test = covar_to_test[grep("surv.qual", covar_to_test, invert = TRUE)]
 covar_to_test = covar_to_test[grep("LC_dom", covar_to_test, invert = TRUE)]
 covar_to_test = covar_to_test[grep("risk", covar_to_test, invert = TRUE)]
 covar_to_test = covar_to_test[grep("population", covar_to_test, invert = TRUE)]
+covar_to_test = covar_to_test[grep("aggregate", covar_to_test, invert = TRUE)]
 
 mod = list()
 pvalues = rep(NA, length(covar_to_test))

@@ -38,7 +38,9 @@ library(snapalette)
 library(YFestimation)
 library(KsetupR)
 
-glm_mcmc_out=get_chains("GLM_MCMC_chain_20190821_6_all", burnin =3e4, thin = 1)
+R.utils::sourceDirectory("Functions")
+
+glm_mcmc_out=get_chains("GLM_MCMC_chain_20190821_6_all_agg", burnin =2e5, thin = 1)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
 
@@ -129,27 +131,32 @@ ageVec = c(0:maxAge)
 #########################################################################################################
 ### LOAD ENVIRONMENTAL DATA ###
 #########################################################################################################
+
 Env_Table_path = "../Data/Environment/global_dat"
 
-filename = KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_11")
+filename = get_latest_file(path = Env_Table_path, pattern = "dat_11")
 
 dat = read.csv(filename, stringsAsFactors = FALSE)
 
-R.utils::sourceDirectory("Functions", modifiedOnly = FALSE)
+# remove families of NHP that are not to be included
+model_form_whole = read.csv("Model_form6.csv", stringsAsFactors = FALSE)$x
+covar = unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
 
+dat = dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] # remove family which are not covariates
+
+# make extra elements and normalise
 dat = adjust_env_dat(dat)
 
 dat %<>% filter(!is.na(precip_mean))
 
-#########################################################################################################
-### FIT GLM ###
-#########################################################################################################
-model_form = read.csv("Model_form6.csv", stringsAsFactors = FALSE)$x
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------
+# FIT MODEL #
+covar = covar[grep("cases_or_outbreaks|family", covar, invert = TRUE)]
 
-#read in models
+model_form = paste0("cases_or_outbreaks~", paste(covar, collapse = "+") ,"+aggregate_family",  "+adm05", "+surv.qual.adm0")
 object_glm = YFestimation::fit_glm(dat = dat, 
                                    depi = match("cases_or_outbreaks", names(dat)), 
-                                   models = paste0(model_form, "+adm05", "+surv.qual.adm0")) #"+predicted_surv_qual"))  
+                                   models = model_form) #"+predicted_surv_qual"))  
 
 beta0 = object_glm[[1]]
 x = object_glm[[2]]
@@ -159,6 +166,7 @@ y = object_glm[[3]]
 plot_glm_map2(shp0, shp1,  dat, Est_beta, x, colours = viridis_pal(option = "magma")(1000))
 
 ```
+
 ```{r AUC}
 
 library(pROC)
