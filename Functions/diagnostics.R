@@ -8,7 +8,7 @@ plot_glm_map2 = function(shp0,
                          colours,
                          plot_data = TRUE){
   if(plot_data){
-    par(mfrow=c(2,1))
+    par(mfrow=c(2,1), omi=c(0.5,0.3,0,0), plt=c(0.1,0.9,0,0.7))
     
     ### data ###
     plot(shp0)
@@ -18,7 +18,7 @@ plot_glm_map2 = function(shp0,
     mm1<-match(pres, shp1$GID_1)
     
     
-    plot(shp1[mm1,], col=colours[750], add=TRUE)
+    plot(shp1[mm1,], col=colours[length(colours)], add=TRUE)
     plot(shp0,lwd=2, add=TRUE)
     plot(shp1,lwd=1, add=TRUE)
   }

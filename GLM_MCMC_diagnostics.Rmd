@@ -46,7 +46,7 @@ names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
 
 glm_mcmc_out2 = ggs( convert.mcmc.list(  glm_mcmc_out %>% select(-c(posteriorProb, acceptRate, starts_with("adm05")))) )
 
-snapal = "BudapestCitadel"
+snapal = "Pop"
 ```
 
 First we plot the posterior.
@@ -61,9 +61,9 @@ maxind = which.max(glm_mcmc_out$posteriorProb )
 
 To assess the convergence of the MCMC chains we shall plot a selection of the outputs for two parameters.
 
-```{r trace_glm,   fig.cap = "\\label{fig:trace_glm}Trace plot.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10 }
+```{r trace_glm,   fig.cap = "\\label{fig:trace_glm}Trace plot for each parameter.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10 }
 
-cols = viridis_pal(option = "magma")(ncol(glm_mcmc_out)-2)
+cols = snapalette(snapal, ncol(glm_mcmc_out)-2, type = "continuous")#viridis_pal(option = "magma")(ncol(glm_mcmc_out)-2)
 par(mfrow = c(4,3))
 for(i in 1:(ncol(glm_mcmc_out)-2)){
   plot(glm_mcmc_out[, i], type = "l", main = names(glm_mcmc_out)[i], col = cols[i])
@@ -71,7 +71,7 @@ for(i in 1:(ncol(glm_mcmc_out)-2)){
 
 ```
 
-```{r density_glm, fig.cap = "\\label{fig:density_glm}Density plot of entire chain (grey) and last 10\\% of the chain (green).", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10}
+```{r density_glm, fig.cap = "\\label{fig:density_glm}Density plot for each parameter.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10}
 par(mfrow = c(4,3))
 for(i in 1:(ncol(glm_mcmc_out)-2)){
   
@@ -83,12 +83,12 @@ for(i in 1:(ncol(glm_mcmc_out)-2)){
 
 Finally, we examine the values of all parameters through a caterpillar plot and compare the prior and posterior distributions.
 
-```{r caterpillar_glm,   fig.cap = "\\label{fig:caterpillar_glm}Caterpillar plot of all parameters.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10}
+```{r caterpillar_glm,   fig.cap = "\\label{fig:caterpillar_glm}Caterpillar plot of parameters excluding adm05.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10}
 
 ggs_caterpillar(glm_mcmc_out2)
 ```
 
-```{r crosscor_glm,   fig.cap = "Crosscorrelation of all parameters.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10}
+```{r crosscor_glm,   fig.cap = "Crosscorrelation of all parameters excluding adm05.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10}
 
 ggs_crosscorrelation(glm_mcmc_out2)
 ```
@@ -104,7 +104,7 @@ ggs_crosscorrelation(glm_mcmc_out2)
 
 We now collect the estimates to produce the posterior predictive distribution of yellow fever reports.
 
-```{r glm_predict,  fig.cap = "\\label{fig:predict_glm}Prediction of glm. The scale indicates the probability of  YF report over the observation period.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10, fig.width=10}
+```{r glm_predict,  fig.cap = "Prediction of GLM including surveillance quality parameters. The scale indicates the probability of YF report over the observation period.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10, fig.width=10}
 
 
 Est_beta =  apply(subset( glm_mcmc_out, select = -c(posteriorProb, acceptRate)), 2, median)
@@ -163,7 +163,7 @@ x = object_glm[[2]]
 y = object_glm[[3]]
 
 #########################################################################################################
-plot_glm_map2(shp0, shp1,  dat, Est_beta, x, colours = viridis_pal(option = "magma")(1000))
+plot_glm_map2(shp0, shp1,  dat, Est_beta, x, colours = snapalette(snapal, 1000, type = "continuous"), plot_data = FALSE)#viridis_pal(option = "magma")(1000))
 
 ```
 
@@ -179,12 +179,12 @@ auc(ROC_out)
 
 ```
 
-```{r plot_wo_adm05}
+```{r plot_wo_adm05, fig.cap = "Prediction of GLM excluding surveillance. The scale indicates the probability of YF occurrence over the observation period.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10, fig.width=10}
 
 x_wo_adm05 = x[, grep("adm05|surv", colnames(x), invert = TRUE)]
 Est_beta_wo_adm05 = Est_beta[grep("adm05|surv", names(Est_beta), invert = TRUE)]
 
-colours = viridis_pal(option = "magma")(1000)
+colours = snapalette(snapal, 1000, type = "continuous")#viridis_pal(option = "magma")(1000)
 ### model ###
 eta =  x_wo_adm05 %*% Est_beta_wo_adm05
 preds = 1-exp(-exp(eta)) # 
