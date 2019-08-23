@@ -10,7 +10,7 @@ output:
 ---
 
 ```{r knitsetup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
 knitr::opts_chunk$set(
   dev = "png",
   fig.path = "images/",
@@ -32,30 +32,37 @@ library(fields)
 library(rgdal)
 library(R.utils)
 library(magrittr)
-library(viridis)
+library(pROC)
 
+# homemade
 library(snapalette)
 library(YFestimation)
 library(KsetupR)
 
 R.utils::sourceDirectory("Functions")
 
-glm_mcmc_out=get_chains("GLM_MCMC_chain_20190821_6_all_agg", burnin =2e5, thin = 1)
+glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190821_6_all_agg", 
+                        burnin =2e5, thin = 1)
 
-names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
+names(glm_mcmc_out) <- gsub("^log.", "", names(glm_mcmc_out))
 
-glm_mcmc_out2 = ggs( convert.mcmc.list(  glm_mcmc_out %>% select(-c(posteriorProb, acceptRate, starts_with("adm05")))) )
+glm_mcmc_out2 <- ggs( convert.mcmc.list(  glm_mcmc_out %>% 
+                                           select(-c(posteriorProb, 
+                                                     acceptRate, 
+                                                     starts_with("adm05")))) )
 
-snapal = "Pop"
+snapal <- "Pop"
 ```
 
 First we plot the posterior.
 
 ```{r posterior,   fig.cap = "Posterior.", fig.align='center', fig.pos = 'h', strip.white=F }
-plot(glm_mcmc_out$posteriorProb, type = "l", xlab = "Iteration", ylab = "Posterior probability")
+plot(glm_mcmc_out$posteriorProb, 
+     type = "l", 
+     xlab = "Iteration", 
+     ylab = "Posterior probability")
 
-maxind = which.max(glm_mcmc_out$posteriorProb )
-#write.csv(glm_mcmc_out[maxind, 1:(ncol(glm_mcmc_out)-2)], paste0("GLM_parameters_", Sys.Date(), ".csv"), row.names = FALSE)
+maxind <- which.max(glm_mcmc_out$posteriorProb )
 ```
 
 
@@ -63,13 +70,15 @@ To assess the convergence of the MCMC chains we shall plot a selection of the ou
 
 ```{r trace_glm,   fig.cap = "\\label{fig:trace_glm}Trace plot for each parameter.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10 }
 
-cols = snapalette(snapal, ncol(glm_mcmc_out)-2, type = "continuous")#viridis_pal(option = "magma")(ncol(glm_mcmc_out)-2)
+cols <- snapalette(snapal, ncol(glm_mcmc_out)-2, type = "continuous")
 par(mfrow = c(4,3))
 for(i in 1:(ncol(glm_mcmc_out)-2)){
   plot(glm_mcmc_out[, i], type = "l", main = names(glm_mcmc_out)[i], col = cols[i])
 }
 
 ```
+
+\FloatBarrier
 
 ```{r density_glm, fig.cap = "\\label{fig:density_glm}Density plot for each parameter.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10}
 par(mfrow = c(4,3))
@@ -80,6 +89,7 @@ for(i in 1:(ncol(glm_mcmc_out)-2)){
 }
 
 ```
+\FloatBarrier
 
 Finally, we examine the values of all parameters through a caterpillar plot and compare the prior and posterior distributions.
 
@@ -95,7 +105,9 @@ ggs_crosscorrelation(glm_mcmc_out2)
 
 ```{r priorpost_glm,   fig.cap = "\\label{fig:priorpost_glm}Prior (maroon) and posterior (grey) distributions for all parameters.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10, eval = FALSE}
 
-#plot_prior_post(glm_mcmc_out, prior_col = snapalette(snapal, 5, type="discrete")[1], "GLM")
+plot_prior_post(glm_mcmc_out, 
+                prior_col = snapalette(snapal, 5, type="discrete")[1], 
+                "GLM")
 ```
 
 \FloatBarrier 
@@ -107,73 +119,73 @@ We now collect the estimates to produce the posterior predictive distribution of
 ```{r glm_predict,  fig.cap = "Prediction of GLM including surveillance quality parameters. The scale indicates the probability of YF report over the observation period.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10, fig.width=10}
 
 
-Est_beta =  apply(subset( glm_mcmc_out, select = -c(posteriorProb, acceptRate)), 2, median)
+Est_beta <-  apply(subset( glm_mcmc_out, 
+                          select = -c(posteriorProb, acceptRate)), 
+                  2, median)
 
-#########################################################################################################
+
 ### LOADING SHAPEFILES AND COUNTRIES ###
-
-
 #read shapefiles in
-shp0 = rgdal::readOGR("../../shapefiles/Africa_SAmerica_0_smooth.shp",
+shp0 <- rgdal::readOGR("../../shapefiles/Africa_SAmerica_0_smooth.shp",
                           stringsAsFactors = FALSE,
                           encoding = "UTF-8",
                           use_iconv = TRUE)
-shp1 = rgdal::readOGR("../../shapefiles/Africa_SAmerica_1_smooth.shp",
+shp1 <- rgdal::readOGR("../../shapefiles/Africa_SAmerica_1_smooth.shp",
                           stringsAsFactors = FALSE,
                           encoding = "UTF-8",
                           use_iconv = TRUE)
 
 
 #sort age vector
-maxAge = 100
-ageVec = c(0:maxAge)
+maxAge <- 100
+ageVec <- c(0:maxAge)
 
-#########################################################################################################
+
 ### LOAD ENVIRONMENTAL DATA ###
-#########################################################################################################
+Env_Table_path <- "../Data/Environment/global_dat"
 
-Env_Table_path = "../Data/Environment/global_dat"
+filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_11")
 
-filename = get_latest_file(path = Env_Table_path, pattern = "dat_11")
-
-dat = read.csv(filename, stringsAsFactors = FALSE)
+dat <- read.csv(filename, stringsAsFactors = FALSE)
 
 # remove families of NHP that are not to be included
-model_form_whole = read.csv("Model_form6.csv", stringsAsFactors = FALSE)$x
-covar = unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
+model_form_whole <- read.csv("Model_form6.csv", stringsAsFactors = FALSE)$x
+covar <- unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
 
-dat = dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] # remove family which are not covariates
+dat <- dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] 
 
 # make extra elements and normalise
-dat = adjust_env_dat(dat)
+dat <- adjust_env_dat(dat)
 
 dat %<>% filter(!is.na(precip_mean))
 
-# ------------------------------------------------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------
 # FIT MODEL #
-covar = covar[grep("cases_or_outbreaks|family", covar, invert = TRUE)]
+covar <- covar[grep("cases_or_outbreaks|family", covar, invert = TRUE)]
 
-model_form = paste0("cases_or_outbreaks~", paste(covar, collapse = "+") ,"+aggregate_family",  "+adm05", "+surv.qual.adm0")
-object_glm = YFestimation::fit_glm(dat = dat, 
-                                   depi = match("cases_or_outbreaks", names(dat)), 
-                                   models = model_form) #"+predicted_surv_qual"))  
+model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+") ,
+                    "+aggregate_family",  "+adm05", "+surv.qual.adm0")
+object_glm <- YFestimation::fit_glm(dat = dat, 
+                                   depi = match("cases_or_outbreaks", 
+                                                names(dat)), 
+                                   models = model_form)
 
-beta0 = object_glm[[1]]
-x = object_glm[[2]]
-y = object_glm[[3]]
+beta0 <- object_glm[[1]]
+x <- object_glm[[2]]
+y <- object_glm[[3]]
 
-#########################################################################################################
-plot_glm_map2(shp0, shp1,  dat, Est_beta, x, colours = snapalette(snapal, 1000, type = "continuous"), plot_data = FALSE)#viridis_pal(option = "magma")(1000))
+###########################################################################
+plot_glm_map2(shp0, shp1,  dat, Est_beta, x, 
+              colours = snapalette(snapal, 1000, type = "continuous"), 
+              plot_data = FALSE)
 
 ```
 
 ```{r AUC}
 
-library(pROC)
+glmpreds <- YFestimation::fun_calcPred( Est_beta ,x,type="response")
 
-glmpreds = fun_calcPred( Est_beta ,x,type="response")
-
-ROC_out = roc(response = dat$cases_or_outbreaks, predictor = glmpreds)
+ROC_out <- pROC::roc(response = dat$cases_or_outbreaks, predictor = glmpreds)
 
 auc(ROC_out)
 
@@ -181,27 +193,30 @@ auc(ROC_out)
 
 ```{r plot_wo_adm05, fig.cap = "Prediction of GLM excluding surveillance. The scale indicates the probability of YF occurrence over the observation period.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10, fig.width=10}
 
-x_wo_adm05 = x[, grep("adm05|surv", colnames(x), invert = TRUE)]
-Est_beta_wo_adm05 = Est_beta[grep("adm05|surv", names(Est_beta), invert = TRUE)]
+x_wo_adm05 <- x[, grep("adm05|surv", colnames(x), invert = TRUE)]
+Est_beta_wo_adm05 <- Est_beta[grep("adm05|surv", names(Est_beta), 
+                                  invert = TRUE)]
 
-colours = snapalette(snapal, 1000, type = "continuous")#viridis_pal(option = "magma")(1000)
-### model ###
-eta =  x_wo_adm05 %*% Est_beta_wo_adm05
-preds = 1-exp(-exp(eta)) # 
+colours <- snapalette::snapalette(snapal, 1000, type = "continuous")
 
+eta <-  x_wo_adm05 %*% Est_beta_wo_adm05
+preds <- 1-exp(-exp(eta)) # 
 
-shp1$predictions  = preds[match( shp1$GID_1, dat$adm1)]
+shp1$predictions  <- preds[match( shp1$GID_1, dat$adm1)]
 
-
-mybreaks = seq(0, 1.0001, length.out=1001)
-mycols =  colours
-vcols = findInterval(shp1$predictions, mybreaks)
+mybreaks <- seq(0, 1.0001, length.out=1001)
+mycols <-  colours
+vcols <- findInterval(shp1$predictions, mybreaks)
 
 
 plot(shp0)
 plot(shp1, col=mycols[vcols] , lty=0, add=TRUE)
 plot(shp0, add=TRUE)
-fields::image.plot(legend.only=TRUE, breaks=mybreaks, col=mycols, zlim=c(0,1), horizontal = TRUE)
+fields::image.plot(legend.only=TRUE, 
+                   breaks=mybreaks, 
+                   col=mycols, 
+                   zlim=c(0,1), 
+                   horizontal = TRUE)
 
 ```
 

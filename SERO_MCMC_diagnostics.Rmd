@@ -13,7 +13,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = "images2_revised/",
+  fig.path = "images/",
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -40,7 +40,7 @@ library(KsetupR)
 
 sourceDirectory("Functions", modifiedOnly = FALSE)
  
-snapal = "Fjord"
+snapal = "Pop"
 
 mcmc_out = get_chains(
   "multi_model_MCMC_chain_20190821", 
@@ -89,12 +89,6 @@ plot_prior_post(mcmc_out,
                 "SERO")
 ```
 
-```{r crosscor,  message = F, warning=F, fig.cap = "\\label{fig:crosscor}Crosscorrelations.", fig.align='center', fig.pos = 'h', strip.white=F, fig.width = 10, fig.height = 10 }
-
-
-ggs_crosscorrelation(mcmc_out2)+  theme(legend.position = "none")
-
-```
 
 \FloatBarrier 
 
