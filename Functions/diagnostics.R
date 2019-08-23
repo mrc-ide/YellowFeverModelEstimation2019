@@ -258,7 +258,7 @@ plot_transmission_intensity2 = function(x,
   shp1$runs = runs[match(shp1$GID_1,dat$adm0_adm1)]
   
   mybreaks= seq(min(log10(shp1$runs), na.rm = TRUE), max(log10(shp1$runs), na.rm = TRUE)+0.01, length.out=101)
-
+  
   vcols = findInterval(log10(shp1$runs),mybreaks)
   
   plot(shp0)
@@ -276,4 +276,66 @@ plot_transmission_intensity2 = function(x,
                     adm0_adm1 = shp1$GID_1,
                     FOI = shp1$runs))
   
+}
+
+#------------------------------------------------------------------------------------------------------#
+plot_prior_post2 = function(mcmc_out,
+                            prior_col = "red",
+                            glm_or_sero ){
+  
+  if(glm_or_sero == "GLM"){
+    #set up output plot
+    par(mfrow=c(3,2), mar = c(4,4,2,1) + 0.1)
+    
+    #get the variables that are country factors
+    jj = grep("adm05", names(mcmc_out))
+    sd.prior = 2 #hardcoded- check matches GLMprior
+    
+    p=as.data.frame(mcmc_out)[,names(mcmc_out)[jj]]
+    t = as.vector(as.matrix(p) )
+    
+    #plot for country factors
+    plot(density(t),
+         ylim=c(0,1), main="", xlab = "Country factor")
+    vec = seq(min(t)-100,max(t)+100, by = (max(t)-min(t))/1000)
+    polygon(vec, dnorm(vec, mean = 0, sd = sd.prior), col = prior_col, border = prior_col)
+    polygon(density(t), col = rgb(0,0,0,0.5))
+    
+    
+    #plot for everything else
+    kk = grep("adm05", names(mcmc_out), invert = TRUE)[1:10]
+    for (i in kk){
+      q = as.numeric(as.data.frame(mcmc_out)[,names(mcmc_out)[i]])
+      
+      plot(density(q), main = "", xlab=names(mcmc_out)[i])
+      vec = seq(min(q)-100, max(q)+100, by = (max(q)-min(q))/1000)
+      polygon(vec,dnorm(vec, mean = 0, sd = 30), col = prior_col, border = prior_col)
+      polygon(density(q), col = rgb(0,0,0,0.5))
+    }
+    
+  }
+  
+  if(glm_or_sero == "SERO"){
+    
+    par(mfrow=c(1,2))
+    
+    #plot vaccine efficacy
+    plot(density(exp(mcmc_out$vac_eff)), xlim = c(min(exp(mcmc_out$vac_eff)),1),
+         main = "", xlab="Vaccine efficacy")
+    
+    vec = seq(min(exp(mcmc_out$vac_eff)), 1.2, length.out = 1000)
+    polygon(vec, dnorm(vec, mean = 0.975, sd = 0.05), col = prior_col, border = prior_col)
+    
+    polygon(density(exp(mcmc_out$vac_eff)), col = rgb(0,0,0,0.5))
+    
+    
+    #plot vaccine coverage factor for CMRs
+    plot(density(exp(mcmc_out$vc_factor_CMRs)), xlim = c(0,1),
+         main = "", xlab="Vaccine factor CMRs")
+    
+    vec = seq(-0.01, 1.01, length.out = 1000)
+    polygon(vec,dunif(vec), col = prior_col, border = prior_col)
+    
+    polygon(density(exp(mcmc_out$vc_factor_CMRs)), col = rgb(0,0,0,0.5))
+  }
 }

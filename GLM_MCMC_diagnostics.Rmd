@@ -103,10 +103,10 @@ ggs_caterpillar(glm_mcmc_out2)
 ggs_crosscorrelation(glm_mcmc_out2)
 ```
 
-```{r priorpost_glm,   fig.cap = "\\label{fig:priorpost_glm}Prior (maroon) and posterior (grey) distributions for all parameters.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10, eval = FALSE}
+```{r priorpost_glm,   fig.cap = "\\label{fig:priorpost_glm}Prior (yellow) and posterior (grey) distributions for all parameters.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10, eval = FALSE}
 
-plot_prior_post(glm_mcmc_out, 
-                prior_col = snapalette(snapal, 5, type="discrete")[1], 
+plot_prior_post2(glm_mcmc_out, 
+                prior_col = snapalette(snapal, 5, type="discrete")[5], 
                 "GLM")
 ```
 
