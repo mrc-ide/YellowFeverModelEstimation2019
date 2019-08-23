@@ -77,7 +77,7 @@ covar = c(covar, "aggregate_family")
 ```{r plot_data}
 
 shp1@data %<>% left_join(dat, by = c("GID_1" = "adm1"))
-colours = magma(1000)
+colours = snapalette::snapalette("Pop", 1000, type = "continuous")#magma(1000)
 
 for(c in covar){
   parm = shp1@data[, c]
