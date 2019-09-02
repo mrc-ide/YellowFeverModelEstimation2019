@@ -60,7 +60,7 @@ run_estimation = function(run_id=1){
   #########################################################################################################
   
   if(!file.exists("vacc_1940_1950.RDS")){
-    vac_in = readRDS("../Data/Vaccination/Outputs/vac_coverage_1940_2050_Africa_SAmerica.RDS")
+    vac_in = readRDS("../Data/Vaccination/Outputs/vac_coverage_1940_2050_BRA_unfixed.RDS")
     
     vc2d <-  vac_in %>% select(-c(doses, population)) %>% spread(age, coverage)
     
@@ -136,8 +136,8 @@ run_estimation = function(run_id=1){
   P_tot_survey = out_p$P_tot_survey_2d
   
   
-  StartParamFoi=read.csv("sero_hpd_2019-08-21.csv",
-                         header = TRUE)
+  # StartParamFoi=read.csv("sero_hpd_2019-08-21.csv",
+  #                        header = TRUE)
 
   ## initialising parameters for MCMC
   parnames =  c("vac_eff",

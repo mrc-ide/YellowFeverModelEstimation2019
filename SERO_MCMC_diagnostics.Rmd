@@ -40,11 +40,10 @@ library(KsetupR)
 
 sourceDirectory("Functions", modifiedOnly = FALSE)
  
-snapal = "Pop"
+snapal <- "Pop"
 
-mcmc_out = get_chains(
-  "multi_model_MCMC_chain_20190821", 
-  burnin = 2.3e4, thin = 1)
+mcmc_out <- get_chains("multi_model_MCMC_chain_20190821", 
+                       burnin = 2.3e4, thin = 1)
 
 mcmc_out %<>% select(-starts_with("R0"))
 
@@ -61,9 +60,9 @@ P <- data.frame(
   Label=c("Vaccine efficacy", "Vaccine factor CMRs"))
 mcmc_out2 = ggs( convert.mcmc.list( mcmc_out[,1:44]), par_labels = P)
 
-f1 = ggs_traceplot(mcmc_out2, family = "Vaccine efficacy")
+f1 <- ggs_traceplot(mcmc_out2, family = "Vaccine efficacy")
 
-f2 = ggs_traceplot(mcmc_out2, family = "Vaccine factor CMRs")
+f2 <- ggs_traceplot(mcmc_out2, family = "Vaccine factor CMRs")
 
 grid.arrange(f1, f2, nrow=1)
 ```
