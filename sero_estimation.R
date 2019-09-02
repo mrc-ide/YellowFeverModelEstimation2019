@@ -49,28 +49,31 @@ run_estimation = function(run_id=1){
   
   pop1 %<>% rename(adm0_adm1 = adm1)
   
-  pop1 %<>% arrange(year) %>% select(-c(country_code, country))
+  pop1 %<>% arrange(year) %>% select(-c( country))
   
-  names(pop1)[3:ncol(pop1)] = paste0("a", 0:100)
+  names(pop1)[4:ncol(pop1)] = paste0("a", 0:100)
   
   pop1 %<>% filter(year<2051)
+  
+  pop1 %<>% rename(adm0 = country_code)
 
   #########################################################################################################
   ### VACCINATION DATA ###
   #########################################################################################################
   
   if(!file.exists("vacc_1940_1950.RDS")){
-    vac_in = readRDS("../Data/Vaccination/Outputs/vac_coverage_1940_2050_BRA_unfixed.RDS")
+    vac_in = readRDS("../Data/Vaccination/Outputs/vac_coverage_1940_2050_2019-09-02.RDS")
     
     vc2d <-  vac_in %>% select(-c(doses, population)) %>% spread(age, coverage)
     
     names(vc2d)[3:ncol(vc2d)] = paste0("a", 0:100)
     
-    names(vc2d)[names(vc2d)=="country"]= "adm0"                          #rename countries as adm0
-    names(vc2d)[names(vc2d)=="new_id"]= "adm0_adm1"                        #renames adm1 as adm0_adm1
+    vc2d %<>% tibble::add_column(adm0 = substr(vc2d$new_id, 1,3), .after = "year")                         #rename countries as adm0
+    
+    vc2d %<>% rename(adm0_adm1 = new_id)                        #renames adm1 as adm0_adm1
     
     # formally "repair_vc_data" from FOI model in Kevin's folder
-    for (colIndex in 3:ncol(vc2d)){                                      #before 1995, we have NA values for those aged >75
+    for (colIndex in 4:ncol(vc2d)){                                      #before 1995, we have NA values for those aged >75
       vc2d[,colIndex] = ifelse(is.na(vc2d[,colIndex]), vc2d[,colIndex-1], vc2d[,colIndex])
     }
     
@@ -85,6 +88,9 @@ run_estimation = function(run_id=1){
   vc2d = as.data.frame(vc2d)
   vc2d %<>% filter(!is.na(adm0_adm1))
   
+  vc2d %<>% filter(adm0_adm1 %in% pop1$adm0_adm1)
+  vc2d %<>% ungroup()  %>% mutate(year = as.numeric(as.character(year)))
+  
   #########################################################################################################
   ### AGGREGATE POPULATION AND VACCINATION DATA ###
   #########################################################################################################
@@ -92,12 +98,36 @@ run_estimation = function(run_id=1){
   if(!file.exists("agg_pop_vc.RData")){ 
 
     #aggregate
-    list_aggregate_pop_vc = YFestimation::Make_aggregate_pop_vc_3d(pop1=pop1, 
-                                                                   vc2d=vc2d, 
-                                                                   sero_studies=seroout$sero_studies, 
-                                                                   adm1s=seroout$adm1s) 
-    pop_agg3d = list_aggregate_pop_vc$pop_agg3d 
-    vc_agg3d = list_aggregate_pop_vc$vc_agg3d 
+    agg=Make_aggregate_pop_vc(select(pop1, -adm0), select(vc2d, -adm0), sero_studies, adm1s)
+    
+    pop_agg=agg$pop_agg
+    vc_agg=agg$vc_agg
+    
+    dim_survey = sero_studies
+    dim_year = as.numeric(unique(pop_agg$year))
+    dim_age = names(pop1 %>% select(-c(adm0_adm1, year, adm0)))
+    
+    length_survey=length(dim_survey);   length_year=length(dim_year);   length_age=length(dim_age)
+    
+    ## pass in 3d
+    pop_agg3d=rep(NA, nrow(pop_agg)*length_age)
+    dim(pop_agg3d)=c(length_survey, length_year, length_age)
+    vc_agg3d=rep(NA, nrow(vc_agg)*length_age)
+    dim(vc_agg3d)=c(length_survey, length_year,length_age)
+    
+    for(ageIndex in 1:length_age) { # dim_age
+      for(yearIndex in min(dim_year):max(dim_year)) {
+        
+        mm = match(pop_agg$adm0[pop_agg$year == yearIndex], dim_survey)
+        pop_agg3d[mm,yearIndex-min(dim_year)+1,ageIndex] = pop_agg[pop_agg$year==yearIndex, ageIndex+3]
+        vc_agg3d[mm,yearIndex-min(dim_year)+1,ageIndex] = vc_agg[vc_agg$year==yearIndex, ageIndex+3]
+      }
+    }
+    
+    dimnames(pop_agg3d)[[1]] = dimnames(vc_agg3d)[[1]] = dim_survey
+    dimnames(pop_agg3d)[[2]] = dimnames(vc_agg3d)[[2]] = dim_year
+    dimnames(pop_agg3d)[[3]] = dimnames(vc_agg3d)[[3]] = dim_age
+
     
     pop_agg3d[is.na(pop_agg3d)] = 0
     vc_agg3d[is.na(vc_agg3d)] = 0
