@@ -33,6 +33,7 @@ library(Hmisc)
 library(viridis)
 library(R.utils)
 library(magrittr)
+library(ggplot2)
 
 library(YFestimation)
 library(snapalette)
@@ -40,11 +41,11 @@ library(KsetupR)
 
 sourceDirectory("Functions", modifiedOnly = FALSE)
 
-mcmc_out = get_chains("multi_model_MCMC_chain_20190820", 
-                      burnin = 4e4, thin = 1)
+mcmc_out = get_chains("multi_model_MCMC_chain_20190903", 
+                       burnin = 8e5, thin = 100)
 
-glm_mcmc_out = get_chains("GLM_MCMC_chain_20190816_5_all", 
-                          burnin =4e5, thin = 1)
+glm_mcmc_out = get_chains("GLM_MCMC_chain_20190821_6_all_agg", 
+                        burnin =2e5, thin = 1)
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
 
 ```
@@ -62,17 +63,24 @@ for(s in 1:seroout$no_sero_surveys){
 }
 
 # LOAD ENVIRONMENTAL DATA #
-Env_Table_path = "../Data/Environment/global_dat"
+Env_Table_path <- "../Data/Environment/global_dat"
 
-filename = get_latest_file(path = Env_Table_path, pattern = "dat_10")
+filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_11")
 
-dat = read.csv(filename, stringsAsFactors = FALSE)
+dat <- read.csv(filename, stringsAsFactors = FALSE)
 
-dat = adjust_env_dat(dat)
+# remove families of NHP that are not to be included
+model_form_whole <- read.csv("Model_form6.csv", stringsAsFactors = FALSE)$x
+covar <- unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
 
+dat <- dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] 
+
+# make extra elements and normalise
+dat <- adjust_env_dat(dat)
+
+dat$adm0_adm1 = dat$adm1
 dat %<>% filter(!is.na(precip_mean))
 
-dat %<>% rename(adm0_adm1 = adm1)
 
 ### POPULATION AND VACCINATION DATA ###
 
@@ -109,7 +117,7 @@ vc2d %<>% filter(!is.na(adm0_adm1))
 #vc3d
 vc3d = transform_into_vc3d(vc2d) 
 #------------------------------------------------------
-
+class(vc3d) = "numeric"
 # t0_vac_africa #
 t0_vac_africa = calc_t0_vac_africa(vc3d)
 
@@ -133,7 +141,7 @@ pop_moments_whole = calc_pop_moments(p_prop_3d,
 
 #aggregate
 list_aggregate_pop_vc = YFestimation::Make_aggregate_pop_vc_3d(pop1=pop1, 
-                                                               vc2d=vc2d, 
+                                                               vc2d=vc2d %>% select(-adm0), 
                                                                sero_studies=seroout$sero_studies, 
                                                                adm1s=seroout$adm1s) 
 pop_agg3d = list_aggregate_pop_vc$pop_agg3d 
@@ -156,25 +164,8 @@ pop_moments_agg = calc_pop_moments_agg(pop_agg3d,
     
 
 # CREATE R0 LOOKUP TABLE #
-if(!file.exists(paste0("../YellowFeverModelEstimation2017/",
-                       "R0_lookup_table.Rdata") )){
-    
-    ptm = proc.time()
-    create_R0_lookup(dim_adm, 
-                     envdat$dat, 
-                     dim_year,
-                     dim_age,
-                     p_prop_3d,
-                     P_tot_2d,
-                     inc_v3d,
-                     pop_moments_whole,
-                     pop_moments_agg, 
-                     vac_eff_arg = 0.975)
-    proc.time()-ptm
-  } else {
-    load(paste0("../YellowFeverModelEstimation2017/",
+load(paste0("../YellowFeverModelEstimation2017/",
                 "R0_lookup_table.Rdata") )
-  }
 
 
 # pop at survey #
@@ -186,17 +177,22 @@ list_pop_at_survey = create_pop_at_survey(pop_agg3d,
 p_at_survey = list_pop_at_survey$p_at_survey_3d
 P_tot_survey = list_pop_at_survey$P_tot_survey_2d
 
-#read in models
-model_form = read.csv("Model_form5.csv", stringsAsFactors = FALSE)$x
+#read in models and get them in the right order of covariates
+covar <- covar[grep("cases_or_outbreaks|family", covar, invert = TRUE)]
 
-#read in models
-object_glm = YFestimation::fit_glm(dat = dat, 
-                                   depi = match("cases_or_outbreaks", names(dat)), 
-                                   models = paste0(model_form, "+adm05", "+surv.qual.adm0")) #"+predicted_surv_qual"))  
+model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+") ,
+                    "+aggregate_family",  "+adm05", "+surv.qual.adm0")
+object_glm <- YFestimation::fit_glm(dat = dat, 
+                                   depi = match("cases_or_outbreaks", 
+                                                names(dat)), 
+                                   models = model_form)
+
 
 beta0 = object_glm[[1]]
 x = object_glm[[2]]
 y = object_glm[[3]]
+
+
 
 # read shapefiles in #
 shp0 = rgdal::readOGR("../../shapefiles/Africa_SAmerica_0_smooth.shp",
@@ -218,18 +214,22 @@ out = get_hpd(mcmc_out, glm_mcmc_out)
 
 Foi_param = out$Foi_param
 
+
+
 ```
 
 
 ```{r Foi_map,  message = F, warning=F, fig.cap = "\\label{fig:Foi_map}Map of FOI values.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 5 }
 
-ii = c(2:57)
+ii = c(2:56)
 varsin_nc = grep("adm05|surv|posterior|acc", names(glm_mcmc_out), invert = TRUE)
 
-colours = viridis_pal(option = "magma")(100)
+colours = snapalette("Ember", 100, type = "continuous")
 
 vc2d %<>% arrange( adm0_adm1)
-dat %<>% arrange(adm0_adm1)
+
+#order x by FOI_param
+x = x[, names(Foi_param[ii,2])]
 
 foi = plot_transmission_intensity2(x,
                                    ii,
@@ -243,7 +243,7 @@ foi = plot_transmission_intensity2(x,
                                    P_tot_2d,
                                    inc_v3d,
                                    pop1,
-                                   vc2d,
+                                   vc2d=vc2d %>% select(-adm0),
                                    varsin_nc,
                                    polydeg = 5,
                                    R0_lookup,
@@ -255,9 +255,57 @@ foi = plot_transmission_intensity2(x,
 
 ```
 
+```{r map_foi_by_country}
+
+tmp = foi %>% group_by(adm0) %>% summarise(median_foi = median(FOI, na.rm = TRUE))
+
+colours = snapalette("Ember", 100, type = "continuous")
+
+shp0$FOI = NA
+shp0$FOI = tmp$median_foi[match(shp0$GID_0, tmp$adm0)]
+
+mybreaks= seq(min(log10(shp0$FOI), na.rm = TRUE), max(log10(shp0$FOI), na.rm = TRUE)+0.01, length.out=101)
+  
+vcols = findInterval(log10(shp0$FOI),mybreaks)
+  
+plot(shp0)
+plot(shp0,col=colours[vcols], lty=2, add=T)
+
+image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), horizontal = TRUE,
+             axis.args = list(at = c(-5:1), labels =c("1e-05","1e-04", "0.001", "0.01", "0.1","1","10"), las =2),
+             legend.mar = 3.5)
+
+```
+
+```{r weighted_mean_foi}
+tmp_pop = pop1 %>% filter(year==2018)
+tmp_pop = data.frame(adm0_adm1 = tmp_pop$adm0_adm1,
+                     pop = rowSums(tmp_pop[, -c(1:2)]))
+
+foi %<>% left_join(tmp_pop)
+
+tmp_foi = foi %>% group_by(adm0) %>% summarise(weighted_mean = weighted.mean(FOI, pop, na.rm = TRUE))
+
+#colours = snapalette("Ember", 100, type = "continuous")
+
+shp0$FOI = NA
+shp0$FOI = tmp_foi$weighted_mean[match(shp0$GID_0, tmp_foi$adm0)]
+
+mybreaks= seq(min(log10(shp0$FOI), na.rm = TRUE), max(log10(shp0$FOI), na.rm = TRUE)+0.01, length.out=101)
+  
+vcols = findInterval(log10(shp0$FOI),mybreaks)
+  
+plot(shp0)
+plot(shp0,col=colours[vcols], lty=2, add=T)
+
+image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), horizontal = TRUE,
+             axis.args = list(at = c(-5:1), labels =c("1e-05","1e-04", "0.001", "0.01", "0.1","1","10"), las =2),
+             legend.mar = 3.5)
+```
+
+
 ```{r FOI_by_country, fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10}
 
-library(ggplot2)
 
 ggplot(foi %>% 
          left_join(dat, by = c("adm0_adm1")) %>% 
@@ -272,7 +320,7 @@ ggplot(foi %>%
 
 ```
 
-```{r FOI_by_country, fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10}
+```{r FOI_by_country2, fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10, eval = FALSE}
 
 
 
@@ -310,137 +358,72 @@ ggplot(foi %>%
 
 
 
-```{r setting_up_burden, eval=FALSE}
+```{r getting_samples, eval=F}
+n_samples = 100
+foi_out = NULL
 
-# NOT EDITED YET #
-
-
-# Bayes factor #
-out = calculate_bootstrap_Bayes(mcmc_out, plotout = FALSE)
-
-
-n_samples = 10
-### we would like n_samples samples of the model output proportional to the model evidence ###
-# first take n_samples samples of glm param #
-glm_samples = glm_mcmc_out[sample(nrow(glm_mcmc_out), n_samples, replace =TRUE), 1:20 ]
-
-#calculate model evidence with equal model prior assumption
-model_ev = as.numeric( exp(out$log_Bayes_R0_FOI[2])/(1+exp(out$log_Bayes_R0_FOI[2])) ) #for R0
-
-#then we would like n_samples of R0 and foi proportional to model evidence
-#filter by model type
-mcmc_out_r = mcmc_out %>% filter(model_chain ==1)
-mcmc_out_f = mcmc_out %>% filter(model_chain ==0)
-
-multimodel_samples = NULL
-for (i in 1:n_samples){
+for(i in 1:n_samples){
+  sample_ind1 = sample(1:nrow(mcmc_out),1)
+  sample_ind2 = sample(1:nrow(glm_mcmc_out),1)
   
-  if(runif(1)<model_ev){ 
-    tmp = mcmc_out_r[sample(nrow(mcmc_out_r), 1, replace = TRUE), 1:83]
-  } else {
-    tmp = mcmc_out_f[sample(nrow(mcmc_out_f), 1, replace = TRUE), 1:83] 
-  }
+  params = bind_cols(vac_eff = exp(mcmc_out[sample_ind1, "vac_eff"]),
+                     glm_mcmc_out[sample_ind2, 1:(ncol(glm_mcmc_out)-2)],
+                     exp(mcmc_out[sample_ind1, grep("^Foi", names(mcmc_out))]),
+                     vc_factor_CMRs = exp(mcmc_out[sample_ind1, "vc_factor_CMRs"]))
+  class(params) = "numeric"
   
-  multimodel_samples = rbind(multimodel_samples, tmp)
+  
+  runs = fun_calc_transmission_Africa(x,
+                                      ii ,
+                                      seroout ,
+                                      params,
+                                      dat ,
+                                      t0_vac_africa ,
+                                      dim_year ,
+                                      dim_age ,
+                                      p_prop_3d ,
+                                      P_tot_2d ,
+                                      inc_v3d ,
+                                      pop1,
+                                      vc2d=vc2d %>% select(-adm0),
+                                      varsin_nc,
+                                      polydeg=5,
+                                      R0_lookup,
+                                      model_type = "Foi")
+  
+  shp1$runs = NA 
+  shp1$runs = runs[match(shp1$GID_1,dat$adm0_adm1)]
+  
+  
+  
+ foi_out  %<>% rbind(shp1$runs)
+   
 }
+colnames(foi_out) = shp1$GID_1
+
+write.csv(foi_out, "FOI_samples.csv", row.names = FALSE)
+```
 
 
-#now we calculate the transmission param based on the model type and glm samples
-transmission_out = NULL
-for (i in 1:n_samples){
-  #check which model for that row
-  model_type = ifelse(multimodel_samples$model_chain[i] , "R0","Foi")
-  
-  ind = grep(model_type, names(multimodel_samples))
-  
-  params = unlist( cbind(exp( multimodel_samples[i,1] ), 
-                         glm_samples[i,], 
-                         exp( multimodel_samples[i,  ind[1]:ind[length(ind)] ] ),
-                         exp( multimodel_samples[i, grep("vc", names(multimodel_samples))]) ) )
-  
-  names(params)[c(1, length(params))] = c("vac_eff", "vc_factor_CMRs")
-  
-  
-  out = fun_calc_transmission_Africa(x, 
-                                     ii, 
-                                     seroout,
-                                     params, 
-                                     envdat$dat, 
-                                     t0_vac_africa,  
-                                     dim_year, 
-                                     dim_age, 
-                                     p_prop_3d, 
-                                     P_tot_2d, 
-                                     inc_v3d, 
-                                     pop1, 
-                                     vc2d,
-                                     varsin_nc, 
-                                     polydeg=5,
-                                     R0_lookup,
-                                     model_type)
-  
+```{r coeff_of_var}
 
+if(exists("foi_out")){
+  coeff_of_var = sapply(1:ncol(foi_out), FUN = function(i) sd(foi_out[,i])/mean(foi_out[,i])) *100
+  names(coeff_of_var) = colnames(foi_out)
   
-  transmission_out = rbind(transmission_out, c(out, model_type))
+  colours = snapalette("Space", 100, type = "continuous")
   
-
+  shp1$cv = NA
+  shp1$cv = coeff_of_var[match(shp1$GID_1, names(coeff_of_var))]
+  
+  mybreaks= seq(min(0, na.rm = TRUE), max(shp1$cv, na.rm = TRUE)+0.01, length.out=101)
+  
+  vcols = findInterval(shp1$cv,mybreaks)
+  
+  plot(shp0)
+  plot(shp1,col=colours[vcols], lty=2, add=T)
+  
+  image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), horizontal = TRUE,
+             legend.mar = 3.5)
 }
-
-colnames(transmission_out) = c(dim_adm, "model_type")
-
-head(transmission_out[,c(1:5, 475:480)])
-
-write.csv(transmission_out, paste0("MultiModel_parameter_samples_equalprior_", 
-                                   Sys.Date(), ".csv"), row.names = FALSE)
-
-
-##### also work out including model priors #####
-
-#then we would like n_samples of R0 and foi proportional to model evidence
-multimodel_samples = mcmc_out[sample(nrow(mcmc_out), n_samples, replace =TRUE),]
-
-#now we calculate the transmission param based on the model type and glm samples
-transmission_out = NULL
-for (i in 1:n_samples){
-  #check which model for that row
-  model_type = ifelse(multimodel_samples$model_chain[i] , "R0","Foi")
-  
-  ind = grep(model_type, names(multimodel_samples))
-  
-  params = unlist( cbind(exp( multimodel_samples[i,1] ), 
-                         glm_samples[i,], 
-                         exp( multimodel_samples[i,  ind[1]:ind[length(ind)] ] ),
-                         exp( multimodel_samples[i,grep("vc", names(multimodel_samples))]) ) )
-  
-  
-  
-  out = fun_calc_transmission_Africa(x, 
-                                     ii, 
-                                     seroout,
-                                     params, 
-                                     envdat$dat, 
-                                     t0_vac_africa,  
-                                     dim_year, 
-                                     dim_age, 
-                                     p_prop_3d, 
-                                     P_tot_2d, 
-                                     inc_v3d, 
-                                     pop1, 
-                                     vc2d,
-                                     varsin_nc, 
-                                     polydeg=5,
-                                     R0_lookup,
-                                     model_type)
-  
-  transmission_out = rbind(transmission_out, c(out, model_type))
-}
-
-colnames(transmission_out) = c(dim_adm, "model_type")
-
-head(transmission_out[,c(1:5, 475:480)])
-
-write.csv(transmission_out, paste0("MultiModel_parameter_samples_", 
-                                   Sys.Date(), ".csv"), row.names = FALSE)
-
-
 ```

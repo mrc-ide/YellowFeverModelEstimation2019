@@ -228,6 +228,8 @@ run_estimation = function(run_id=1){
   #########################################################################################################
   print("scaled posterior distributions")
   
+  set.seed(run_id)
+  
   ign = NA
   
   prob_Foi = log(1) 

@@ -42,8 +42,8 @@ sourceDirectory("Functions", modifiedOnly = FALSE)
  
 snapal <- "Pop"
 
-mcmc_out <- get_chains("multi_model_MCMC_chain_20190821", 
-                       burnin = 2.3e4, thin = 1)
+mcmc_out <- get_chains("multi_model_MCMC_chain_20190903", 
+                       burnin = 8e5, thin = 1)
 
 mcmc_out %<>% select(-starts_with("R0"))
 
@@ -131,12 +131,20 @@ pop1 %<>% filter(year<2051)
 vc2d = readRDS("vacc_1940_1950.RDS")
 vc2d = as.data.frame(vc2d)
 
+# need to add the other places in the population with zero coverage
+tmp = pop1 %>% filter(!adm0_adm1 %in% vc2d$adm0_adm1)
+tmp %<>% mutate(adm0 = substr(adm0_adm1, 1,3))
+tmp[, paste0("a", 0:100)] = 0
+
+vc2d %<>% mutate(year = as.integer(as.character(year)))
+vc2d %<>% bind_rows(tmp)
+vc2d %<>% filter(!is.na(adm0))
 #-------------------------------------------------------
 #vc3d
 vc2d %<>% mutate(year = as.numeric(as.character(year)))
 vc3d = transform_into_vc3d(vc2d, adm = "adm1") 
 #------------------------------------------------------
-
+class(vc3d) = "numeric"
 # t0_vac_africa #
 t0_vac_africa = calc_t0_vac_africa(vc3d)
 
@@ -160,7 +168,7 @@ pop_moments_whole = calc_pop_moments(p_prop_3d,
 
 #aggregate
 list_aggregate_pop_vc = YFestimation::Make_aggregate_pop_vc_3d(pop1=pop1, 
-                                                               vc2d=vc2d, 
+                                                               vc2d=vc2d %>% select(-adm0), 
                                                                sero_studies=seroout$sero_studies, 
                                                                adm1s=seroout$adm1s) 
 pop_agg3d = list_aggregate_pop_vc$pop_agg3d 
@@ -222,7 +230,7 @@ hpd_sero = get_hpd(mcmc_out = mcmc_out, glm_mcmc_out = NA)$hpd_sero
 
 ```
 
-```{r sero_predict1,  message = F, warning=F, fig.cap = "\\label{fig:sero_predict1}Seroprevalence predictions from $R_0$ model (red) and Foi model (blue).", fig.align='center', fig.pos = 'h', fig.height = 12, fig.width = 20, strip.white=F}
+```{r sero_predict1,  message = F, warning=F, fig.cap = "\\label{fig:sero_predict1}Seroprevalence predictions (blue).", fig.align='center', fig.pos = 'h', fig.height = 12, fig.width = 20, strip.white=F}
 
 
 plot_sero(seroout, 

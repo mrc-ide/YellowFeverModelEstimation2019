@@ -165,6 +165,7 @@ covar <- covar[grep("cases_or_outbreaks|family", covar, invert = TRUE)]
 
 model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+") ,
                     "+aggregate_family",  "+adm05", "+surv.qual.adm0")
+
 object_glm <- YFestimation::fit_glm(dat = dat, 
                                    depi = match("cases_or_outbreaks", 
                                                 names(dat)), 
@@ -173,6 +174,9 @@ object_glm <- YFestimation::fit_glm(dat = dat,
 beta0 <- object_glm[[1]]
 x <- object_glm[[2]]
 y <- object_glm[[3]]
+
+#order Est_beta to match beta0
+Est_beta = Est_beta[names(beta0)]
 
 ###########################################################################
 plot_glm_map2(shp0, shp1,  dat, Est_beta, x, 
