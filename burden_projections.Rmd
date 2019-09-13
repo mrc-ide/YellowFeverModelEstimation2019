@@ -1,5 +1,26 @@
-# burden gist
+---
+title: "Burden estimates"
+author: "Katy Gaythorpe"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+header-includes: 
+- \usepackage{placeins}
+output: 
+  pdf_document:
+    df_print: "kable"
+---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  dev = "png",
+  fig.path = "images/",
+  dpi = 300,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+```{r library_load}
 library(YFburden)
 library(dplyr)
 library(magrittr)
@@ -11,6 +32,7 @@ library(YFestimation)
 library(ggplot2)
 library(snapalette)
 library(rgdal)
+library(fields)
 
 sourceDirectory("Functions", modifiedOnly = FALSE)
 
@@ -23,6 +45,10 @@ shp1 = rgdal::readOGR("../../shapefiles/Africa_SAmerica_1_smooth.shp",
                       stringsAsFactors = FALSE,
                       encoding = "UTF-8",
                       use_iconv = TRUE)
+```
+
+
+```{r load_data}
 
 # ---------------------------------------------------------------------------
 ### POPULATION DATA ###
@@ -57,10 +83,17 @@ vc2d %<>% bind_rows(vc_tmp)
 vc2d %<>% unique()
 vc2d %<>% filter(!is.na(adm0_adm1))
 
+```
 
-# ---------------------------------------------------------------------------
-# FOI #
+
+```{r load_foi}
+
 foi = read.csv( "FOI_samples.csv", stringsAsFactors = FALSE)
+
+```
+
+
+```{r calculate burden}
 
 # ---------------------------------------------------------------------------
 fun_calcBurden = function(fois, year , adm1 = NA, vc2d, pop1) { # Tini's burden function
@@ -95,8 +128,11 @@ infections_df %<>% mutate(adm0 = substr(adm0_adm1, 1, 3))
 
 infections_df %<>% mutate(infections = as.numeric(infections))
 
-infections_df %<>% mutate(severe_infections = 0.12*infections,
-                          deaths = 0.47*severe_infections)
+infections_df %<>% mutate(prob_severe = rbeta(nrow(infections_df),6.367309,44.60736),
+                          prob_severe_death = rbeta(nrow(infections_df),16.43466, 18.49048))
+
+infections_df %<>% mutate(severe_infections = prob_severe*infections,
+                          deaths = prob_severe_death*severe_infections)
 
 pop_df = data.frame(adm0_adm1 = pop1$adm0_adm1,
                     year = pop1$year,
@@ -106,71 +142,76 @@ infections_df %<>% left_join(pop_df)
 
 infections_df %<>% mutate(severe_inci = severe_infections/pop,
                           deaths_inci = deaths/pop)
-# ---------------------------------------------------------------------------
+```
 
-ggplot(infections_df) + geom_boxplot( aes(x = adm0, y = infections)) #+ scale_y_log10()
+```{r boxplot_simple, fig.width=10, fig.height=10}
 
+ggplot(infections_df) + geom_boxplot( aes(x = adm0, y = infections)) + theme(axis.text.x = element_text(angle = 90))
 
-# ---------------------------------------------------------------------------
+```
+
+```{r infections_map, fig.cap="Mean infections in 2018", fig.width=10, fig.height=10}
 colours = snapalette("Pop", 1000, type = "continuous")
 
+tmp  = infections_df %>% group_by(adm0_adm1) %>% summarise(mean_infections = mean(infections, na.rm = TRUE))
+
 shp1$infections = NA
-shp1$infections = infections_df$infections[match(shp1$GID_1, infections_df$adm0_adm1)]
+shp1$infections = tmp$mean_infections[match(shp1$GID_1, tmp$adm0_adm1)]
 
 mybreaks= seq(min(log10(shp1$infections), na.rm = TRUE), max(log10(shp1$infections), na.rm = TRUE)+0.01, length.out=1001)
 
 vcols = findInterval(log10(shp1$infections),mybreaks)
 
-plot(shp0, main = "Infections in 2018")
+plot(shp0)
 plot(shp1, col=colours[vcols], lty=2, add=T)
 plot(shp0, add = TRUE, lwd = 2)
 image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), horizontal = TRUE,
            legend.mar = 3.5)
 
-# ---------------------------------------------------------------------------
+```
+
+```{r deaths_map, fig.cap="Mean deaths in 2018", fig.width=10, fig.height=10}
+tmp  = infections_df %>% group_by(adm0_adm1) %>% summarise(mean_deaths = mean(deaths, na.rm = TRUE))
+
 shp1$deaths = NA
-shp1$deaths = infections_df$deaths[match(shp1$GID_1, infections_df$adm0_adm1)]
+shp1$deaths = tmp$mean_deaths[match(shp1$GID_1, tmp$adm0_adm1)]
 
 mybreaks= seq(min(log10(shp1$deaths), na.rm = TRUE), max(log10(shp1$deaths), na.rm = TRUE)+0.01, length.out=1001)
 
 vcols = findInterval(log10(shp1$deaths),mybreaks)
 
-plot(shp0, main = "Deaths in 2018")
+plot(shp0)
 plot(shp1, col=colours[vcols], lty=2, add=T)
 plot(shp0, add = TRUE, lwd = 2)
 image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), horizontal = TRUE,
            legend.mar = 3.5)
 
-#sum(shp1$deaths, na.rm = TRUE)
+```
 
-# ---------------------------------------------------------------------------
 
-tmp =  infections_df %>%group_by(adm0) %>% summarise(sum_deaths = sum(deaths, na.rm = TRUE))
+```{r map_deaths_country, fig.width=10, fig.height=10}
+tmp = infections_df %>% group_by(adm0_adm1,adm0) %>% summarise(mean_deaths = mean(deaths, na.rm = TRUE))
+
+tmp2 =  tmp %>% group_by(adm0) %>% summarise(sum_deaths = sum(mean_deaths, na.rm = TRUE))
 
 shp0$deaths = NA
-shp0$deaths = tmp$sum_deaths[match(shp0$GID_0, tmp$adm0)]
+shp0$deaths = tmp2$sum_deaths[match(shp0$GID_0, tmp2$adm0)]
 
 mybreaks= seq(min(log10(shp0$deaths), na.rm = TRUE), max(log10(shp0$deaths), na.rm = TRUE)+0.01, length.out=1001)
 
 vcols = findInterval(log10(shp0$deaths),mybreaks)
 
-plot(shp0, main = "Deaths in 2018")
+plot(shp0)
 plot(shp0, col=colours[vcols], lty=2, add=T)
 plot(shp0, add = TRUE, lwd = 2)
 image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), horizontal = TRUE,
            legend.mar = 3.5)
 
+```
 
-# ---------------------------------------------------------------------------
-shp1$deaths_inci = NA
-shp1$deaths_inci = infections_df$deaths_inci[match(shp1$GID_1, infections_df$adm0_adm1)]
+```{r boxplot_severe, fig.width=10, fig.height=10}
 
-mybreaks= seq(min(log10(shp1$deaths_inci), na.rm = TRUE), max(log10(shp1$deaths_inci), na.rm = TRUE)+0.01, length.out=1001)
+df = infections_df %>% group_by(adm0, sample) %>% summarise(severe_infections = sum(severe_infections))
+ggplot(df) + geom_boxplot( aes(x = adm0, y = severe_infections))  + theme(axis.text.x = element_text(angle = 90))
 
-vcols = findInterval(log10(shp1$deaths_inci),mybreaks)
-
-plot(shp0, main = "Deaths per capita in 2018")
-plot(shp1, col=colours[vcols], lty=2, add=T)
-plot(shp0, add = TRUE, lwd = 2)
-image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), horizontal = TRUE,
-           legend.mar = 3.5)
+```
