@@ -79,7 +79,7 @@ adjust_env_dat = function(dat) {
 get_pop_data_3d = function() {
   
   
-  pop1 = read.csv("../Data/Population/pop_at_adm1_1940-2100_landscan2017_gadm36.csv",
+  pop1 = read.csv("Z:/Data/Population/pop_at_adm1_1940-2100_landscan2017_gadm36.csv",
                   stringsAsFactors = FALSE)
 
   pop2d = tidyr::gather(pop1, age, population, -c(country_code, adm1, country, year))

@@ -10,7 +10,7 @@ GLM_MCMC_step = function(param, x, y, chain_cov, adapt,  accCurrent) {
   ### if prior finite, evaluate likelihood ###
   if (is.finite(prior_prop)) {
     
-    like_prop = YFestimation::GLMlike(param_prop, x, y)
+    like_prop = GLMlike_nb(param_prop, x, y)
     
     ### accept prob ###
     accProp = like_prop + prior_prop
@@ -113,4 +113,19 @@ GLMprior = function(param) {
   # this term is for normally distributed non-country parameters : normal distrib with high sd (flat distrib)
   out = as.numeric( Prior )
   return( out )
+}
+
+
+GLMlike_nb = function(beta, x, y) {
+  # beta are the model coefficients,
+  # x the independent covariates (needs one column for the Intercept),
+  # and y the binary outcome_
+  # model predictions pi = p, 1-pi = q
+  eta = as.numeric(x %*% beta)
+  logq = -exp(eta) # -exp(X*beta) (= log(1-q) )
+  logp = log(1-exp(logq)) #
+  #q = exp(logq)
+  #p = 1-q
+  logl = sum(dnbinom(x = y, mu = rep(1, length(y))*exp(logp), size = 0.1, log = T ))
+  return (logl)
 }

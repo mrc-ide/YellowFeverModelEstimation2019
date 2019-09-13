@@ -44,8 +44,8 @@ sourceDirectory("Functions", modifiedOnly = FALSE)
 mcmc_out = get_chains("multi_model_MCMC_chain_20190903", 
                        burnin = 8e5, thin = 100)
 
-glm_mcmc_out = get_chains("GLM_MCMC_chain_20190821_6_all_agg", 
-                        burnin =2e5, thin = 1)
+glm_mcmc_out = get_chains("GLM_MCMC_chain_20190912_6_all_agg", 
+                        burnin =4.5e5, thin = 1)
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
 
 ```
@@ -401,7 +401,7 @@ for(i in 1:n_samples){
 }
 colnames(foi_out) = shp1$GID_1
 
-write.csv(foi_out, "FOI_samples.csv", row.names = FALSE)
+write.csv(foi_out, "FOI_samples_nb.csv", row.names = FALSE)
 ```
 
 
