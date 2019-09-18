@@ -41,8 +41,10 @@ library(KsetupR)
 
 R.utils::sourceDirectory("Functions")
 
-glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190912_6_all_agg", 
-                        burnin =4.5e5, thin = 1)
+# glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190913_6_all_agg",
+#                         burnin =2e5, thin = 1)
+glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190915_6_new_pop_dat_wes",
+                         burnin =2.65e6, thin = 1)
 
 names(glm_mcmc_out) <- gsub("^log.", "", names(glm_mcmc_out))
 
@@ -126,11 +128,11 @@ Est_beta <-  apply(subset( glm_mcmc_out,
 
 ### LOADING SHAPEFILES AND COUNTRIES ###
 #read shapefiles in
-shp0 <- rgdal::readOGR("../../shapefiles/Africa_SAmerica_0_smooth.shp",
+shp0 <- rgdal::readOGR("../../shapefiles/Africa_America_0_smooth.shp",
                           stringsAsFactors = FALSE,
                           encoding = "UTF-8",
                           use_iconv = TRUE)
-shp1 <- rgdal::readOGR("../../shapefiles/Africa_SAmerica_1_smooth.shp",
+shp1 <- rgdal::readOGR("../../shapefiles/Africa_America_1_smooth.shp",
                           stringsAsFactors = FALSE,
                           encoding = "UTF-8",
                           use_iconv = TRUE)
@@ -144,7 +146,7 @@ ageVec <- c(0:maxAge)
 ### LOAD ENVIRONMENTAL DATA ###
 Env_Table_path <- "../Data/Environment/global_dat"
 
-filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_11")
+filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
 
 dat <- read.csv(filename, stringsAsFactors = FALSE)
 
@@ -154,11 +156,12 @@ covar <- unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
 
 dat <- dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] 
 
-# make extra elements and normalise
-dat <- adjust_env_dat(dat)
-
+dat %<>% select(-year)
+dat %<>% filter( is.finite(MIR.max))
 dat %<>% filter(!is.na(precip_mean))
 
+# make extra elements and normalise
+dat = adjust_env_dat(dat)
 # -----------------------------------------------------------------------
 # FIT MODEL #
 covar <- covar[grep("cases_or_outbreaks|family", covar, invert = TRUE)]
@@ -224,4 +227,71 @@ fields::image.plot(legend.only=TRUE,
 
 ```
 
+
+
+```{r rayshader_prep}
+library(rayshader)
+library(raster)
+
+dim_out = 1000
+ 
+
+blank_raster <- raster(shp1, ncols = dim_out, nrows = dim_out, vals = 0)
+each_adm_value <- sapply(1:length(shp1$predictions), function(i){
+  #print(i)
+  intersect_country <- rasterize(shp1[i, ], crop(blank_raster, extent(shp1[i, ])), mask = TRUE)
+  intersect_country[!is.na(intersect_country)] <- shp1$predictions[i]
+  intersect_country
+
+}, simplify = FALSE)
+
+each_adm_value$fun <- mean
+
+full_shape <- do.call(mosaic, each_adm_value)
+
+plot(full_shape)
+```
+
+```{r rayshader_out}
+
+bath = flip(full_shape, "x")
+
+tempfilename = tempfile()
+png(tempfilename,width = 401,height=401)
+par(mar = c(0,0,0,0))
+raster::image(bath,axes = FALSE, col = snapalette::snapalette(snapal, 1000, type = "continuous") )
+dev.off()
+tempmap = png::readPNG(tempfilename)
+
+bath[is.na(bath)] = -1
+depth_exaggeration = 100
+
+bath %>%
+  as.matrix() %>%
+  sphere_shade(texture="desert",
+               zscale = 1/depth_exaggeration) %>%
+  add_shadow(ray_shade(as.matrix(bath), 
+                       zscale = 1/depth_exaggeration), 
+             max_darken = 1) %>%
+  add_shadow(ambient_shade(as.matrix(bath), 
+                           zscale = 1/depth_exaggeration)) %>%
+  
+  add_overlay(tempmap, alphacolor = 0.5) %>%
+
+  plot_3d(as.matrix(bath),
+          solid=TRUE,
+          soliddepth="auto",
+          solidcolor = 'white',
+          solidlinecolor = "grey50",
+          water = TRUE,
+          waterdepth = 0,
+          wateralpha = 0.9,
+          shadow = TRUE,
+          background='white',
+          zscale = 1/depth_exaggeration,
+          windowsize = c(1200, 700)) 
+
+#render_snapshot(clear = TRUE)
+
+```
 

@@ -14,7 +14,7 @@ adjust_env_dat = function(dat) {
   # 
   # adding a categorical "dominant land cover" variable:
   LC_i = grep("LC",names(dat))
-  LC_dom = names(dat)[LC_i][ apply(dat[,LC_i],1, which.max )]
+  LC_dom = names(dat)[LC_i][  as.numeric(apply(dat[,LC_i],1, which.max ))]
   dat = cbind(dat, LC_dom) # 37 potential covariates/levels
   dat$LC_dom = as.numeric(as.factor(dat$LC_dom))
   
@@ -49,10 +49,10 @@ adjust_env_dat = function(dat) {
   dat$risk[is.na(dat$risk)] = max(dat$risk, na.rm = TRUE)+1
   
   # ESH and GUF missing from predicted surv qual
-  dat$predicted_surv_qual[dat$adm0 == "ESH"] = mean(c(unique(dat$predicted_surv_qual[dat$adm0 == "MAR"]),
-                                                    unique(dat$predicted_surv_qual[dat$adm0 == "MRT"])))
-  dat$predicted_surv_qual[dat$adm0 == "GUF"] = mean(c(unique(dat$predicted_surv_qual[dat$adm0 == "SUR"]), 
-                                                           unique(dat$predicted_surv_qual[dat$adm0 == "BRA"])))
+  # dat$predicted_surv_qual[dat$adm0 == "ESH"] = mean(c(unique(dat$predicted_surv_qual[dat$adm0 == "MAR"]),
+  #                                                   unique(dat$predicted_surv_qual[dat$adm0 == "MRT"])))
+  # dat$predicted_surv_qual[dat$adm0 == "GUF"] = mean(c(unique(dat$predicted_surv_qual[dat$adm0 == "SUR"]), 
+  #                                                          unique(dat$predicted_surv_qual[dat$adm0 == "BRA"])))
   
   #dat$predicted_surv_qual = log(dat$predicted_surv_qual)
 
@@ -79,7 +79,7 @@ adjust_env_dat = function(dat) {
 get_pop_data_3d = function() {
   
   
-  pop1 = read.csv("Z:/Data/Population/pop_at_adm1_1940-2100_landscan2017_gadm36.csv",
+  pop1 = read.csv("Z:/Data/Population/all_pop_at_adm1_1940-2100_landscan2017_gadm36.csv",
                   stringsAsFactors = FALSE)
 
   pop2d = tidyr::gather(pop1, age, population, -c(country_code, adm1, country, year))

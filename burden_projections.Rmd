@@ -37,11 +37,11 @@ library(fields)
 sourceDirectory("Functions", modifiedOnly = FALSE)
 
 # read shapefiles in #
-shp0 = rgdal::readOGR("../../shapefiles/Africa_SAmerica_0_smooth.shp",
+shp0 = rgdal::readOGR("../../shapefiles/Africa_America_0_smooth.shp",
                       stringsAsFactors = FALSE,
                       encoding = "UTF-8",
                       use_iconv = TRUE)
-shp1 = rgdal::readOGR("../../shapefiles/Africa_SAmerica_1_smooth.shp",
+shp1 = rgdal::readOGR("../../shapefiles/Africa_America_1_smooth.shp",
                       stringsAsFactors = FALSE,
                       encoding = "UTF-8",
                       use_iconv = TRUE)
@@ -88,7 +88,7 @@ vc2d %<>% filter(!is.na(adm0_adm1))
 
 ```{r load_foi}
 
-foi = read.csv( "FOI_samples_nb.csv", stringsAsFactors = FALSE)
+foi = read.csv( "FOI_samples.csv", stringsAsFactors = FALSE)
 
 ```
 

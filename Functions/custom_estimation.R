@@ -10,7 +10,7 @@ GLM_MCMC_step = function(param, x, y, chain_cov, adapt,  accCurrent) {
   ### if prior finite, evaluate likelihood ###
   if (is.finite(prior_prop)) {
     
-    like_prop = GLMlike_nb(param_prop, x, y)
+    like_prop = GLMlike(param_prop, x, y)
     
     ### accept prob ###
     accProp = like_prop + prior_prop
@@ -126,6 +126,6 @@ GLMlike_nb = function(beta, x, y) {
   logp = log(1-exp(logq)) #
   #q = exp(logq)
   #p = 1-q
-  logl = sum(dnbinom(x = y, mu = rep(1, length(y))*exp(logp), size = 0.1, log = T ))
+  logl = sum(dnbinom(x = y, mu = rep(1, length(y))*exp(logp), size = 0.5, log = T ))
   return (logl)
 }

@@ -44,8 +44,10 @@ sourceDirectory("Functions", modifiedOnly = FALSE)
 mcmc_out = get_chains("multi_model_MCMC_chain_20190903", 
                        burnin = 8e5, thin = 100)
 
-glm_mcmc_out = get_chains("GLM_MCMC_chain_20190912_6_all_agg", 
-                        burnin =4.5e5, thin = 1)
+# glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190913_6_new_pop_nb",burnin =1.5e6, thin = 1)
+glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190915_6_new_pop_dat_wes",
+                         burnin =2.5e6, thin = 100)
+
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
 
 ```
@@ -65,7 +67,7 @@ for(s in 1:seroout$no_sero_surveys){
 # LOAD ENVIRONMENTAL DATA #
 Env_Table_path <- "../Data/Environment/global_dat"
 
-filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_11")
+filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
 
 dat <- read.csv(filename, stringsAsFactors = FALSE)
 
@@ -76,12 +78,14 @@ covar <- unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
 dat <- dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] 
 
 # make extra elements and normalise
-dat <- adjust_env_dat(dat)
-
-dat$adm0_adm1 = dat$adm1
+dat %<>% select(-year)
+dat %<>% filter( is.finite(MIR.max))
 dat %<>% filter(!is.na(precip_mean))
 
+# make extra elements and normalise
+dat = adjust_env_dat(dat)
 
+dat %<>% mutate(adm0_adm1 = adm1)
 ### POPULATION AND VACCINATION DATA ###
 
 all_res_pop_3d = get_pop_data_3d() 
@@ -195,11 +199,11 @@ y = object_glm[[3]]
 
 
 # read shapefiles in #
-shp0 = rgdal::readOGR("../../shapefiles/Africa_SAmerica_0_smooth.shp",
+shp0 = rgdal::readOGR("../../shapefiles/Africa_America_0_smooth.shp",
                           stringsAsFactors = FALSE,
                           encoding = "UTF-8",
                           use_iconv = TRUE)
-shp1 = rgdal::readOGR("../../shapefiles/Africa_SAmerica_1_smooth.shp",
+shp1 = rgdal::readOGR("../../shapefiles/Africa_America_1_smooth.shp",
                           stringsAsFactors = FALSE,
                           encoding = "UTF-8",
                           use_iconv = TRUE)
@@ -221,7 +225,7 @@ Foi_param = out$Foi_param
 
 ```{r Foi_map,  message = F, warning=F, fig.cap = "\\label{fig:Foi_map}Map of FOI values.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 5 }
 
-ii = c(2:56)
+ii = c(2:(grep("Foi", names(Foi_param[,1]))[1]-1))
 varsin_nc = grep("adm05|surv|posterior|acc", names(glm_mcmc_out), invert = TRUE)
 
 colours = snapalette("Ember", 100, type = "continuous")
@@ -401,7 +405,7 @@ for(i in 1:n_samples){
 }
 colnames(foi_out) = shp1$GID_1
 
-write.csv(foi_out, "FOI_samples_nb.csv", row.names = FALSE)
+write.csv(foi_out, "FOI_samples.csv", row.names = FALSE)
 ```
 
 

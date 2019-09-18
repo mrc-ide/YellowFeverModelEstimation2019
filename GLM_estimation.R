@@ -24,7 +24,7 @@ run_estimation = function(run_id =1){
   
   Env_Table_path = "../Data/Environment/global_dat"
   
-  filename = get_latest_file(path = Env_Table_path, pattern = "dat_11")
+  filename = get_latest_file(path = Env_Table_path, pattern = "dat_wes")
   
   dat = read.csv(filename, stringsAsFactors = FALSE)
   
@@ -34,10 +34,14 @@ run_estimation = function(run_id =1){
   
   dat = dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] # remove family which are not covariates
   
+  dat %<>% select(-year)
+  dat %<>% filter( is.finite(MIR.max))
+  dat %<>% filter(!is.na(precip_mean))
+  
   # make extra elements and normalise
   dat = adjust_env_dat(dat)
   
-  dat %<>% filter(!is.na(precip_mean))
+  
   
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
   # FIT MODEL #
@@ -83,7 +87,7 @@ run_estimation = function(run_id =1){
   plot_chain = FALSE
   
   # create a directory to save the output in 
-  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_6_all_agg")
+  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_6_new_pop_dat_wes")
   dir.create(name_dir)
   
   Niter = 1e6
