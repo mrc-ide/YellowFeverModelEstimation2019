@@ -42,10 +42,11 @@ library(KsetupR)
 
 R.utils::sourceDirectory("Functions")
 
-# glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190913_6_all_agg",
-#                         burnin =2e5, thin = 1)
-glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190919_6_new_pop_dat_wes",
-                         burnin =1e5, thin = 1)
+# glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190919_6_new_pop_dat_wes",
+#                          burnin =1e5, thin = 1)
+
+glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190919_6_new_pop_dat_wes_noadm05",
+                          burnin =1e4, thin = 1)
 
 names(glm_mcmc_out) <- gsub("^log.", "", names(glm_mcmc_out))
 
@@ -169,8 +170,7 @@ dat = adjust_env_dat(dat)
 # FIT MODEL #
 covar <- covar[grep("cases_or_outbreaks|family", covar, invert = TRUE)]
 
-model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+") ,
-                    "+aggregate_family",  "+adm05", "+surv.qual.adm0")
+model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+") , "+aggregate_family")#,  "+adm05", "+surv.qual.adm0")
 
 object_glm <- YFestimation::fit_glm(dat = dat, 
                                    depi = match("cases_or_outbreaks", 

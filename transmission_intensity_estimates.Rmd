@@ -45,9 +45,10 @@ sourceDirectory("Functions", modifiedOnly = FALSE)
 mcmc_out = get_chains("multi_model_MCMC_chain_20190903", 
                        burnin = 8e5, thin = 100)
 
-# glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190913_6_new_pop_nb",burnin =1.5e6, thin = 1)
-glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190919_6_new_pop_dat_wes",
-                         burnin =1e4, thin = 1)
+glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190919_6_new_pop_dat_wes_noadm05",
+                          burnin =1e4, thin = 1)
+# glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190919_6_new_pop_dat_wes",
+#                          burnin =1e4, thin = 1)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
 
@@ -185,8 +186,7 @@ P_tot_survey = list_pop_at_survey$P_tot_survey_2d
 #read in models and get them in the right order of covariates
 covar <- covar[grep("cases_or_outbreaks|family", covar, invert = TRUE)]
 
-model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+") ,
-                    "+aggregate_family",  "+adm05", "+surv.qual.adm0")
+model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+") ,"+aggregate_family")#,  "+adm05", "+surv.qual.adm0")
 object_glm <- YFestimation::fit_glm(dat = dat, 
                                    depi = match("cases_or_outbreaks", 
                                                 names(dat)), 

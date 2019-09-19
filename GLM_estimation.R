@@ -47,7 +47,7 @@ run_estimation = function(run_id =1){
   # FIT MODEL #
   covar = covar[grep("cases_or_outbreaks|family", covar, invert = TRUE)]
   
-  model_form = paste0("cases_or_outbreaks~", paste(covar, collapse = "+") ,"+aggregate_family",  "+adm05", "+surv.qual.adm0")
+  model_form = paste0("cases_or_outbreaks~", paste(covar, collapse = "+") ,"+aggregate_family")#,  "+adm05", "+surv.qual.adm0")
 
   
   
@@ -62,15 +62,15 @@ run_estimation = function(run_id =1){
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
   # INITIAL PARAMETERS #
   
-  #pars_ini = beta0
-  # 
-  parm_in = read.csv("glm_param.csv", stringsAsFactors = TRUE)
-  parm_in = parm_in[1:(length(parm_in)-2)]
-  pars_ini = as.numeric(parm_in)
-  # 
-  #pars_ini[grep("family", names(pars_ini))] = abs(pars_ini[grep("family", names(pars_ini))])
+  pars_ini = beta0
+  pars_ini[grep("family", names(pars_ini))] = abs(pars_ini[grep("family", names(pars_ini))])
+  names(pars_ini) = paste0("log.", names(beta0))
   
-  names(pars_ini) = paste0("log.", names(parm_in))
+  # parm_in = read.csv("glm_param.csv", stringsAsFactors = TRUE)
+  # parm_in = parm_in[1:(length(parm_in)-2)]
+  # pars_ini = as.numeric(parm_in)
+  # names(pars_ini) = paste0("log.", names(parm_in))
+  
   
   pars_ini[is.na(pars_ini)] = 0
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -89,7 +89,7 @@ run_estimation = function(run_id =1){
   plot_chain = FALSE
   
   # create a directory to save the output in 
-  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_6_new_pop_dat_wes")
+  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_6_new_pop_dat_wes_noadm05")
   dir.create(name_dir)
   
   Niter = 1e6
