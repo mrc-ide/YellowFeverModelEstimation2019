@@ -215,3 +215,14 @@ df = infections_df %>% group_by(adm0, sample) %>% summarise(severe_infections = 
 ggplot(df) + geom_boxplot( aes(x = adm0, y = severe_infections))  + theme(axis.text.x = element_text(angle = 90))
 
 ```
+
+
+```{r severe_table}
+
+df %>% 
+  group_by(adm0) %>% 
+  summarise(mean_severe = round(mean(severe_infections))) %>% 
+  arrange(-mean_severe) %>% 
+  mutate(mean_severe = prettyNum(mean_severe, big.mark = ","))
+
+```

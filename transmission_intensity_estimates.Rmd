@@ -34,6 +34,7 @@ library(viridis)
 library(R.utils)
 library(magrittr)
 library(ggplot2)
+library(dplyr)
 
 library(YFestimation)
 library(snapalette)
@@ -45,8 +46,8 @@ mcmc_out = get_chains("multi_model_MCMC_chain_20190903",
                        burnin = 8e5, thin = 100)
 
 # glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190913_6_new_pop_nb",burnin =1.5e6, thin = 1)
-glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190915_6_new_pop_dat_wes",
-                         burnin =2.5e6, thin = 100)
+glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190918_6_new_pop_dat_wes",
+                         burnin =8e5, thin = 1)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
 
@@ -78,7 +79,7 @@ covar <- unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
 dat <- dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] 
 
 # make extra elements and normalise
-dat %<>% select(-year)
+dat %<>% dplyr::select(-year)
 dat %<>% filter( is.finite(MIR.max))
 dat %<>% filter(!is.na(precip_mean))
 
@@ -96,7 +97,7 @@ p_prop = all_res_pop_3d$p_prop                                   #proportions of
 
 pop1 %<>% rename(adm0_adm1 = adm1)
 
-pop1 %<>% arrange(year) %>% select(-c(country_code, country))
+pop1 %<>% arrange(year) %>% dplyr::select(-c(country_code, country))
 
 names(pop1)[3:ncol(pop1)] = paste0("a", 0:100)
 
@@ -247,7 +248,7 @@ foi = plot_transmission_intensity2(x,
                                    P_tot_2d,
                                    inc_v3d,
                                    pop1,
-                                   vc2d=vc2d %>% select(-adm0),
+                                   vc2d=vc2d %>% dplyr::select(-adm0),
                                    varsin_nc,
                                    polydeg = 5,
                                    R0_lookup,
@@ -389,7 +390,7 @@ for(i in 1:n_samples){
                                       P_tot_2d ,
                                       inc_v3d ,
                                       pop1,
-                                      vc2d=vc2d %>% select(-adm0),
+                                      vc2d=vc2d %>% dplyr::select(-adm0),
                                       varsin_nc,
                                       polydeg=5,
                                       R0_lookup,
