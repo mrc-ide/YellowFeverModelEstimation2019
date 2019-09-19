@@ -88,7 +88,7 @@ vc2d %<>% filter(!is.na(adm0_adm1))
 
 ```{r load_foi}
 
-foi = read.csv( "FOI_samples.csv", stringsAsFactors = FALSE)
+foi = read.csv( "FOI_samples_noadm05.csv", stringsAsFactors = FALSE)
 
 ```
 
