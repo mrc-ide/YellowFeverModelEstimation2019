@@ -41,18 +41,18 @@ R.utils::sourceDirectory("Functions", modifiedOnly = FALSE)
 
 
 #read shapefiles in
-shp0 = rgdal::readOGR("../../shapefiles/Africa_SAmerica_0_smooth.shp",
+shp0 = rgdal::readOGR("../../shapefiles/Africa_America_0_smooth.shp",
                           stringsAsFactors = FALSE,
                           encoding = "UTF-8",
                           use_iconv = TRUE)
-shp1 = rgdal::readOGR("../../shapefiles/Africa_SAmerica_1_smooth.shp",
+shp1 = rgdal::readOGR("../../shapefiles/Africa_America_1_smooth.shp",
                           stringsAsFactors = FALSE,
                           encoding = "UTF-8",
                           use_iconv = TRUE)
 
 Env_Table_path = "../Data/Environment/global_dat"
 
-filename = get_latest_file(path = Env_Table_path, pattern = "dat_11")
+filename = get_latest_file(path = Env_Table_path, pattern = "dat_wes")
 
 dat = read.csv(filename, stringsAsFactors = FALSE)
 
@@ -67,6 +67,8 @@ dat = dplyr::mutate(dat,
                       aggregate_family = rowSums(dat[, grep("family", names(dat))]))
   
 
+dat %<>% dplyr::select(-year)
+dat %<>% filter( is.finite(MIR.max))
 dat %<>% filter(!is.na(precip_mean))
 
 covar = c(covar, "aggregate_family")

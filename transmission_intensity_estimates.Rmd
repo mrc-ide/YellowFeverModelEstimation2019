@@ -46,8 +46,8 @@ mcmc_out = get_chains("multi_model_MCMC_chain_20190903",
                        burnin = 8e5, thin = 100)
 
 # glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190913_6_new_pop_nb",burnin =1.5e6, thin = 1)
-glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190918_6_new_pop_dat_wes",
-                         burnin =8e5, thin = 1)
+glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190919_6_new_pop_dat_wes",
+                         burnin =1e4, thin = 1)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
 
@@ -277,7 +277,7 @@ plot(shp0)
 plot(shp0,col=colours[vcols], lty=2, add=T)
 
 image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), horizontal = TRUE,
-             axis.args = list(at = c(-5:1), labels =c("1e-05","1e-04", "0.001", "0.01", "0.1","1","10"), las =2),
+             axis.args = list(at = c(-7:1), labels =c("1e-07","1e-06","1e-05","1e-04", "0.001", "0.01", "0.1","1","10"), las =2),
              legend.mar = 3.5)
 
 ```
@@ -304,7 +304,7 @@ plot(shp0)
 plot(shp0,col=colours[vcols], lty=2, add=T)
 
 image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), horizontal = TRUE,
-             axis.args = list(at = c(-5:1), labels =c("1e-05","1e-04", "0.001", "0.01", "0.1","1","10"), las =2),
+             axis.args = list(at = c(-7:1), labels =c("1e-07","1e-06","1e-05","1e-04", "0.001", "0.01", "0.1","1","10"), las =2),
              legend.mar = 3.5)
 ```
 

@@ -269,7 +269,7 @@ plot_transmission_intensity2 = function(x,
   
   
   image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), horizontal = TRUE,
-             axis.args = list(at = c(-5:1), labels =c("1e-05","1e-04", "0.001", "0.01", "0.1","1","10"), las =2),
+             axis.args = list(at = c(-7:1), labels =c("1e-07", "1e-06","1e-05","1e-04", "0.001", "0.01", "0.1","1","10"), las =2),
              legend.mar = 3.5)
   
   return(data.frame(adm0 = shp1$GID_0,

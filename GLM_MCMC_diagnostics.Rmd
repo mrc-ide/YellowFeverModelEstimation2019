@@ -44,8 +44,8 @@ R.utils::sourceDirectory("Functions")
 
 # glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190913_6_all_agg",
 #                         burnin =2e5, thin = 1)
-glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190918_6_new_pop_dat_wes",
-                         burnin =8e5, thin = 1)
+glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190919_6_new_pop_dat_wes",
+                         burnin =1e5, thin = 1)
 
 names(glm_mcmc_out) <- gsub("^log.", "", names(glm_mcmc_out))
 
@@ -230,9 +230,25 @@ fields::image.plot(legend.only=TRUE,
 
 ```
 
+What proportion of areas are predicted correctly?
+
+```{r proportion_correct}
+
+df = data.frame(shp1$GID_0, shp1$GID_1, shp1$predictions, dat$cases_or_outbreaks[match(shp1$GID_1, dat$adm1)])
+names(df) = c("adm0", "adm1", "predictions", "data")
+
+df1 = df %>% filter(data == 0) %>% filter(predictions <=0.5)
+df2 = df %>% filter(data == 1) %>% filter(predictions >=0.5)
+
+df3 = data.frame("x1" = nrow(df1)/nrow(df %>% filter(data == 0)),
+           "X2" = nrow(df2)/nrow(df %>% filter(data == 1)))
+
+names(df3) = c("Proportion of negatives correctly predicted", "Proportion of positives correctly predicted")
+df3
+```
 
 
-```{r rayshader_prep, eval = F}
+```{r rayshader_prep, eval = F, echo = F}
 library(rayshader)
 library(raster)
 
@@ -255,7 +271,7 @@ full_shape <- do.call(mosaic, each_adm_value)
 plot(full_shape)
 ```
 
-```{r rayshader_out, eval = F}
+```{r rayshader_out, eval = F, echo = F}
 
 bath = focal(flip(full_shape, "x"), w=matrix(1,3,3), mean)
 
