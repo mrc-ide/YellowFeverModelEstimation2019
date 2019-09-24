@@ -45,8 +45,8 @@ sourceDirectory("Functions", modifiedOnly = FALSE)
 mcmc_out = get_chains("multi_model_MCMC_chain_20190903", 
                        burnin = 8e5, thin = 100)
 
-glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190924_7_new_pop_dat_wes_diffadm05_2",
-                          burnin =1.5e5, thin = 1)
+glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190924_6_new_pop_dat_wes_diffadm05_3",
+                          burnin =1e4, thin = 1)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
 
@@ -72,11 +72,12 @@ filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
 dat <- read.csv(filename, stringsAsFactors = FALSE)
 
 # remove families of NHP that are not to be included
-model_form_whole <- read.csv("Model_form7.csv", stringsAsFactors = FALSE)$x
+model_form_whole <- read.csv("Model_form6.csv", stringsAsFactors = FALSE)$x
 covar <- unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
 
 dat <- dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] 
 
+    
 # make extra elements and normalise
 dat %<>% dplyr::select(-year)
 dat %<>% filter( is.finite(MIR.max))
