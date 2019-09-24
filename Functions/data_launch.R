@@ -8,10 +8,7 @@ adjust_env_dat = function(dat) {
   depvar = "cases_or_outbreaks"
   depi = match(depvar, names(dat)) # column number for the chosen outcome
   
-  # # excluding LC1,3,5,15 as they only ever cover <5% -
-  # ex_i = match(c("LC1","LC3","LC5","LC15"), names(dat))
-  # dat = dat[,-ex_i]
-  # 
+
   # adding a categorical "dominant land cover" variable:
   LC_i = grep("LC",names(dat))
   LC_dom = names(dat)[LC_i][  as.numeric(apply(dat[,LC_i],1, which.max ))]
@@ -30,9 +27,13 @@ adjust_env_dat = function(dat) {
                                               0, log(surv.qual.adm0)))
   
   # a same categorical variable for all countries within the YFSD
+  # aslo group countries not considered high or moderate risk together
   dat = dplyr::mutate(dat,
                       adm05 = ifelse(surv.qual.adm0>0,
-                                     "AFR", adm0))
+                                     "AFR", 
+                                     ifelse(risk %in% c("high", "moderate"),
+                                            adm0,
+                                            "low_risk")))
   
   #add continental factor
   dat = dplyr::mutate(dat,
@@ -48,13 +49,7 @@ adjust_env_dat = function(dat) {
   dat = dplyr::mutate(dat, risk = as.numeric(as.factor(risk)))
   dat$risk[is.na(dat$risk)] = max(dat$risk, na.rm = TRUE)+1
   
-  # ESH and GUF missing from predicted surv qual
-  # dat$predicted_surv_qual[dat$adm0 == "ESH"] = mean(c(unique(dat$predicted_surv_qual[dat$adm0 == "MAR"]),
-  #                                                   unique(dat$predicted_surv_qual[dat$adm0 == "MRT"])))
-  # dat$predicted_surv_qual[dat$adm0 == "GUF"] = mean(c(unique(dat$predicted_surv_qual[dat$adm0 == "SUR"]), 
-  #                                                          unique(dat$predicted_surv_qual[dat$adm0 == "BRA"])))
-  
-  #dat$predicted_surv_qual = log(dat$predicted_surv_qual)
+
 
   v1 = apply(dat,2,var, na.rm = TRUE)
   for(i in 9:(ncol(dat))) {

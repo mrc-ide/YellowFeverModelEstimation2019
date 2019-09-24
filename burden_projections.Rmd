@@ -88,7 +88,9 @@ vc2d %<>% filter(!is.na(adm0_adm1))
 
 ```{r load_foi}
 
-foi = read.csv( "FOI_samples.csv", stringsAsFactors = FALSE)
+foi = read.csv( "FOI_samples_diffadm05.csv", stringsAsFactors = FALSE)
+
+ve = median(exp(mcmc_out$vac_eff))
 
 ```
 
@@ -109,7 +111,7 @@ fun_calcBurden = function(fois, year , adm1 = NA, vc2d, pop1) { # Tini's burden 
   a.mat = matrix(0:100, nrow=length(fois), ncol=101, byrow=TRUE)
   
   burden = fois * rowSums(exp(-foi.mat*a.mat) * 
-                            (1-vc2d[vc2d$year==year & 
+                            (1-ve*vc2d[vc2d$year==year & 
                                       vc2d$adm0_adm1 %in% adm1,-(1:3)]) *
                             pop1[pop1$year==year & 
                                    pop1$adm0_adm1 %in% adm1, -(1:2)], na.rm=TRUE)
@@ -266,9 +268,9 @@ df2 = df %>%
   group_by(adm0) %>% 
   summarise(mean_severe = round(mean(severe_infections))) %>% 
   arrange(-mean_severe) %>% 
-  mutate(reported_mean_severe = mean_severe/reporting_propn) %>% 
-  mutate(mean_severe = prettyNum(mean_severe, big.mark = ","), 
-         reported_mean_severe = prettyNum(round(reported_mean_severe), big.mark = ",")) 
+  mutate(reported_mean_severe = mean_severe/reporting_propn) #%>% 
+  # mutate(mean_severe = prettyNum(mean_severe, big.mark = ","), 
+  #        reported_mean_severe = prettyNum(round(reported_mean_severe), big.mark = ",")) 
 
 df2
 
@@ -283,5 +285,59 @@ shp0$reported = df2$reported_mean_severe[match( shp0$GID_0, df2$adm0)]
 plot(shp0)
 plot(shp0[shp0$reported>1,], col=colours[length(colours)], lty=2, add=T)
 plot(shp0, add = TRUE, lwd = 2)
+
+```
+
+
+```{r cases_continent}
+
+tmp = data.frame(countries = unique(shp0$NAME_0), adm0 = unique(shp0$GID_0))
+tmp$continent <- countrycode::countrycode(sourcevar = tmp$countries,
+                            origin = "country.name",
+                            destination = "continent")
+
+tmp2 = left_join(df2, tmp)
+
+tmp2 %>% group_by(continent) %>% summarise(cases = sum(as.numeric(mean_severe), na.rm = T)) %>% mutate(percent = round(cases/sum(cases)*100))
+
+```
+
+
+```{r deaths}
+df = infections_df %>% 
+  group_by(adm0, sample) %>% 
+  summarise(deaths = sum(deaths, na.rm = TRUE))
+  
+df2 = df %>% 
+  group_by(adm0) %>% 
+  summarise(deaths = round(mean(deaths))) %>% 
+  arrange(-deaths) %>% 
+  mutate(reported_deaths = deaths/reporting_propn)
+
+tmp = data.frame(countries = unique(shp0$NAME_0), adm0 = unique(shp0$GID_0))
+tmp$continent <- countrycode::countrycode(sourcevar = tmp$countries,
+                            origin = "country.name",
+                            destination = "continent")
+
+tmp2 = left_join(df2, tmp)
+
+tmp2 %>% group_by(continent) %>% summarise(deaths = sum(as.numeric(deaths), na.rm = T)) %>% mutate(percent = round(deaths/sum(deaths)*100))
+```
+
+
+```{r c34}
+
+c34 = read.csv("../Data/Countries.csv", stringsAsFactors = FALSE)$c34
+
+tmp = filter(df, adm0 %in% c34)
+
+tmp %<>% group_by(adm0) %>% 
+  summarise(deaths = round(mean(deaths))) %>% 
+  arrange(-deaths) %>% 
+  mutate(reported_deaths = deaths/reporting_propn)
+
+tmp
+
+sum(tmp$deaths)
 
 ```
