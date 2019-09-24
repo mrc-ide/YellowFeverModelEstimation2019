@@ -45,6 +45,12 @@ adjust_env_dat = function(dat) {
   dat = dplyr::mutate(dat,
                       aggregate_family = rowSums(dat[, grep("family", names(dat))]))
   
+  
+  # add ranges
+  dat = dplyr::mutate(dat,
+                      EVI.range = EVI.max - EVI.min,
+                      temp_range = temp_max - temp_min)
+  
   # sorting risk
   dat = dplyr::mutate(dat, risk = as.numeric(as.factor(risk)))
   dat$risk[is.na(dat$risk)] = max(dat$risk, na.rm = TRUE)+1

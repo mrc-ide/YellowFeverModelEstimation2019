@@ -29,14 +29,14 @@ run_estimation = function(run_id =1){
   dat = read.csv(filename, stringsAsFactors = FALSE)
   
   # remove families of NHP that are not to be included
-  model_form_whole = read.csv("Model_form6.csv", stringsAsFactors = FALSE)$x
+  model_form_whole = read.csv("Model_form7.csv", stringsAsFactors = FALSE)$x
   covar = unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
   
   dat = dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] # remove family which are not covariates
   
   dat %<>% select(-year)
   dat %<>% filter( is.finite(MIR.max))
-  dat %<>% filter(!is.na(precip_mean))
+  dat %<>% tidyr::drop_na()
   
   # make extra elements and normalise
   dat = adjust_env_dat(dat)
@@ -90,7 +90,7 @@ run_estimation = function(run_id =1){
   plot_chain = FALSE
   
   # create a directory to save the output in 
-  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_6_new_pop_dat_wes_diffadm05_2")
+  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_7_new_pop_dat_wes_diffadm05_2")
   dir.create(name_dir)
   
   Niter = 1e6

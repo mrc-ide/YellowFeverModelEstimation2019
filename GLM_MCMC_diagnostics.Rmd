@@ -45,8 +45,8 @@ R.utils::sourceDirectory("Functions")
 # glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190919_6_new_pop_dat_wes",
 #                          burnin =1e5, thin = 1)
 
-glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190923_6_new_pop_dat_wes_diffadm05_2",
-                          burnin =1e5, thin = 1)
+glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190924_7_new_pop_dat_wes_diffadm05_2",
+                          burnin =1.5e5, thin = 1)
 
 names(glm_mcmc_out) <- gsub("^log.", "", names(glm_mcmc_out))
 
@@ -155,14 +155,17 @@ filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
 dat <- read.csv(filename, stringsAsFactors = FALSE)
 
 # remove families of NHP that are not to be included
-model_form_whole <- read.csv("Model_form6.csv", stringsAsFactors = FALSE)$x
+model_form_whole <- read.csv("Model_form7.csv", stringsAsFactors = FALSE)$x
 covar <- unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
 
 dat <- dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] 
 
 dat %<>% dplyr::select(-year)
 dat %<>% filter( is.finite(MIR.max))
-dat %<>% filter(!is.na(precip_mean))
+dat %<>% filter(!is.na(temp_mean))
+#dat %<>% tidyr::drop_na()
+dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
+                                   "Africa", continent))
 
 # make extra elements and normalise
 dat = adjust_env_dat(dat)
