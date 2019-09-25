@@ -46,7 +46,7 @@ mcmc_out = get_chains("multi_model_MCMC_chain_20190903",
                        burnin = 8e5, thin = 100)
 
 glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190924_6_new_pop_dat_wes_diffadm05_3",
-                          burnin =1e4, thin = 1)
+                          burnin =3e4, thin = 1)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
 
