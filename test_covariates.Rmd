@@ -21,6 +21,7 @@ library(ggplot2)
 library(tidyr)
 
 source('Functions/data_launch.R')
+source("Functions/temp_suit.R")
 ```
 
 ```{r load_data}
@@ -34,11 +35,12 @@ dat <- read.csv(filename, stringsAsFactors = FALSE)
 
 dat %<>% dplyr::select(-year)
 dat %<>% filter( is.finite(MIR.max))
-dat %<>% filter(!is.na(precip_mean))
-dat %<>% filter(!is.na(adm0))
+dat %<>% filter(!is.na(temp_mean))
+#dat %<>% tidyr::drop_na()
+dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
+                                   "Africa", continent))
 
-dat %<>% drop_na()
-
+# make extra elements and normalise
 dat = adjust_env_dat(dat)
 
 ```
@@ -183,7 +185,7 @@ summary(final_mod)
 
 pvalues <- coef(summary(final_mod))[,4]
 
-parm <- names(pvalues)#[pvalues < 0.05]
+parm <- names(pvalues)[pvalues < 0.05]
 parm <- parm[-1]
 
 model_form <- paste0("cases_or_outbreaks~", paste(parm, collapse = "+") )

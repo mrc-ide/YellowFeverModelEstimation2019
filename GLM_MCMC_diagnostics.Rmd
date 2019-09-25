@@ -162,7 +162,7 @@ covar <- unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
 dat <- dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] 
 
     #try fitting just to high/moderate
-    dat %<>% filter(risk %in% c("high", "moderate"))
+    #dat %<>% filter(risk %in% c("high", "moderate"))
   
     
 dat %<>% dplyr::select(-year)
