@@ -33,13 +33,20 @@ run_estimation = function(run_id =1){
   covar = unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
   
   dat = dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] # remove family which are not covariates
+
+  #try fitting just to high/moderate
+  dat %<>% filter(risk %in% c("high", "moderate"))
   
-  dat %<>% select(-year)
+  dat %<>% dplyr::select(-year)
   dat %<>% filter( is.finite(MIR.max))
-  dat %<>% filter(!is.na(precip_mean))
+  dat %<>% filter(!is.na(temp_mean))
+  #dat %<>% tidyr::drop_na()
+  dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
+                                     "Africa", continent))
   
   # make extra elements and normalise
   dat = adjust_env_dat(dat)
+  
   
   
   
@@ -64,13 +71,16 @@ run_estimation = function(run_id =1){
   
   pars_ini = beta0
   pars_ini[grep("family", names(pars_ini))] = abs(pars_ini[grep("family", names(pars_ini))])
+
+  pars_ini[grep("low_risk", names(pars_ini))] = 1
   names(pars_ini) = paste0("log.", names(beta0))
   
   # parm_in = read.csv("glm_param.csv", stringsAsFactors = TRUE)
   # parm_in = parm_in[1:(length(parm_in)-2)]
   # pars_ini = as.numeric(parm_in)
   # names(pars_ini) = paste0("log.", names(parm_in))
-  
+
+
   
   pars_ini[is.na(pars_ini)] = 0
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -89,7 +99,9 @@ run_estimation = function(run_id =1){
   plot_chain = FALSE
   
   # create a directory to save the output in 
-  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_6_new_pop_dat_wes_noadm05")
+
+  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_6_new_pop_dat_wes_diffadm05_3")
+
   dir.create(name_dir)
   
   Niter = 1e6

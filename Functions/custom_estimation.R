@@ -96,6 +96,8 @@ GLMprior = function(param) {
   
   #GLM
   jj = grep("^log.adm05", names(param)) # select country parameters (parameter_type=2) the sd.prior=2 is from Kevin's original code create status
+  #ign = grep("low_risk", names(param))
+  #jj = jj[jj!=ign]
   sd.prior = 2
   
   Prior[1] =  - 0.5 * sum((param[jj] / sd.prior) ^ 2) # adjustment for reduced variation between countries?
@@ -110,6 +112,14 @@ GLMprior = function(param) {
                        mean = 0,
                        sd = 30,
                        a = 0, b = Inf)))
+  
+  # Prior[4] = sum(log(dtrunc(param[grep("low_risk", names(param))],
+  #                           "norm",
+  #                           mean = 10,
+  #                           sd = 1,
+  #                           a = 0, b = Inf)))# brute force the adm05 low risk to be positive
+  
+  
   # this term is for normally distributed non-country parameters : normal distrib with high sd (flat distrib)
   out = as.numeric( Prior )
   return( out )

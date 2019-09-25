@@ -18,6 +18,7 @@ library(dplyr)
 library(magrittr)
 library(corrplot)
 library(ggplot2)
+library(tidyr)
 
 source('Functions/data_launch.R')
 ```
@@ -27,14 +28,18 @@ source('Functions/data_launch.R')
 Env_Table_path <- "../Data/Environment/global_dat"
 
 filename <- KsetupR::get_latest_file(path = Env_Table_path, 
-                                    pattern = "dat_11")
+                                    pattern = "dat_wes")
 
 dat <- read.csv(filename, stringsAsFactors = FALSE)
 
-dat <- adjust_env_dat(dat)
-
+dat %<>% dplyr::select(-year)
+dat %<>% filter( is.finite(MIR.max))
 dat %<>% filter(!is.na(precip_mean))
+dat %<>% filter(!is.na(adm0))
 
+dat %<>% drop_na()
+
+dat = adjust_env_dat(dat)
 
 ```
 
@@ -48,6 +53,8 @@ covar_to_test <- covar_to_test[grep("risk", covar_to_test, invert = TRUE)]
 covar_to_test <- covar_to_test[grep("population", covar_to_test, invert = TRUE)]
 covar_to_test <- covar_to_test[grep("aggregate", covar_to_test, invert = TRUE)]
 covar_to_test <- covar_to_test[grep("adm05", covar_to_test, invert = TRUE)]
+
+covar_to_test <- covar_to_test[grep("EVI.max", covar_to_test, invert = TRUE)] # because EVI.range is so correlated with it
 
 mod <- list()
 pvalues <- rep(NA, length(covar_to_test))
@@ -72,7 +79,8 @@ ggplot(df) +
   theme_bw() + 
   theme(axis.text.x = element_text(angle = 90)) +
   xlab("Covariate")+
-  ylab("P value of univariate model fit")
+  ylab("P value of univariate model fit")+
+  scale_y_log10()
 ```
 
 
@@ -112,7 +120,7 @@ df %<>% filter(param %in% covar_to_test)
 
 ```{r, fig.height=12, fig.width=10}
 
-x <- as.dist( 1-abs(cor(na.omit(dat[, covar_to_test]))))
+x <- as.dist( 1-abs(cor(na.omit(dat[, na.omit(covar_to_test)]))))
 
 out <- hclust(x)
 
@@ -121,7 +129,7 @@ plot(out)
 parm <- list()
 
 ind <- 1
-for(i in 2:length(covar_to_test)){
+for(i in 2:length(na.omit(covar_to_test))){
   y <- cutree(out, k = i)
   
   df$cluster <- as.numeric(y[match(names(y), as.character(df$param) )])
@@ -175,7 +183,7 @@ summary(final_mod)
 
 pvalues <- coef(summary(final_mod))[,4]
 
-parm <- names(pvalues)[pvalues < 0.05]
+parm <- names(pvalues)#[pvalues < 0.05]
 parm <- parm[-1]
 
 model_form <- paste0("cases_or_outbreaks~", paste(parm, collapse = "+") )
@@ -184,7 +192,7 @@ mod <- glm( model_form, data = dat, family=binomial(link="cloglog"))
 
 
 write.csv(data.frame(x = model_form),
-                 "Model_form6.csv",
+                 "Model_form7.csv",
                  row.names = FALSE)
 parm
 ```

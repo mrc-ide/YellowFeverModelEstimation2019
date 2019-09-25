@@ -13,7 +13,7 @@ output:
 
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = "images/",
+  #fig.path = "images/",
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -42,11 +42,12 @@ library(KsetupR)
 
 R.utils::sourceDirectory("Functions")
 
-# glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190919_6_new_pop_dat_wes",
-#                          burnin =1e5, thin = 1)
 
-glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190919_6_new_pop_dat_wes_noadm05",
-                          burnin =1e4, thin = 1)
+
+
+glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190924_6_new_pop_dat_wes_diffadm05_3",
+                          burnin =1e5, thin = 1)
+
 
 names(glm_mcmc_out) <- gsub("^log.", "", names(glm_mcmc_out))
 
@@ -160,9 +161,16 @@ covar <- unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
 
 dat <- dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] 
 
+    #try fitting just to high/moderate
+    dat %<>% filter(risk %in% c("high", "moderate"))
+  
+    
 dat %<>% dplyr::select(-year)
 dat %<>% filter( is.finite(MIR.max))
-dat %<>% filter(!is.na(precip_mean))
+dat %<>% filter(!is.na(temp_mean))
+#dat %<>% tidyr::drop_na()
+dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
+                                   "Africa", continent))
 
 # make extra elements and normalise
 dat = adjust_env_dat(dat)
@@ -170,7 +178,9 @@ dat = adjust_env_dat(dat)
 # FIT MODEL #
 covar <- covar[grep("cases_or_outbreaks|family", covar, invert = TRUE)]
 
-model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+") , "+aggregate_family")#,  "+adm05", "+surv.qual.adm0")
+
+model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+") , "+aggregate_family",  "+adm05", "+surv.qual.adm0")
+
 
 object_glm <- YFestimation::fit_glm(dat = dat, 
                                    depi = match("cases_or_outbreaks", 
@@ -207,14 +217,14 @@ x_wo_adm05 <- x[, grep("adm05|surv", colnames(x), invert = TRUE)]
 Est_beta_wo_adm05 <- Est_beta[grep("adm05|surv", names(Est_beta), 
                                   invert = TRUE)]
 
-colours <- snapalette::snapalette(snapal, 1000, type = "continuous")
+colours <- snapalette::snapalette(snapal, 100, type = "continuous")
 
 eta <-  x_wo_adm05 %*% Est_beta_wo_adm05
 preds <- 1-exp(-exp(eta)) # 
 
 shp1$predictions  <- preds[match( shp1$GID_1, dat$adm1)]
 
-mybreaks <- seq(0, 1.0001, length.out=1001)
+mybreaks <- seq(0, 1.0001, length.out=101)
 mycols <-  colours
 vcols <- findInterval(shp1$predictions, mybreaks)
 
