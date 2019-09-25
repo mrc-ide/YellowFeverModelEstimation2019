@@ -88,9 +88,11 @@ vc2d %<>% filter(!is.na(adm0_adm1))
 
 ```{r load_foi}
 
+
 foi = read.csv( "FOI_samples_diffadm05.csv", stringsAsFactors = FALSE)
 
 ve = median(exp(mcmc_out$vac_eff))
+
 
 ```
 
