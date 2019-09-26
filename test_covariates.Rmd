@@ -21,6 +21,7 @@ library(ggplot2)
 library(tidyr)
 
 source('Functions/data_launch.R')
+source("Functions/temp_suit.R")
 ```
 
 ```{r load_data}
@@ -34,11 +35,12 @@ dat <- read.csv(filename, stringsAsFactors = FALSE)
 
 dat %<>% dplyr::select(-year)
 dat %<>% filter( is.finite(MIR.max))
-dat %<>% filter(!is.na(precip_mean))
-dat %<>% filter(!is.na(adm0))
+dat %<>% filter(!is.na(temp_mean))
+#dat %<>% tidyr::drop_na()
+dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
+                                   "Africa", continent))
 
-dat %<>% drop_na()
-
+# make extra elements and normalise
 dat = adjust_env_dat(dat)
 
 ```
@@ -53,8 +55,10 @@ covar_to_test <- covar_to_test[grep("risk", covar_to_test, invert = TRUE)]
 covar_to_test <- covar_to_test[grep("population", covar_to_test, invert = TRUE)]
 covar_to_test <- covar_to_test[grep("aggregate", covar_to_test, invert = TRUE)]
 covar_to_test <- covar_to_test[grep("adm05", covar_to_test, invert = TRUE)]
+covar_to_test <- covar_to_test[grep("family", covar_to_test, invert = TRUE)]
 
 covar_to_test <- covar_to_test[grep("EVI.max", covar_to_test, invert = TRUE)] # because EVI.range is so correlated with it
+covar_to_test <- covar_to_test[grep("temp_max", covar_to_test, invert = TRUE)] # because EVI.range is so correlated with it
 
 mod <- list()
 pvalues <- rep(NA, length(covar_to_test))
@@ -108,7 +112,7 @@ df <- data.frame(param = colnames(tab_cor),
                 correlation = t(tab_cor))
 df %>% arrange(-abs(correlation))
 
-covar_to_test <- as.character( df$param[abs(df$correlation)>0.1])
+covar_to_test <- as.character( df$param[abs(df$correlation)>0.2])
 
 df %<>% filter(param %in% covar_to_test)
 ```
@@ -139,7 +143,7 @@ for(i in 2:length(na.omit(covar_to_test))){
   parm[[ind]] <- df %>% 
     arrange(-abs(correlation)) %>% 
     group_by(cluster) %>% 
-    summarise(parms = first(param))
+    summarise(parms = first(param)) #this picks the most correlated parameter out of each cluster
   
   ind <- ind+1
 }
@@ -175,26 +179,43 @@ parm[[which.min(AICs)]]
 
 
 ```
-```{r remove insiginficant}
+```{r table_inclusion}
 
-final_mod <- mod[[which.min(AICs)]]
+df_freq = as.data.frame(table(bind_rows(parm)$parms))
+
+#discard those that are chosen once or less
+df_freq %<>% filter(Freq>1)
+
+df_freq %>% arrange(-Freq)
+
+model_form <- paste0("cases_or_outbreaks~", paste(df_freq$Var1, collapse = "+") )
+
+mod = glm( model_form, data = dat, family=binomial(link="cloglog"))
+```
+
+
+
+
+```{r remove insiginficant, eval = F}
+
+final_mod <- mod
 
 summary(final_mod)
 
 pvalues <- coef(summary(final_mod))[,4]
 
-parm <- names(pvalues)#[pvalues < 0.05]
-parm <- parm[-1]
+parm_out <- names(pvalues)[pvalues < 0.05]
+parm_out <- parm_out[-1]
 
-model_form <- paste0("cases_or_outbreaks~", paste(parm, collapse = "+") )
+model_form <- paste0("cases_or_outbreaks~", paste(parm_out, collapse = "+") )
   
 mod <- glm( model_form, data = dat, family=binomial(link="cloglog"))
 
 
 write.csv(data.frame(x = model_form),
-                 "Model_form7.csv",
+                 "Model_form10.csv",
                  row.names = FALSE)
-parm
+parm_out
 ```
 
 

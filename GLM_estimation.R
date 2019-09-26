@@ -29,7 +29,7 @@ run_estimation = function(run_id =1){
   dat = read.csv(filename, stringsAsFactors = FALSE)
   
   # remove families of NHP that are not to be included
-  model_form_whole = read.csv("Model_form6.csv", stringsAsFactors = FALSE)$x
+  model_form_whole = read.csv("Model_form10.csv", stringsAsFactors = FALSE)$x
   covar = unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
   
   dat = dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] # remove family which are not covariates
@@ -54,7 +54,7 @@ run_estimation = function(run_id =1){
   # FIT MODEL #
   covar = covar[grep("cases_or_outbreaks|family", covar, invert = TRUE)]
   
-  model_form = paste0("cases_or_outbreaks~", paste(covar, collapse = "+") ,"+aggregate_family",  "+adm05", "+surv.qual.adm0")
+  model_form = paste0("cases_or_outbreaks~", paste(covar, collapse = "+") ,  "+adm05", "+surv.qual.adm0")# ,"+aggregate_family"
 
   
   
@@ -80,7 +80,7 @@ run_estimation = function(run_id =1){
   # pars_ini = as.numeric(parm_in)
   # names(pars_ini) = paste0("log.", names(parm_in))
 
-
+  pars_ini = pars_ini*0
   
   pars_ini[is.na(pars_ini)] = 0
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -96,11 +96,11 @@ run_estimation = function(run_id =1){
   # MCMC #
   
   # set-up #
-  plot_chain = T#FALSE
+  plot_chain = FALSE
   
   # create a directory to save the output in 
 
-  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_6_new")
+  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_10")
 
   dir.create(name_dir)
   

@@ -46,8 +46,8 @@ mcmc_out = get_chains("multi_model_MCMC_chain_20190903",
                        burnin = 8e5, thin = 100)
 
 
-glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190924_6_new_pop_dat_wes_diffadm05_3",
-                          burnin =3e4, thin = 1)
+glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190925_9",
+                          burnin =5e4, thin = 1)
 
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
@@ -74,7 +74,7 @@ filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
 dat <- read.csv(filename, stringsAsFactors = FALSE)
 
 # remove families of NHP that are not to be included
-model_form_whole <- read.csv("Model_form6.csv", stringsAsFactors = FALSE)$x
+model_form_whole <- read.csv("Model_form9.csv", stringsAsFactors = FALSE)$x
 covar <- unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
 
 dat <- dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] 
@@ -91,9 +91,9 @@ dat = adjust_env_dat(dat)
 
 dat %<>% mutate(adm0_adm1 = adm1)
 ### POPULATION AND VACCINATION DATA ###
-
-all_res_pop_3d = get_pop_data_3d() 
-
+if(!exists("all_res_pop_3d")){
+  all_res_pop_3d = get_pop_data_3d() 
+}
 pop1 = all_res_pop_3d$pop1                                      
 P_tot = all_res_pop_3d$P_tot                                   #total populations for each adm and year
 p_prop = all_res_pop_3d$p_prop                                   #proportions of population
@@ -130,7 +130,9 @@ class(vc3d) = "numeric"
 t0_vac_africa = calc_t0_vac_africa(vc3d)
 
 # inc_v3d #
-inc_v3d = calc_incidence_vac_general(vc3d)
+if(!exists("inc_v3d")){
+  inc_v3d = calc_incidence_vac_general(vc3d)
+}
     
 # CALCULATE population moments #
 p_prop_3d = array( data = p_prop$population,
@@ -148,10 +150,12 @@ pop_moments_whole = calc_pop_moments(p_prop_3d,
                                      dim_age = dimnames(vc3d)[[3]])
 
 #aggregate
-list_aggregate_pop_vc = YFestimation::Make_aggregate_pop_vc_3d(pop1=pop1, 
-                                                               vc2d=vc2d %>% select(-adm0), 
-                                                               sero_studies=seroout$sero_studies, 
-                                                               adm1s=seroout$adm1s) 
+if(!exists("list_aggregate_pop_vc")){
+  list_aggregate_pop_vc = YFestimation::Make_aggregate_pop_vc_3d(pop1=pop1, 
+                                                                 vc2d=vc2d %>% select(-adm0), 
+                                                                 sero_studies=seroout$sero_studies, 
+                                                                 adm1s=seroout$adm1s) 
+}
 pop_agg3d = list_aggregate_pop_vc$pop_agg3d 
 vc_agg3d = list_aggregate_pop_vc$vc_agg3d 
 
@@ -188,7 +192,7 @@ P_tot_survey = list_pop_at_survey$P_tot_survey_2d
 #read in models and get them in the right order of covariates
 covar <- covar[grep("cases_or_outbreaks|family", covar, invert = TRUE)]
 
-model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+") ,"+aggregate_family")#,  "+adm05", "+surv.qual.adm0")
+model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+") ,"+aggregate_family",  "+adm05", "+surv.qual.adm0")
 object_glm <- YFestimation::fit_glm(dat = dat, 
                                    depi = match("cases_or_outbreaks", 
                                                 names(dat)), 
@@ -202,14 +206,18 @@ y = object_glm[[3]]
 
 
 # read shapefiles in #
-shp0 = rgdal::readOGR("../../shapefiles/Africa_America_0_smooth.shp",
-                          stringsAsFactors = FALSE,
-                          encoding = "UTF-8",
-                          use_iconv = TRUE)
-shp1 = rgdal::readOGR("../../shapefiles/Africa_America_1_smooth.shp",
-                          stringsAsFactors = FALSE,
-                          encoding = "UTF-8",
-                          use_iconv = TRUE)
+if(!exists("shp0")){
+  shp0 = rgdal::readOGR("../../shapefiles/Africa_America_0_smooth.shp",
+                        stringsAsFactors = FALSE,
+                        encoding = "UTF-8",
+                        use_iconv = TRUE)
+}
+if(!exists("shp1")){
+  shp1 = rgdal::readOGR("../../shapefiles/Africa_America_1_smooth.shp",
+                        stringsAsFactors = FALSE,
+                        encoding = "UTF-8",
+                        use_iconv = TRUE)
+}
 
 
 ```
@@ -231,7 +239,7 @@ Foi_param = out$Foi_param
 ii = c(2:(grep("Foi", names(Foi_param[,1]))[1]-1))
 varsin_nc = grep("adm05|surv|posterior|acc", names(glm_mcmc_out), invert = TRUE)
 
-colours = snapalette("Ember", 100, type = "continuous")
+colours = snapalette("Pop", 100, type = "continuous")
 
 vc2d %<>% arrange( adm0_adm1)
 
@@ -266,7 +274,7 @@ foi = plot_transmission_intensity2(x,
 
 tmp = foi %>% group_by(adm0) %>% summarise(median_foi = median(FOI, na.rm = TRUE))
 
-colours = snapalette("Ember", 100, type = "continuous")
+colours = snapalette("Pop", 100, type = "continuous")
 
 shp0$FOI = NA
 shp0$FOI = tmp$median_foi[match(shp0$GID_0, tmp$adm0)]
@@ -399,7 +407,7 @@ for(i in 1:n_samples){
                                       model_type = "Foi")
   
   shp1$runs = NA 
-  shp1$runs = runs[match(shp1$GID_1,dat$adm0_adm1)]
+  shp1$runs = runs[match(shp1$GID_1,dat$adm1)]
   
   
   
@@ -409,7 +417,7 @@ for(i in 1:n_samples){
 colnames(foi_out) = shp1$GID_1
 
 
-write.csv(foi_out, "FOI_samples_diffadm05.csv", row.names = FALSE)
+write.csv(foi_out, "FOI_samples_9.csv", row.names = FALSE)
 
 ```
 

@@ -92,12 +92,13 @@ GLM_MCMC = function(Niter, name_dir, pars_ini, x, y, plot_chain, run_id = 1){
 
 GLMprior = function(param) {
   
-  Prior = rep(0,3)
+  Prior = rep(0,4)
   
   #GLM
   jj = grep("^log.adm05", names(param)) # select country parameters (parameter_type=2) the sd.prior=2 is from Kevin's original code create status
   ign = grep("low_risk", names(param))
   jj = jj[jj!=ign]
+  
   sd.prior = 2
   
   Prior[1] =  - 0.5 * sum((param[jj] / sd.prior) ^ 2) # adjustment for reduced variation between countries?

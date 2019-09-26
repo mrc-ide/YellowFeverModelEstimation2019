@@ -8,7 +8,7 @@ adjust_env_dat = function(dat) {
   depvar = "cases_or_outbreaks"
   depi = match(depvar, names(dat)) # column number for the chosen outcome
   
-
+  
   # adding a categorical "dominant land cover" variable:
   LC_i = grep("LC",names(dat))
   LC_dom = names(dat)[LC_i][  as.numeric(apply(dat[,LC_i],1, which.max ))]
@@ -51,17 +51,27 @@ adjust_env_dat = function(dat) {
                       EVI.range = EVI.max - EVI.min,
                       temp_range = temp_max - temp_min)
   
+  
+  # add simple temp suitability
+  parm = read.csv("temp_suit_parm.csv", stringsAsFactors = F)
+  parm2 = as.numeric(parm$x)
+  names(parm2) = parm$X
+  dat = dplyr::mutate(dat,
+                      temp_suit_mean = temp_suitability(dat$temp_mean, parm2),
+                      temp_suit_min = temp_suitability(dat$temp_min, parm2),
+                      temp_suit_max = temp_suitability(dat$temp_max, parm2))
+  
   # sorting risk
   dat = dplyr::mutate(dat, risk = as.numeric(as.factor(risk)))
   dat$risk[is.na(dat$risk)] = max(dat$risk, na.rm = TRUE)+1
   
-
-
+  
+  
   v1 = apply(dat,2,var, na.rm = TRUE)
   for(i in 9:(ncol(dat))) {
-
+    
     if(!is.factor(dat[,i]) & !is.character(dat[,i])) {
-
+      
       dat[,i] = dat[,i]/sqrt(v1[i])
     }
   }
@@ -82,7 +92,7 @@ get_pop_data_3d = function() {
   
   pop1 = read.csv("Z:/Data/Population/all_pop_at_adm1_1940-2100_landscan2017_gadm36.csv",
                   stringsAsFactors = FALSE)
-
+  
   pop2d = tidyr::gather(pop1, age, population, -c(country_code, adm1, country, year))
   
   out = Make_Ptot_Pprop(pop2d)
