@@ -165,7 +165,7 @@ covar = names(glm_mcmc_out %>% select(-c(Intercept, starts_with("adm05"), poster
 #dat <- dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] 
 
     #try fitting just to high/moderate
-    #dat %<>% filter(risk %in% c("high", "moderate"))
+    dat %<>% filter(risk %in% c("high", "moderate"))
   
     
 dat %<>% dplyr::select(-year)
@@ -182,7 +182,7 @@ dat = adjust_env_dat(dat)
 
 model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+") , "+aggregate_family",  "+adm05") 
 
-
+model_form
 object_glm <- YFestimation::fit_glm(dat = dat, 
                                    depi = match("cases_or_outbreaks", 
                                                 names(dat)), 
@@ -193,7 +193,7 @@ x <- object_glm[[2]]
 y <- object_glm[[3]]
 
 #order Est_beta to match beta0
-#Est_beta = Est_beta[names(beta0)]
+Est_beta = na.omit(Est_beta[names(beta0)])
 
 ###########################################################################
 plot_glm_map2(shp0, shp1,  dat, Est_beta, x, 
