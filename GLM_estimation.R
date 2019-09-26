@@ -54,7 +54,7 @@ run_estimation = function(run_id =1){
   # FIT MODEL #
   covar = covar[grep("cases_or_outbreaks|family", covar, invert = TRUE)]
   
-  model_form = paste0("cases_or_outbreaks~", paste(covar, collapse = "+") ,"+aggregate_family",  "+adm05", "+surv.qual.adm0")
+  model_form = paste0("cases_or_outbreaks~", paste(covar, collapse = "+") ,  "+adm05", "+surv.qual.adm0")# ,"+aggregate_family"
 
   
   
