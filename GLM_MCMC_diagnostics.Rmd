@@ -45,8 +45,8 @@ R.utils::sourceDirectory("Functions")
 
 
 
-glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190924_6_new_pop_dat_wes_diffadm05_3",
-                          burnin =1e5, thin = 1)
+glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190925_9",
+                          burnin =5e4, thin = 1)
 
 
 names(glm_mcmc_out) <- gsub("^log.", "", names(glm_mcmc_out))
@@ -156,7 +156,7 @@ filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
 dat <- read.csv(filename, stringsAsFactors = FALSE)
 
 # remove families of NHP that are not to be included
-model_form_whole <- read.csv("Model_form6.csv", stringsAsFactors = FALSE)$x
+model_form_whole <- read.csv("Model_form9.csv", stringsAsFactors = FALSE)$x
 covar <- unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
 
 dat <- dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] 
@@ -197,7 +197,7 @@ Est_beta = Est_beta[names(beta0)]
 ###########################################################################
 plot_glm_map2(shp0, shp1,  dat, Est_beta, x, 
               colours = snapalette(snapal, 1000, type = "continuous"), 
-              plot_data = FALSE)
+              plot_data = TRUE)
 
 ```
 

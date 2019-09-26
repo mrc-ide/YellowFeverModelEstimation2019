@@ -89,7 +89,7 @@ vc2d %<>% filter(!is.na(adm0_adm1))
 ```{r load_foi}
 
 
-foi = read.csv( "FOI_samples_diffadm05.csv", stringsAsFactors = FALSE)
+foi = read.csv( "FOI_samples_9.csv", stringsAsFactors = FALSE)
 
 ve = median(exp(mcmc_out$vac_eff))
 
@@ -124,7 +124,7 @@ fun_calcBurden = function(fois, year , adm1 = NA, vc2d, pop1) { # Tini's burden 
 
 
 infections_out = sapply(1:nrow(foi), FUN = function(i) fun_calcBurden(foi[i,], 
-                                                                      2018, 
+                                                                      2013, 
                                                                       adm1 = names(foi), 
                                                                       vc2d, 
                                                                       pop1))
@@ -134,11 +134,11 @@ infections_df %<>% mutate(adm0_adm1 = rownames(infections_out),
                            year = 2018)
 infections_df %<>% gather(sample, infections, -c(adm0_adm1, year))
 
-infections_df %<>% mutate(adm0 = substr(adm0_adm1, 1, 3))
+infections_df %<>% mutate(adm0 = substr(adm0_adm1, 1, 3)) %>%
 
-infections_df %<>% mutate(infections = as.numeric(infections))
+                   mutate(infections = as.numeric(infections)) %>%
 
-infections_df %<>% mutate(prob_severe = rbeta(nrow(infections_df),
+                   mutate(prob_severe = rbeta(nrow(infections_df),
                                               6.367309,44.60736),
                           prob_severe_death = rbeta(nrow(infections_df),
                                                     16.43466, 18.49048))
@@ -270,9 +270,9 @@ df2 = df %>%
   group_by(adm0) %>% 
   summarise(mean_severe = round(mean(severe_infections))) %>% 
   arrange(-mean_severe) %>% 
-  mutate(reported_mean_severe = mean_severe/reporting_propn) #%>% 
-  # mutate(mean_severe = prettyNum(mean_severe, big.mark = ","), 
-  #        reported_mean_severe = prettyNum(round(reported_mean_severe), big.mark = ",")) 
+  mutate(reported_mean_severe = mean_severe/reporting_propn) %>% 
+  mutate(#mean_severe = prettyNum(mean_severe, big.mark = ","),
+         reported_mean_severe = prettyNum(round(reported_mean_severe), big.mark = ","))
 
 df2
 
@@ -302,6 +302,7 @@ tmp2 = left_join(df2, tmp)
 
 tmp2 %>% group_by(continent) %>% summarise(cases = sum(as.numeric(mean_severe), na.rm = T)) %>% mutate(percent = round(cases/sum(cases)*100))
 
+sum(tmp2$mean_severe)
 ```
 
 
@@ -324,6 +325,8 @@ tmp$continent <- countrycode::countrycode(sourcevar = tmp$countries,
 tmp2 = left_join(df2, tmp)
 
 tmp2 %>% group_by(continent) %>% summarise(deaths = sum(as.numeric(deaths), na.rm = T)) %>% mutate(percent = round(deaths/sum(deaths)*100))
+
+sum(tmp2$deaths)
 ```
 
 
