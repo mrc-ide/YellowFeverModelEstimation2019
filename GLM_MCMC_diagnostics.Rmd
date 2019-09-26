@@ -45,8 +45,8 @@ R.utils::sourceDirectory("Functions")
 
 
 
-glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190925_9",
-                          burnin =5e4, thin = 1)
+glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190925_10",
+                          burnin =4e4, thin = 1)
 
 
 names(glm_mcmc_out) <- gsub("^log.", "", names(glm_mcmc_out))
@@ -156,7 +156,7 @@ filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
 dat <- read.csv(filename, stringsAsFactors = FALSE)
 
 # remove families of NHP that are not to be included
-model_form_whole <- read.csv("Model_form9.csv", stringsAsFactors = FALSE)$x
+model_form_whole <- read.csv("Model_form10.csv", stringsAsFactors = FALSE)$x
 covar <- unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
 
 dat <- dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] 
@@ -179,7 +179,7 @@ dat = adjust_env_dat(dat)
 covar <- covar[grep("cases_or_outbreaks|family", covar, invert = TRUE)]
 
 
-model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+") , "+aggregate_family",  "+adm05", "+surv.qual.adm0")
+model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+") ,  "+adm05", "+surv.qual.adm0") #, "+aggregate_family"
 
 
 object_glm <- YFestimation::fit_glm(dat = dat, 
@@ -217,7 +217,7 @@ x_wo_adm05 <- x[, grep("adm05|surv", colnames(x), invert = TRUE)]
 Est_beta_wo_adm05 <- Est_beta[grep("adm05|surv", names(Est_beta), 
                                   invert = TRUE)]
 
-colours <- snapalette::snapalette(snapal, 100, type = "continuous")
+colours <- snapalette::snapalette("Mosaic", 100, type = "continuous")
 
 eta <-  x_wo_adm05 %*% Est_beta_wo_adm05
 preds <- 1-exp(-exp(eta)) # 
