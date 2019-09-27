@@ -28,13 +28,14 @@ adjust_env_dat = function(dat) {
   
   # a same categorical variable for all countries within the YFSD
   # aslo group countries not considered high or moderate risk together
+  
   dat = dplyr::mutate(dat,
                       adm05 = ifelse(surv.qual.adm0>0,
-                                     "AFR", 
+                                     "AFR",
                                      ifelse(risk %in% c("high", "moderate"),
                                             adm0,
                                             "low_risk")))
-  
+                                     # 
   #add continental factor
   dat = dplyr::mutate(dat,
                       continent_factor = ifelse(continent=="Africa",
@@ -65,7 +66,7 @@ adjust_env_dat = function(dat) {
   dat = dplyr::mutate(dat, risk = as.numeric(as.factor(risk)))
   dat$risk[is.na(dat$risk)] = max(dat$risk, na.rm = TRUE)+1
   
-  
+
   
   v1 = apply(dat,2,var, na.rm = TRUE)
   for(i in 9:(ncol(dat))) {
@@ -119,3 +120,44 @@ Make_Ptot_Pprop = function(pop2d){
 }
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+fit_glm2 = function(dat, depi, models) {
+  
+  fm_best = models[1] #take first model
+  
+  bm = glm(as.formula(fm_best), data=dat, family=binomial(link="cloglog"))
+  
+  # setting up the evaluation of the likelihood:
+  beta = coefficients(bm)
+  
+  vl=NULL
+  for(i in 1:ncol(dat)) {
+    if(length(grep(names(dat)[i], names(beta)))>0) {
+      vl = c(vl,i) # select the variables used in the GLM
+    }
+  }
+  
+  
+  x = cbind(Intercept=1,dat[,vl])
+  j_expand = !sapply(1:ncol(x), function(i) is.numeric(x[,i]) & !is.factor(x[,i]))
+  
+  # create indicative variables for adm05
+  x %<>% mutate(adm05 = as.factor(paste0("adm05", adm05)))
+  x2 = tidyr::spread(x, adm05, adm05)
+  for(i in grep("adm05", names(x2))){
+    x2[, i] = as.numeric(x2[, i])
+  }
+  x2[is.na(x2)] = 0
+  
+  y = dat[,depi]  # dependant variable vector
+  
+  beta0 = coefficients(bm)
+  names(beta0)[names(beta0)=="(Intercept)"] = "Intercept"
+  
+  mm = match(names(beta0),colnames(x2))
+  x2 = x2[,mm]
+  
+  beta0 = beta0[match(colnames(x2),names(beta0))]
+  
+  return(list(beta0=beta0, x=x2, y=y))
+  
+}
