@@ -63,7 +63,7 @@ covar_to_test <- covar_to_test[grep("adm05", covar_to_test, invert = TRUE)]
 filteredDescr <-  dat[, covar_to_test]
 descrCor <-  cor(filteredDescr)
 
-highlyCorDescr <- findCorrelation(descrCor, cutoff = .9)
+highlyCorDescr <- findCorrelation(descrCor, cutoff = .8)
 
 filteredDescr <- filteredDescr[,-highlyCorDescr]
 
@@ -122,7 +122,7 @@ df <- data.frame(param = colnames(tab_cor),
                 correlation = t(tab_cor))
 df %>% arrange(-abs(correlation))
 
-covar_to_test <- as.character( df$param[abs(df$correlation)>0.2])
+covar_to_test <- as.character( df$param[abs(df$correlation)>0.1])
 
 df %<>% filter(param %in% covar_to_test)
 ```
@@ -209,7 +209,7 @@ mod_freq = glm( model_form, data = dat, family=binomial(link="cloglog"))
 
 ```{r remove insiginficant}
 
-final_mod <- mod[[which.min(AICs)]]
+final_mod <- mod_freq#mod[[which.min(AICs)]]
 
 summary(final_mod)
 
@@ -224,7 +224,7 @@ mod <- glm( model_form, data = dat, family=binomial(link="cloglog"))
 
 
 # write.csv(data.frame(x = model_form),
-#                  "Model_form_d.csv",
+#                  "Model_form_e.csv",
 #                  row.names = FALSE)
 parm_out
 ```
@@ -256,16 +256,3 @@ Landcover = c(1:16, 17) )
 ```
 
 
-
-```{r caret}
-
-library(caret)
-
-filteredDescr <-  dat[, covar_to_test]
-descrCor <-  cor(filteredDescr)
-
-highlyCorDescr <- findCorrelation(descrCor, cutoff = .75)
-
-filteredDescr <- filteredDescr[,-highlyCorDescr]
-
-```
