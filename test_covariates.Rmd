@@ -190,7 +190,7 @@ df_freq %>% arrange(-Freq)
 
 model_form <- paste0("cases_or_outbreaks~", paste(df_freq$Var1, collapse = "+") )
 
-mod = glm( model_form, data = dat, family=binomial(link="cloglog"))
+mod_freq = glm( model_form, data = dat, family=binomial(link="cloglog"))
 ```
 
 
@@ -198,7 +198,7 @@ mod = glm( model_form, data = dat, family=binomial(link="cloglog"))
 
 ```{r remove insiginficant}
 
-final_mod <- mod
+final_mod <- mod[[which.min(AICs)]]
 
 summary(final_mod)
 
@@ -212,9 +212,9 @@ model_form <- paste0("cases_or_outbreaks~", paste(parm_out, collapse = "+") )
 mod <- glm( model_form, data = dat, family=binomial(link="cloglog"))
 
 
-# write.csv(data.frame(x = model_form),
-#                  "Model_form_a.csv",
-#                  row.names = FALSE)
+write.csv(data.frame(x = model_form),
+                 "Model_form_b.csv",
+                 row.names = FALSE)
 parm_out
 ```
 

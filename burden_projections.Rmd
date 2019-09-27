@@ -13,7 +13,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = "images/",
+  #fig.path = "images/",
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -89,11 +89,13 @@ vc2d %<>% filter(!is.na(adm0_adm1))
 ```{r load_foi}
 
 
-foi = read.csv( "FOI_samples_9.csv", stringsAsFactors = FALSE)
+foi = read.csv( "FOI_samples_a.csv", stringsAsFactors = FALSE)
 
-ve = median(exp(mcmc_out$vac_eff))
+ve = 0.9533031#median(exp(mcmc_out$vac_eff))
 
-
+# sort pop and vc to included adm1
+pop1 %<>% filter(adm0_adm1 %in% names(foi))
+vc2d %<>% filter(adm0_adm1 %in% names(foi))
 ```
 
 
@@ -124,7 +126,7 @@ fun_calcBurden = function(fois, year , adm1 = NA, vc2d, pop1) { # Tini's burden 
 
 
 infections_out = sapply(1:nrow(foi), FUN = function(i) fun_calcBurden(foi[i,], 
-                                                                      2013, 
+                                                                      2018, 
                                                                       adm1 = names(foi), 
                                                                       vc2d, 
                                                                       pop1))
@@ -230,6 +232,8 @@ tmp2 =  tmp %>%
 
 shp0$deaths = NA
 shp0$deaths = tmp2$sum_deaths[match(shp0$GID_0, tmp2$adm0)]
+shp0$deaths[shp0$deaths == 0] = NA
+
 
 mybreaks= seq(min(log10(shp0$deaths), na.rm = TRUE), 
               max(log10(shp0$deaths), na.rm = TRUE)+0.01, 

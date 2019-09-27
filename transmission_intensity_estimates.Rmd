@@ -13,7 +13,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = "images/",
+  #fig.path = "images/",
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -42,12 +42,13 @@ library(KsetupR)
 
 sourceDirectory("Functions", modifiedOnly = FALSE)
 
-mcmc_out = get_chains("multi_model_MCMC_chain_20190903", 
-                       burnin = 8e5, thin = 100)
+if(!exists("mcmc_out")){
+  mcmc_out = get_chains("multi_model_MCMC_chain_20190903", 
+                        burnin = 8e5, thin = 100)
+}
 
-
-glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190925_9",
-                          burnin =5e4, thin = 1)
+glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190926_a",
+                          burnin =4e4, thin = 1)
 
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
@@ -73,13 +74,18 @@ filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
 
 dat <- read.csv(filename, stringsAsFactors = FALSE)
 
-# remove families of NHP that are not to be included
-model_form_whole <- read.csv("Model_form9.csv", stringsAsFactors = FALSE)$x
-covar <- unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
+#remove families of NHP that are not to be included
+model_form_whole <- read.csv("Model_form_a.csv", stringsAsFactors = FALSE)$x
+covar_family <- unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
 
-dat <- dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] 
+dat <- dat[, -which(!names(dat) %in% covar_family & grepl("family", names(dat)))] 
 
-    
+# get model covariates
+covar = names(glm_mcmc_out %>% select(-c(Intercept, starts_with("adm05"), posteriorProb, acceptRate)))  
+
+    #try fitting just to high/moderate
+    #dat %<>% filter(risk %in% c("high", "moderate"))
+
 # make extra elements and normalise
 dat %<>% dplyr::select(-year)
 dat %<>% filter( is.finite(MIR.max))
@@ -120,6 +126,13 @@ vc_tmp[, grep("adm0_adm1|year", names(vc_tmp), invert = TRUE)] = 0
 vc2d %<>% bind_rows(vc_tmp)
 vc2d %<>% unique()
 vc2d %<>% filter(!is.na(adm0_adm1))
+
+
+#-------------------------------------------------------
+# filter vac and pop to match dat
+vc2d %<>% filter(adm0_adm1 %in% dat$adm1)
+pop1 %<>% filter(adm0_adm1 %in% dat$adm1)
+
 
 #-------------------------------------------------------
 #vc3d
@@ -189,19 +202,17 @@ list_pop_at_survey = create_pop_at_survey(pop_agg3d,
 p_at_survey = list_pop_at_survey$p_at_survey_3d
 P_tot_survey = list_pop_at_survey$P_tot_survey_2d
 
-#read in models and get them in the right order of covariates
-covar <- covar[grep("cases_or_outbreaks|family", covar, invert = TRUE)]
+model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+")  ,   "+adm05") 
 
-model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+") ,"+aggregate_family",  "+adm05", "+surv.qual.adm0")
+model_form
 object_glm <- YFestimation::fit_glm(dat = dat, 
                                    depi = match("cases_or_outbreaks", 
                                                 names(dat)), 
                                    models = model_form)
 
-
-beta0 = object_glm[[1]]
-x = object_glm[[2]]
-y = object_glm[[3]]
+beta0 <- object_glm[[1]]
+x <- object_glm[[2]]
+y <- object_glm[[3]]
 
 
 
@@ -270,7 +281,7 @@ foi = plot_transmission_intensity2(x,
 
 ```
 
-```{r map_foi_by_country}
+```{r map_foi_by_country, warning=FALSE}
 
 tmp = foi %>% group_by(adm0) %>% summarise(median_foi = median(FOI, na.rm = TRUE))
 
@@ -351,7 +362,7 @@ ggplot(foi %>%
 
 ```
 
-```{r FOI_by_risk, fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10}
+```{r FOI_by_risk, fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10, eval = FALSE}
 
 
 
@@ -417,7 +428,7 @@ for(i in 1:n_samples){
 colnames(foi_out) = shp1$GID_1
 
 
-write.csv(foi_out, "FOI_samples_9.csv", row.names = FALSE)
+write.csv(foi_out, "FOI_samples_a.csv", row.names = FALSE)
 
 ```
 
