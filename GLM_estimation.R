@@ -29,7 +29,7 @@ run_estimation = function(run_id =1){
   dat = read.csv(filename, stringsAsFactors = FALSE)
   
   # remove families of NHP that are not to be included
-  model_form_whole = read.csv("Model_form_a.csv", stringsAsFactors = FALSE)$x
+  model_form_whole = read.csv("Model_form_c.csv", stringsAsFactors = FALSE)$x
   covar = unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
   
   dat = dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] # remove family which are not covariates
@@ -100,7 +100,7 @@ run_estimation = function(run_id =1){
   
   # create a directory to save the output in 
 
-  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_a")
+  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_c_noadm05")
 
   dir.create(name_dir)
   
