@@ -13,7 +13,7 @@ output:
 
 knitr::opts_chunk$set(
   dev = "png",
-  #fig.path = "images/",
+  fig.path = "images/",
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -160,7 +160,10 @@ covar_family <- unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"
 dat <- dat[, -which(!names(dat) %in% covar_family & grepl("family", names(dat)))] 
 
 # change to just read covariates from mcmc
-covar = names(glm_mcmc_out %>% dplyr::select(-c(Intercept, starts_with("adm05"), posteriorProb, acceptRate)))
+covar = names(glm_mcmc_out %>% dplyr::select(-c(Intercept, 
+                                                starts_with("adm05"), 
+                                                posteriorProb, 
+                                                acceptRate)))
 
 
     #try fitting just to high/moderate
@@ -179,9 +182,10 @@ dat = adjust_env_dat(dat)
 # -----------------------------------------------------------------------
 # FIT MODEL #
 
-model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+"),  "+adm05") 
+model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+"),  
+                     "+adm05") 
 
-model_form
+as.data.frame(c(covar, "adm05"))
 object_glm <- YFestimation::fit_glm(dat = dat, 
                                    depi = match("cases_or_outbreaks", 
                                                 names(dat)), 
@@ -244,7 +248,10 @@ What proportion of areas are predicted correctly?
 
 ```{r proportion_correct}
 
-df = data.frame(shp1$GID_0, shp1$GID_1, shp1$predictions, dat$cases_or_outbreaks[match(shp1$GID_1, dat$adm1)])
+df = data.frame(shp1$GID_0, 
+                shp1$GID_1, 
+                shp1$predictions, 
+                dat$cases_or_outbreaks[match(shp1$GID_1, dat$adm1)])
 names(df) = c("adm0", "adm1", "predictions", "data")
 
 df1 = df %>% filter(data == 0) %>% filter(predictions <=0.5)
@@ -253,7 +260,8 @@ df2 = df %>% filter(data == 1) %>% filter(predictions >=0.5)
 df3 = data.frame("x1" = nrow(df1)/nrow(df %>% filter(data == 0)),
            "X2" = nrow(df2)/nrow(df %>% filter(data == 1)))
 
-names(df3) = c("Proportion of negatives correctly predicted", "Proportion of positives correctly predicted")
+names(df3) = c("Proportion of negatives correctly predicted", 
+               "Proportion of positives correctly predicted")
 df3
 ```
 
