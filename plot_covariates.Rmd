@@ -50,17 +50,30 @@ shp1 = rgdal::readOGR("../../shapefiles/Africa_America_1_smooth.shp",
                           encoding = "UTF-8",
                           use_iconv = TRUE)
 
-Env_Table_path = "../Data/Environment/global_dat"
+### LOAD ENVIRONMENTAL DATA ###
+Env_Table_path <- "../Data/Environment/global_dat"
 
-filename = get_latest_file(path = Env_Table_path, pattern = "dat_wes")
+filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
 
-dat = read.csv(filename, stringsAsFactors = FALSE)
+dat <- read.csv(filename, stringsAsFactors = FALSE)
 
-# remove families of NHP that are not to be included
-model_form_whole = read.csv("Model_form8.csv", stringsAsFactors = FALSE)$x
+
+#remove families of NHP that are not to be included
+model_form_whole <- read.csv("Model_form_step_1.csv", stringsAsFactors = FALSE)$x
+covar_family <- unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
+
+dat <- dat[, -which(!names(dat) %in% covar_family & grepl("family", names(dat)))] 
+
+# change to just read covariates from mcmc
 covar = unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
+   
+dat %<>% dplyr::select(-year)
+dat %<>% filter( is.finite(MIR.max))
+dat %<>% filter(!is.na(temp_mean))
+#dat %<>% tidyr::drop_na()
+dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
+                                   "Africa", continent))
 
-dat = dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] # remove family which are not covariates
 
 # make extra elements and normalise
 dat = dplyr::mutate(dat,
@@ -71,7 +84,11 @@ dat = dplyr::mutate(dat,
                     EVI.range = EVI.max - EVI.min,
                     temp_range = temp_max - temp_min)
 
-
+#continent factor
+dat = dplyr::mutate(dat,
+                    continent_factor = ifelse(continent=="Africa",
+                                              1,
+                                              0))
 # add simple temp suitability
 parm = read.csv("temp_suit_parm.csv", stringsAsFactors = F)
 parm2 = as.numeric(parm$x)
@@ -80,10 +97,6 @@ dat = dplyr::mutate(dat,
                     temp_suit_mean = temp_suitability(dat$temp_mean, parm2),
                     temp_suit_min = temp_suitability(dat$temp_min, parm2),
                     temp_suit_max = temp_suitability(dat$temp_max, parm2))
-
-dat %<>% dplyr::select(-year)
-dat %<>% filter( is.finite(MIR.max))
-dat %<>% filter(!is.na(precip_mean))
 
 covar = c(covar, "aggregate_family")
 
