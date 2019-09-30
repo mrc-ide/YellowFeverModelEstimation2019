@@ -61,7 +61,7 @@ p_prop = all_res_pop_3d$p_prop
 
 pop1 %<>% rename(adm0_adm1 = adm1)
 
-pop1 %<>% arrange(year) %>% select(-c(country_code, country))
+pop1 %<>% arrange(year) %>% dplyr::select(-c(country_code, country))
 
 names(pop1)[3:ncol(pop1)] = paste0("a", 0:100)
 
@@ -89,7 +89,7 @@ vc2d %<>% filter(!is.na(adm0_adm1))
 ```{r load_foi}
 
 
-foi = read.csv( "FOI_samples_d.csv", stringsAsFactors = FALSE)
+foi = read.csv( "FOI_samples_step_1_wideprior.csv", stringsAsFactors = FALSE)
 
 ve = 0.9533031#median(exp(mcmc_out$vac_eff))
 

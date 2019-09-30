@@ -43,8 +43,8 @@ library(KsetupR)
 R.utils::sourceDirectory("Functions")
 
 
-glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190927_e_noadm05_nosurv",
-                          burnin =5e4, thin = 1)
+glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190930_step_1_wideprior",
+                          burnin =1e5, thin = 1)
 
 
 names(glm_mcmc_out) <- gsub("^log.", "", names(glm_mcmc_out))
@@ -154,13 +154,13 @@ filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
 dat <- read.csv(filename, stringsAsFactors = FALSE)
 
 #remove families of NHP that are not to be included
-model_form_whole <- read.csv("Model_form_e.csv", stringsAsFactors = FALSE)$x
+model_form_whole <- read.csv("Model_form_step_1.csv", stringsAsFactors = FALSE)$x
 covar_family <- unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
 
 dat <- dat[, -which(!names(dat) %in% covar_family & grepl("family", names(dat)))] 
 
 # change to just read covariates from mcmc
-covar = names(glm_mcmc_out %>% select(-c(Intercept, starts_with("adm05"), posteriorProb, acceptRate)))
+covar = names(glm_mcmc_out %>% dplyr::select(-c(Intercept, starts_with("adm05"), posteriorProb, acceptRate)))
 
 
     #try fitting just to high/moderate
@@ -179,7 +179,7 @@ dat = adjust_env_dat(dat)
 # -----------------------------------------------------------------------
 # FIT MODEL #
 
-model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+"))#,  "+adm05") 
+model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+"),  "+adm05") 
 
 model_form
 object_glm <- YFestimation::fit_glm(dat = dat, 
