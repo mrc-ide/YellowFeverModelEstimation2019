@@ -1,0 +1,219 @@
+---
+title: "Compare South America"
+author: "Katy Gaythorpe"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+header-includes: 
+- \usepackage{placeins}
+output: 
+  pdf_document:
+    df_print: "kable"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  dev = "png",
+  #fig.path = "images/",
+  dpi = 300,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+```{r library_load}
+library(YFburden)
+library(dplyr)
+library(magrittr)
+library(tidyr)
+library(snapalette)
+library(KsetupR)
+library(R.utils)
+library(YFestimation)
+library(ggplot2)
+library(snapalette)
+library(rgdal)
+library(fields)
+
+sourceDirectory("Functions", modifiedOnly = FALSE)
+
+# read shapefiles in #
+shp0 = rgdal::readOGR("../../shapefiles/Africa_America_0_smooth.shp",
+                      stringsAsFactors = FALSE,
+                      encoding = "UTF-8",
+                      use_iconv = TRUE)
+shp1 = rgdal::readOGR("../../shapefiles/Africa_America_1_smooth.shp",
+                      stringsAsFactors = FALSE,
+                      encoding = "UTF-8",
+                      use_iconv = TRUE)
+
+```
+
+
+```{r load_data}
+
+# ---------------------------------------------------------------------------
+### POPULATION DATA ###
+
+all_res_pop_3d = get_pop_data_3d() 
+
+pop1 = all_res_pop_3d$pop1                                      
+P_tot = all_res_pop_3d$P_tot                               
+p_prop = all_res_pop_3d$p_prop                                  
+
+pop1 %<>% rename(adm0_adm1 = adm1)
+
+pop1 %<>% arrange(year) %>% dplyr::select(-c(country_code, country))
+
+names(pop1)[3:ncol(pop1)] = paste0("a", 0:100)
+
+pop1 %<>% filter(year<2051)
+p_prop %<>% filter(year<2051)
+P_tot %<>% filter(year<2051)
+
+# ---------------------------------------------------------------------------
+# VACCINATION DATA #
+vc2d = readRDS("vacc_1940_1950.RDS")
+vc2d = as.data.frame(vc2d)
+
+# expand vc2d to match pop1
+vc2d %<>% mutate(year = as.numeric(as.character(year)))
+vc_tmp = pop1 %>% filter(!adm0_adm1 %in% vc2d$adm0_adm1)
+vc_tmp[, grep("adm0_adm1|year", names(vc_tmp), invert = TRUE)] = 0
+
+vc2d %<>% bind_rows(vc_tmp)
+vc2d %<>% unique()
+vc2d %<>% filter(!is.na(adm0_adm1))
+
+```
+
+
+```{r load_foi}
+
+
+fois = read.csv( "FOI_samples_step_1_wideprior.csv", stringsAsFactors = FALSE)
+
+ve = 0.9533031#median(exp(mcmc_out$vac_eff))
+
+# sort pop and vc to included adm1
+pop1 %<>% filter(adm0_adm1 %in% names(foi))
+vc2d %<>% filter(adm0_adm1 %in% names(foi))
+
+# take average
+foi = apply(fois, 2, median)
+```
+
+```{r load_paho}
+
+paho_dat = as.data.frame( data.table::fread("Z:/Data/LatinAmerica/Historic_data.csv", stringsAsFactors = FALSE))
+
+paho_dat %<>% spread(`Measure Names`, `Measure Values`)
+
+# filter to observation period
+paho_dat %<>% filter(Year>1983)
+```
+
+
+```{r calculate burden}
+
+# ---------------------------------------------------------------------------
+fun_calcBurden = function(fois, year , adm1 = NA, vc2d, pop1) { # Tini's burden function
+  
+  if(anyNA(adm1)){
+    adm1 = names(fois)
+  }
+  
+  foi.mat = matrix(fois, nrow=length(fois), ncol=101, byrow=FALSE)
+  
+  class(foi.mat) = "numeric"
+  
+  a.mat = matrix(0:100, nrow=length(fois), ncol=101, byrow=TRUE)
+  
+  burden = fois * rowSums(exp(-foi.mat*a.mat) * 
+                            (1-ve*vc2d[vc2d$year==year & 
+                                      vc2d$adm0_adm1 %in% adm1,-(1:3)]) *
+                            pop1[pop1$year==year & 
+                                   pop1$adm0_adm1 %in% adm1, -(1:2)], na.rm=TRUE)
+  return(burden)
+}
+
+# ---------------------------------------------------------------------------
+
+
+infections_df <- bind_rows(lapply(unique(paho_dat$Year), FUN = function(y) {
+  
+  infections_out = fun_calcBurden(foi, y, adm1 = names(foi), vc2d, pop1) 
+  
+  inf_df = data.frame(infections = as.numeric(infections_out),
+                      adm0_adm1 = names(infections_out),
+                      year = y,
+                      adm0 = substr(names(infections_out), 1, 3))
+  
+  inf_df %<>% mutate(prob_severe = rbeta(nrow(inf_df),
+                                         6.367309,44.60736),
+                     prob_severe_death = rbeta(nrow(inf_df),
+                                               16.43466, 18.49048))
+  
+  inf_df %<>% mutate(severe_infections = prob_severe*infections,
+                     deaths = prob_severe_death*severe_infections)
+  
+}))
+
+
+pop_df = data.frame(adm0_adm1 = pop1$adm0_adm1,
+                    year = pop1$year,
+                    pop = rowSums(pop1[, -c(1:2)], na.rm = TRUE))
+
+infections_df %<>% left_join(pop_df)
+
+infections_df %<>% mutate(severe_inci = severe_infections/pop,
+                          deaths_inci = deaths/pop)
+```
+
+```{r lnk_data_and_model}
+# get paho iso
+translate = countrycode::countrycode(unique(paho_dat$Countries), "country.name", "iso3c")
+translate_df = data.frame(Countries = unique(paho_dat$Countries),
+                          adm0 = translate)
+
+paho_dat %<>% left_join(translate_df)
+
+# get reporting proportion
+reporting_propn = 24000/416 #120000/805
+
+#filter(model out to paho countries)
+infections_df %<>% filter(adm0 %in% paho_dat$adm0)
+
+```
+
+
+```{r combine}
+
+inf_df = infections_df %>% 
+  group_by(adm0, year ) %>% 
+  summarise(infections = sum(infections, na.rm = T),
+            severe_infections = sum(severe_infections, na.rm = T),
+            deaths = sum(deaths, na.rm = T),
+            pop = sum(pop, na.rm = T))
+
+combined = left_join(paho_dat, inf_df, by = c("adm0" = "adm0", "Year" = "year"))
+
+
+
+```
+
+```{r compare_cases, fig.height=5, fig.width=10}
+
+ggplot(combined, aes(colour = Countries, x = Year)) + 
+  geom_line(aes(y = Cases)) +
+  geom_line(aes(y = round(severe_infections/reporting_propn)), linetype = "dashed") +
+  facet_wrap(~Countries, scales = "free_y")
+```
+
+```{r compare_deaths, fig.height=5, fig.width=10}
+
+ggplot(combined, aes(colour = Countries, x = Year)) + 
+  geom_line(aes(y = Deaths)) +
+  geom_line(aes(y = round(deaths/reporting_propn)), linetype = "dashed") +
+  facet_wrap(~Countries, scales = "free_y")
+```
+
