@@ -45,6 +45,8 @@ shp1 = rgdal::readOGR("../../shapefiles/Africa_America_1_smooth.shp",
                       stringsAsFactors = FALSE,
                       encoding = "UTF-8",
                       use_iconv = TRUE)
+
+year_out = 2018
 ```
 
 
@@ -89,7 +91,7 @@ vc2d %<>% filter(!is.na(adm0_adm1))
 ```{r load_foi}
 
 
-foi = read.csv( "FOI_samples_step_1_wideprior.csv", stringsAsFactors = FALSE)
+foi = read.csv( "FOI_samples_step_1_wideprior_nocontinent.csv", stringsAsFactors = FALSE)
 
 ve = 0.9533031#median(exp(mcmc_out$vac_eff))
 
@@ -126,14 +128,14 @@ fun_calcBurden = function(fois, year , adm1 = NA, vc2d, pop1) { # Tini's burden 
 
 
 infections_out = sapply(1:nrow(foi), FUN = function(i) fun_calcBurden(foi[i,], 
-                                                                      2018, 
+                                                                      year_out, 
                                                                       adm1 = names(foi), 
                                                                       vc2d, 
                                                                       pop1))
 
 infections_df = as.data.frame(infections_out)
 infections_df %<>% mutate(adm0_adm1 = rownames(infections_out),
-                           year = 2018)
+                           year = year_out)
 infections_df %<>% gather(sample, infections, -c(adm0_adm1, year))
 
 infections_df %<>% mutate(adm0 = substr(adm0_adm1, 1, 3)) %>%
@@ -267,7 +269,7 @@ ggplot(df) +
 
 
 ```{r severe_table}
-reporting_propn = 120000/805 # 149  #Nasidi et al. 1989,
+reporting_propn = 24000/416 # 120000/805 # 149  #Nasidi et al. 1989,
                              
 
 df2 = df %>% 

@@ -54,6 +54,7 @@ run_estimation = function(run_id =1){
   # FIT MODEL #
   covar = covar[grep("cases_or_outbreaks|family", covar, invert = TRUE)]
   
+  
   model_form = paste0("cases_or_outbreaks~", 
                       paste(covar, collapse = "+"),
                       "+aggregate_family" , "+adm05",   "+surv.qual.adm0")
@@ -102,7 +103,7 @@ run_estimation = function(run_id =1){
   
   # create a directory to save the output in 
   
-  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_step_1_wideprior")
+  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_step_1_superwideprior")
   
   dir.create(name_dir)
   

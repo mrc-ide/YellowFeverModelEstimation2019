@@ -13,7 +13,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(
   dev = "png",
-  #fig.path = "images/",
+  fig.path = "images/",
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -48,7 +48,7 @@ if(!exists("mcmc_out")){
 }
 
 
-glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20190930_step_1_wideprior",
+glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20191001_step_1_wideprior_nocontinent",
                           burnin =1e5, thin = 1)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
@@ -61,7 +61,8 @@ names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
 ```{r setup_fit,  message = F, warning=F}
 
 ### LOADING SEROLOGY DATA ###
-Serology = read.csv(paste0("../Data/","Serology/Serology_newgadm_2019.csv"), stringsAsFactors = FALSE)
+Serology = read.csv(paste0("../Data/","Serology/Serology_newgadm_2019.csv"), 
+                    stringsAsFactors = FALSE)
 
 Serology$gadm36 = gsub("_", "." ,Serology$gadm36)
 
@@ -84,7 +85,10 @@ covar_family <- unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"
 dat <- dat[, -which(!names(dat) %in% covar_family & grepl("family", names(dat)))] 
 
 # get model covariates
-covar = names(glm_mcmc_out %>% dplyr::select(-c(Intercept, starts_with("adm05"), posteriorProb, acceptRate))) 
+covar = names(glm_mcmc_out %>% dplyr::select(-c(Intercept, 
+                                                starts_with("adm05"), 
+                                                posteriorProb, 
+                                                acceptRate))) 
 
    #try fitting just to high/moderate
     #dat %<>% filter(risk %in% c("high", "moderate"))
@@ -104,8 +108,8 @@ if(!exists("all_res_pop_3d")){
   all_res_pop_3d = get_pop_data_3d() 
 }
 pop1 = all_res_pop_3d$pop1                                      
-P_tot = all_res_pop_3d$P_tot                                   #total populations for each adm and year
-p_prop = all_res_pop_3d$p_prop                                   #proportions of population
+P_tot = all_res_pop_3d$P_tot                                   
+p_prop = all_res_pop_3d$p_prop                                   
 
 pop1 %<>% rename(adm0_adm1 = adm1)
 
@@ -167,10 +171,11 @@ pop_moments_whole = calc_pop_moments(p_prop_3d,
 
 #aggregate
 if(!exists("list_aggregate_pop_vc")){
-  list_aggregate_pop_vc = YFestimation::Make_aggregate_pop_vc_3d(pop1=pop1, 
-                                                                 vc2d=vc2d %>% select(-adm0), 
-                                                                 sero_studies=seroout$sero_studies, 
-                                                                 adm1s=seroout$adm1s) 
+  list_aggregate_pop_vc = 
+    YFestimation::Make_aggregate_pop_vc_3d(pop1=pop1, 
+                                           vc2d=vc2d %>% select(-adm0), 
+                                           sero_studies=seroout$sero_studies, 
+                                           adm1s=seroout$adm1s) 
 }
 pop_agg3d = list_aggregate_pop_vc$pop_agg3d 
 vc_agg3d = list_aggregate_pop_vc$vc_agg3d 
@@ -207,7 +212,7 @@ P_tot_survey = list_pop_at_survey$P_tot_survey_2d
 
 model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+")  ,  "+adm05") 
 
-model_form
+
 object_glm <- YFestimation::fit_glm(dat = dat, 
                                    depi = match("cases_or_outbreaks", 
                                                 names(dat)), 
@@ -293,7 +298,9 @@ colours = snapalette("Pop", 100, type = "continuous")
 shp0$FOI = NA
 shp0$FOI = tmp$median_foi[match(shp0$GID_0, tmp$adm0)]
 
-mybreaks= seq(min(log10(shp0$FOI), na.rm = TRUE), max(log10(shp0$FOI), na.rm = TRUE)+0.01, length.out=101)
+mybreaks= seq(min(log10(shp0$FOI), na.rm = TRUE), 
+              max(log10(shp0$FOI), na.rm = TRUE)+0.01, 
+              length.out=101)
   
 vcols = findInterval(log10(shp0$FOI),mybreaks)
   
@@ -301,7 +308,9 @@ plot(shp0)
 plot(shp0,col=colours[vcols], lty=2, add=T)
 
 image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), horizontal = TRUE,
-             axis.args = list(at = c(-7:1), labels =c("1e-07","1e-06","1e-05","1e-04", "0.001", "0.01", "0.1","1","10"), las =2),
+             axis.args = list(at = c(-7:1), 
+                              labels =c("1e-07","1e-06","1e-05","1e-04", 
+                                        "0.001", "0.01", "0.1","1","10"), las =2),
              legend.mar = 3.5)
 
 ```
@@ -431,7 +440,7 @@ for(i in 1:n_samples){
 colnames(foi_out) = shp1$GID_1
 
 
-write.csv(foi_out, "FOI_samples_step_1_wideprior.csv", row.names = FALSE)
+write.csv(foi_out, "FOI_samples_step_1_wideprior_nocontinent.csv", row.names = FALSE)
 
 ```
 
@@ -439,7 +448,8 @@ write.csv(foi_out, "FOI_samples_step_1_wideprior.csv", row.names = FALSE)
 ```{r coeff_of_var}
 
 if(exists("foi_out")){
-  coeff_of_var = sapply(1:ncol(foi_out), FUN = function(i) sd(foi_out[,i])/mean(foi_out[,i])) *100
+  coeff_of_var = sapply(1:ncol(foi_out), FUN = function(i) sd(foi_out[,i])/
+                          mean(foi_out[,i])) *100
   names(coeff_of_var) = colnames(foi_out)
   
   colours = snapalette("Space", 100, type = "continuous")
@@ -454,7 +464,8 @@ if(exists("foi_out")){
   plot(shp0)
   plot(shp1,col=colours[vcols], lty=2, add=T)
   
-  image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), horizontal = TRUE,
+  image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), 
+             horizontal = TRUE,
              legend.mar = 3.5)
 }
 ```

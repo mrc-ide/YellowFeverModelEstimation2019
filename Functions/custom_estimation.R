@@ -99,7 +99,7 @@ GLMprior = function(param) {
   ign = grep("low_risk", names(param))
   jj = jj[jj!=ign]
   
-  sd.prior = 10
+  sd.prior = 100
   
   Prior[1] =  - 0.5 * sum((param[jj] / sd.prior) ^ 2) # adjustment for reduced variation between countries?
   
