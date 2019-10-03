@@ -13,7 +13,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = "images/",
+  #fig.path = "images/",
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -48,7 +48,7 @@ if(!exists("mcmc_out")){
 }
 
 
-glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20191001_step_1_wideprior_nocontinent",
+glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20191003_step_1_continentprior_wideprior",
                           burnin =1e5, thin = 1)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
@@ -397,7 +397,7 @@ ggplot(foi %>%
 
 
 ```{r getting_samples, eval=F}
-n_samples = 100
+n_samples = 10
 foi_out = NULL
 
 for(i in 1:n_samples){
@@ -440,7 +440,7 @@ for(i in 1:n_samples){
 colnames(foi_out) = shp1$GID_1
 
 
-write.csv(foi_out, "FOI_samples_step_1_wideprior_nocontinent.csv", row.names = FALSE)
+write.csv(foi_out, "FOI_samples_step_1_continentprior.csv", row.names = FALSE)
 
 ```
 

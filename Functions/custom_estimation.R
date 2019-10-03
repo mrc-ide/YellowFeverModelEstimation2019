@@ -92,18 +92,18 @@ GLM_MCMC = function(Niter, name_dir, pars_ini, x, y, plot_chain, run_id = 1){
 
 GLMprior = function(param) {
   
-  Prior = rep(0,4)
+  Prior = rep(0,5)
   
   #GLM
   jj = grep("^log.adm05", names(param)) # select country parameters (parameter_type=2) the sd.prior=2 is from Kevin's original code create status
   ign = grep("low_risk", names(param))
   jj = jj[jj!=ign]
   
-  sd.prior = 100
+  sd.prior = 2
   
   Prior[1] =  - 0.5 * sum((param[jj] / sd.prior) ^ 2) # adjustment for reduced variation between countries?
   
-  Prior[2] =  sum(dnorm(param[grep("^log.adm05|family", names(param), invert = TRUE)],
+  Prior[2] =  sum(dnorm(param[grep("^log.adm05|family|continent", names(param), invert = TRUE)],
                         mean = 0,
                         sd = 30,
                         log = TRUE))
@@ -119,6 +119,11 @@ GLMprior = function(param) {
                             mean = 0,
                             sd = 30,
                             a = 0, b = Inf)))# brute force the adm05 low risk to be positive
+  
+  Prior[5] =  sum(dnorm(param[grep("continent", names(param))],
+                        mean = 0,
+                        sd = 2,
+                        log = TRUE))
   
   
   # this term is for normally distributed non-country parameters : normal distrib with high sd (flat distrib)

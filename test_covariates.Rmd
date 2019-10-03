@@ -50,8 +50,19 @@ dat %<>% filter(!is.na(temp_mean))
 dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
                                    "Africa", continent)) # check these are assigned properly
 
+
+#--------------------------------------
+# run for only South America
+#dat %<>% filter(continent == "Africa") 
+
+#--------------------------------------
+
 # make extra elements and normalise
 dat <- adjust_env_dat(dat)
+
+dat[dat==Inf] = NA
+dat = dat[, !apply(dat, 2, anyNA)]
+
 
 ```
 
@@ -116,6 +127,22 @@ as.data.frame(parm_out)
 
 ```
 
+```{r add_aggregate}
+
+dat_subs2 = dat_subs[, c("cases_or_outbreaks" ,parm_out)]
+
+dat_subs2 %<>% mutate(aggregate_family = rowSums(dat_subs2[, grep("family", names(dat_subs2))]))
+
+dat_subs2 %<>% dplyr::select(-starts_with("family"))
+
+parm = names(dat_subs2)[-1]
+
+model_form <- paste0("cases_or_outbreaks~", paste(parm, collapse = "+") )
+  
+mod <- glm( model_form, data = dat, family=binomial(link="cloglog"))
+
+summary(mod)
+```
 
 # Land cover types
 

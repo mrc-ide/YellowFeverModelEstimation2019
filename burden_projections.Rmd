@@ -91,7 +91,7 @@ vc2d %<>% filter(!is.na(adm0_adm1))
 ```{r load_foi}
 
 
-foi = read.csv( "FOI_samples_step_1_wideprior_nocontinent.csv", stringsAsFactors = FALSE)
+foi = read.csv( "FOI_samples_step_1_continentprior.csv", stringsAsFactors = FALSE)
 
 ve = 0.9533031#median(exp(mcmc_out$vac_eff))
 

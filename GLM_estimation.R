@@ -103,7 +103,7 @@ run_estimation = function(run_id =1){
   
   # create a directory to save the output in 
   
-  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_step_1_superwideprior")
+  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_step_1_continentprior_wideprior")
   
   dir.create(name_dir)
   
