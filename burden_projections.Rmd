@@ -91,13 +91,18 @@ vc2d %<>% filter(!is.na(adm0_adm1))
 ```{r load_foi}
 
 
-foi = read.csv( "FOI_samples_step_1_continentprior.csv", stringsAsFactors = FALSE)
+foi = read.csv( "FOI_samples_step_1.csv", stringsAsFactors = FALSE)
 
 ve = 0.9533031#median(exp(mcmc_out$vac_eff))
 
 # sort pop and vc to included adm1
 pop1 %<>% filter(adm0_adm1 %in% names(foi))
 vc2d %<>% filter(adm0_adm1 %in% names(foi))
+
+#arrange
+pop1 %<>% arrange(adm0_adm1)
+vc2d %<>% arrange(adm0_adm1)
+foi = foi[unique(vc2d$adm0_adm1)]
 ```
 
 
@@ -160,7 +165,7 @@ infections_df %<>% mutate(severe_inci = severe_infections/pop,
                           deaths_inci = deaths/pop)
 ```
 
-```{r boxplot_simple, fig.width=10, fig.height=8}
+```{r boxplot_simple, fig.width=10, fig.height=8, eval = FALSE}
 
 ggplot(infections_df) + 
   geom_boxplot( aes(x = adm0, y = infections)) + 
@@ -261,9 +266,9 @@ df = infections_df %>%
   group_by(adm0, sample) %>% 
   summarise(severe_infections = sum(severe_infections, na.rm = TRUE))
 
-ggplot(df) + 
-  geom_boxplot( aes(x = adm0, y = severe_infections))  + 
-  theme(axis.text.x = element_text(angle = 90))
+# ggplot(df) + 
+#   geom_boxplot( aes(x = adm0, y = severe_infections))  + 
+#   theme(axis.text.x = element_text(angle = 90))
 
 ```
 

@@ -122,7 +122,7 @@ GLMprior = function(param) {
   
   Prior[5] =  sum(dnorm(param[grep("continent", names(param))],
                         mean = 0,
-                        sd = 2,
+                        sd = 30,
                         log = TRUE))
   
   

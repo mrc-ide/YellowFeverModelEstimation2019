@@ -34,9 +34,6 @@ run_estimation = function(run_id =1){
   
   dat = dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] # remove family which are not covariates
   
-  #try fitting just to high/moderate
-  #dat %<>% filter(risk %in% c("high", "moderate"))
-  
   dat %<>% dplyr::select(-year)
   dat %<>% filter( is.finite(MIR.max))
   dat %<>% filter(!is.na(temp_mean))
@@ -57,7 +54,7 @@ run_estimation = function(run_id =1){
   
   model_form = paste0("cases_or_outbreaks~", 
                       paste(covar, collapse = "+"),
-                      "+aggregate_family" , "+adm05",   "+surv.qual.adm0")
+                      "+adm05",   "+surv.qual.adm0") #"+aggregate_family" ,
   
   
   
@@ -103,7 +100,7 @@ run_estimation = function(run_id =1){
   
   # create a directory to save the output in 
   
-  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_step_1_continentprior_wideprior")
+  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_step_1_noagg")
   
   dir.create(name_dir)
   

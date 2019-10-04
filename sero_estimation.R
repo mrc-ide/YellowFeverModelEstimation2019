@@ -62,15 +62,15 @@ run_estimation = function(run_id=1){
   #########################################################################################################
   
   if(!file.exists("vacc_1940_1950.RDS")){
-    vac_in = readRDS("../Data/Vaccination/Outputs/vac_coverage_1940_2050_2019-09-02.RDS")
+    vac_in = readRDS("../Data/Vaccination/Outputs/vac_coverage_1940_2050_all.RDS" )
     
-    vc2d <-  vac_in %>% select(-c(doses, population)) %>% spread(age, coverage)
+    vc2d <-  vac_in %>% spread(age, vac)
     
     names(vc2d)[3:ncol(vc2d)] = paste0("a", 0:100)
     
-    vc2d %<>% tibble::add_column(adm0 = substr(vc2d$new_id, 1,3), .after = "year")                         #rename countries as adm0
-    
-    vc2d %<>% rename(adm0_adm1 = new_id)                        #renames adm1 as adm0_adm1
+    vc2d %<>% tibble::add_column(adm0 = substr(vc2d$adm1, 1,3), .after = "year")                       
+
+    vc2d %<>% rename(adm0_adm1 = adm1)                        #renames adm1 as adm0_adm1
     
     # formally "repair_vc_data" from FOI model in Kevin's folder
     for (colIndex in 4:ncol(vc2d)){                                      #before 1995, we have NA values for those aged >75
