@@ -90,13 +90,13 @@ vc2d %<>% filter(!is.na(adm0_adm1))
 ```{r load_foi}
 
 
-fois = read.csv( "FOI_samples_step_1.csv", stringsAsFactors = FALSE)
+fois = read.csv( "FOI_samples_step_1_continentprior_lowriskpriorchange.csv", stringsAsFactors = FALSE)
 
 ve = 0.9533031#median(exp(mcmc_out$vac_eff))
 
 # sort pop and vc to included adm1
-pop1 %<>% filter(adm0_adm1 %in% names(foi))
-vc2d %<>% filter(adm0_adm1 %in% names(foi))
+pop1 %<>% filter(adm0_adm1 %in% names(fois))
+vc2d %<>% filter(adm0_adm1 %in% names(fois))
 
 #arrange
 pop1 %<>% arrange(adm0_adm1)
@@ -206,19 +206,22 @@ combined = left_join(paho_dat, inf_df, by = c("adm0" = "adm0", "Year" = "year"))
 
 ```
 
-```{r compare_cases, fig.height=5, fig.width=10}
+```{r compare_cases, fig.height=10, fig.width=8}
 
-ggplot(combined, aes(colour = Countries, x = Year)) + 
+ggplot(combined, aes( x = Year)) + 
   geom_line(aes(y = Cases)) +
   geom_line(aes(y = round(severe_infections/reporting_propn)), linetype = "dashed") +
-  facet_wrap(~Countries, scales = "free_y")
+  facet_wrap(~Countries) + 
+  theme_bw() +
+  ylim(0,500)
 ```
 
-```{r compare_deaths, fig.height=5, fig.width=10}
+```{r compare_deaths, fig.height=10, fig.width=8}
 
-ggplot(combined, aes(colour = Countries, x = Year)) + 
+ggplot(combined, aes( x = Year)) + 
   geom_line(aes(y = Deaths)) +
   geom_line(aes(y = round(deaths/reporting_propn)), linetype = "dashed") +
-  facet_wrap(~Countries, scales = "free_y")
+  facet_wrap(~Countries)+ 
+  theme_bw()
 ```
 

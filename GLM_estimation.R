@@ -54,7 +54,7 @@ run_estimation = function(run_id =1){
   
   model_form = paste0("cases_or_outbreaks~", 
                       paste(covar, collapse = "+"),
-                      "+adm05",   "+surv.qual.adm0") #"+aggregate_family" ,
+                      "+aggregate_family", "+adm05", "+surv.qual.adm0") #
   
   
   
@@ -100,7 +100,7 @@ run_estimation = function(run_id =1){
   
   # create a directory to save the output in 
   
-  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_step_1_noagg")
+  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_step_1_continentprior_lowriskpriorchange")
   
   dir.create(name_dir)
   

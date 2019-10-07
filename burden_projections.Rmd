@@ -91,7 +91,7 @@ vc2d %<>% filter(!is.na(adm0_adm1))
 ```{r load_foi}
 
 
-foi = read.csv( "FOI_samples_step_1.csv", stringsAsFactors = FALSE)
+foi = read.csv( "FOI_samples_step_1_continentprior_lowriskpriorchange.csv", stringsAsFactors = FALSE)
 
 ve = 0.9533031#median(exp(mcmc_out$vac_eff))
 
@@ -290,7 +290,7 @@ df2
 ```
 
 
-```{r reported_map, fig.cap="Map of countries where we may expect to see at least 1 case reported in 2018."}
+```{r reported_map, fig.cap="Map of countries where we may expect to see at least 1 case reported in 2018.", eval = FALSE}
 
 shp0$reported = df2$reported_mean_severe[match( shp0$GID_0, df2$adm0)]
 
@@ -355,5 +355,30 @@ tmp %<>% group_by(adm0) %>%
 tmp
 
 sum(tmp$deaths)
+
+```
+
+
+# Uncertainty
+
+```{r deaths_uncert}
+
+df = infections_df %>% 
+  group_by(adm0, sample) %>% 
+  summarise(deaths = sum(deaths, na.rm = TRUE))
+
+tmp = data.frame(countries = unique(shp0$NAME_0), adm0 = unique(shp0$GID_0))
+tmp$continent <- countrycode::countrycode(sourcevar = tmp$countries,
+                            origin = "country.name",
+                            destination = "continent")
+
+tmp2 = left_join(df, tmp)
+
+tmp3 = tmp2 %>% group_by(continent, sample) %>% summarise(deaths = sum(deaths))
+
+tmp3 %>% group_by(continent) %>% 
+  summarise(deaths_low = quantile(as.numeric(deaths), probs = 0.025, na.rm = T),
+            deaths_median = quantile(as.numeric(deaths), probs = 0.5, na.rm = T),
+            deaths_high = quantile(as.numeric(deaths), probs = 0.975, na.rm = T)) 
 
 ```
