@@ -103,8 +103,7 @@ pop1 %<>% arrange(adm0_adm1)
 vc2d %<>% arrange(adm0_adm1)
 fois = fois[unique(vc2d$adm0_adm1)]
 
-# take average
-foi = apply(fois, 2, median)
+
 ```
 
 ```{r load_paho}
@@ -119,59 +118,71 @@ paho_dat %<>% filter(Year>1983)
 
 
 ```{r calculate burden}
-
-# ---------------------------------------------------------------------------
-fun_calcBurden = function(fois, year , adm1 = NA, vc2d, pop1) { # Tini's burden function
+inf_out = NULL
+for(q in c(0.025, 0.5, 0.975)){
+  # take quantile
+  foi = apply(fois, 2, FUN = function(k)quantile(k, probs = q, na.rm = TRUE))
   
-  if(anyNA(adm1)){
-    adm1 = names(fois)
+  
+  # ---------------------------------------------------------------------------
+  fun_calcBurden = function(fois, year , adm1 = NA, vc2d, pop1) { # Tini's burden function
+    
+    if(anyNA(adm1)){
+      adm1 = names(fois)
+    }
+    
+    foi.mat = matrix(fois, nrow=length(fois), ncol=101, byrow=FALSE)
+    
+    class(foi.mat) = "numeric"
+    
+    a.mat = matrix(0:100, nrow=length(fois), ncol=101, byrow=TRUE)
+    
+    burden = fois * rowSums(exp(-foi.mat*a.mat) * 
+                              (1-ve*vc2d[vc2d$year==year & 
+                                           vc2d$adm0_adm1 %in% adm1,-(1:3)]) *
+                              pop1[pop1$year==year & 
+                                     pop1$adm0_adm1 %in% adm1, -(1:2)], na.rm=TRUE)
+    return(burden)
   }
   
-  foi.mat = matrix(fois, nrow=length(fois), ncol=101, byrow=FALSE)
+  # ---------------------------------------------------------------------------
   
-  class(foi.mat) = "numeric"
   
-  a.mat = matrix(0:100, nrow=length(fois), ncol=101, byrow=TRUE)
+  infections_df <- bind_rows(lapply(unique(paho_dat$Year), FUN = function(y) {
+    
+    infections_out = fun_calcBurden(foi, y, adm1 = names(foi), vc2d, pop1) 
+    
+    inf_df = data.frame(infections = as.numeric(infections_out),
+                        adm0_adm1 = names(infections_out),
+                        year = y,
+                        adm0 = substr(names(infections_out), 1, 3))
+    
+    inf_df %<>% mutate(prob_severe = rbeta(nrow(inf_df),
+                                           6.367309,44.60736),
+                       prob_severe_death = rbeta(nrow(inf_df),
+                                                 16.43466, 18.49048))
+    
+    inf_df %<>% mutate(severe_infections = prob_severe*infections,
+                       deaths = prob_severe_death*severe_infections)
+    
+  }))
   
-  burden = fois * rowSums(exp(-foi.mat*a.mat) * 
-                            (1-ve*vc2d[vc2d$year==year & 
-                                      vc2d$adm0_adm1 %in% adm1,-(1:3)]) *
-                            pop1[pop1$year==year & 
-                                   pop1$adm0_adm1 %in% adm1, -(1:2)], na.rm=TRUE)
-  return(burden)
+  
+  pop_df = data.frame(adm0_adm1 = pop1$adm0_adm1,
+                      year = pop1$year,
+                      pop = rowSums(pop1[, -c(1:2)], na.rm = TRUE))
+  
+  infections_df %<>% left_join(pop_df)
+  
+  infections_df %<>% mutate(severe_inci = severe_infections/pop,
+                            deaths_inci = deaths/pop)
+  
+  infections_df %<>% mutate(quantile = q)
+  
+  inf_out %<>% bind_rows(infections_df)
 }
+infections_df = inf_out
 
-# ---------------------------------------------------------------------------
-
-
-infections_df <- bind_rows(lapply(unique(paho_dat$Year), FUN = function(y) {
-  
-  infections_out = fun_calcBurden(foi, y, adm1 = names(foi), vc2d, pop1) 
-  
-  inf_df = data.frame(infections = as.numeric(infections_out),
-                      adm0_adm1 = names(infections_out),
-                      year = y,
-                      adm0 = substr(names(infections_out), 1, 3))
-  
-  inf_df %<>% mutate(prob_severe = rbeta(nrow(inf_df),
-                                         6.367309,44.60736),
-                     prob_severe_death = rbeta(nrow(inf_df),
-                                               16.43466, 18.49048))
-  
-  inf_df %<>% mutate(severe_infections = prob_severe*infections,
-                     deaths = prob_severe_death*severe_infections)
-  
-}))
-
-
-pop_df = data.frame(adm0_adm1 = pop1$adm0_adm1,
-                    year = pop1$year,
-                    pop = rowSums(pop1[, -c(1:2)], na.rm = TRUE))
-
-infections_df %<>% left_join(pop_df)
-
-infections_df %<>% mutate(severe_inci = severe_infections/pop,
-                          deaths_inci = deaths/pop)
 ```
 
 ```{r lnk_data_and_model}
@@ -194,7 +205,7 @@ infections_df %<>% filter(adm0 %in% paho_dat$adm0)
 ```{r combine}
 
 inf_df = infections_df %>% 
-  group_by(adm0, year ) %>% 
+  group_by(adm0, year, quantile ) %>% 
   summarise(infections = sum(infections, na.rm = T),
             severe_infections = sum(severe_infections, na.rm = T),
             deaths = sum(deaths, na.rm = T),
@@ -203,6 +214,7 @@ inf_df = infections_df %>%
 combined = left_join(paho_dat, inf_df, by = c("adm0" = "adm0", "Year" = "year"))
 
 
+combined %<>% mutate(quantile = as.character(quantile))
 
 ```
 
@@ -210,7 +222,7 @@ combined = left_join(paho_dat, inf_df, by = c("adm0" = "adm0", "Year" = "year"))
 
 ggplot(combined, aes( x = Year)) + 
   geom_line(aes(y = Cases)) +
-  geom_line(aes(y = round(severe_infections/reporting_propn)), linetype = "dashed") +
+  geom_line(aes(y = round(severe_infections/reporting_propn), colour = quantile)) +
   facet_wrap(~Countries) + 
   theme_bw() +
   ylim(0,500)
@@ -220,7 +232,7 @@ ggplot(combined, aes( x = Year)) +
 
 ggplot(combined, aes( x = Year)) + 
   geom_line(aes(y = Deaths)) +
-  geom_line(aes(y = round(deaths/reporting_propn)), linetype = "dashed") +
+  geom_line(aes(y = round(deaths/reporting_propn), colour = quantile)) +
   facet_wrap(~Countries)+ 
   theme_bw()
 ```
