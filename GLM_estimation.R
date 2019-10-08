@@ -70,9 +70,6 @@ run_estimation = function(run_id =1){
   # INITIAL PARAMETERS #
   
   pars_ini = beta0
-  pars_ini[grep("family", names(pars_ini))] = abs(pars_ini[grep("family", names(pars_ini))])
-  
-  pars_ini[grep("low_risk", names(pars_ini))] = 1
   names(pars_ini) = paste0("log.", names(beta0))
   
   # parm_in = read.csv("glm_param.csv", stringsAsFactors = TRUE)
@@ -81,6 +78,7 @@ run_estimation = function(run_id =1){
   # names(pars_ini) = paste0("log.", names(parm_in))
   
   pars_ini = pars_ini*0
+  pars_ini[grep("low_risk", names(pars_ini))] = 1
   
   pars_ini[is.na(pars_ini)] = 0
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -100,7 +98,7 @@ run_estimation = function(run_id =1){
   
   # create a directory to save the output in 
   
-  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_step_1_continentprior_lowriskpriorchange")
+  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_step_1_continentprior_nolowriskprior")
   
   dir.create(name_dir)
   

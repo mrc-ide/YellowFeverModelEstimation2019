@@ -13,7 +13,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(
   dev = "png",
-  #fig.path = "images/",
+  fig.path = "images/",
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -90,7 +90,7 @@ vc2d %<>% filter(!is.na(adm0_adm1))
 ```{r load_foi}
 
 
-fois = read.csv( "FOI_samples_step_1_continentprior_lowriskpriorchange.csv", stringsAsFactors = FALSE)
+fois = read.csv( "FOI_samples_step_1_continentprior.csv", stringsAsFactors = FALSE)
 
 ve = 0.9533031#median(exp(mcmc_out$vac_eff))
 
@@ -220,20 +220,35 @@ combined %<>% mutate(quantile = as.character(quantile))
 
 ```{r compare_cases, fig.height=10, fig.width=8}
 
-ggplot(combined, aes( x = Year)) + 
+tmp <- spread(combined %>% mutate(quantile = paste0("q", quantile)), quantile, severe_infections)
+
+tmp %<>% group_by(Countries, Year, Cases) %>% summarise(q0.025 = mean(q0.025, na.rm=T),
+                                                         q0.5 = mean(q0.5, na.rm=T),
+                                                         q0.975 = mean(q0.975, na.rm=T))
+
+ggplot(tmp, aes( x = Year)) + 
   geom_line(aes(y = Cases)) +
-  geom_line(aes(y = round(severe_infections/reporting_propn), colour = quantile)) +
-  facet_wrap(~Countries) + 
-  theme_bw() +
-  ylim(0,500)
+  geom_ribbon(aes(ymin = round(q0.025/reporting_propn), 
+                  ymax = round(q0.975/reporting_propn)), 
+              fill = alpha(snapalette("Pop", 5, "discrete")[5], 0.5)) +
+  facet_wrap(~Countries, scales = "free_y")+ 
+  theme_bw()
 ```
 
 ```{r compare_deaths, fig.height=10, fig.width=8}
 
-ggplot(combined, aes( x = Year)) + 
+tmp <- spread(combined %>% mutate(quantile = paste0("q", quantile)), quantile, deaths)
+
+tmp %<>% group_by(Countries, Year, Deaths) %>% summarise(q0.025 = mean(q0.025, na.rm=T),
+                                                         q0.5 = mean(q0.5, na.rm=T),
+                                                         q0.975 = mean(q0.975, na.rm=T))
+
+ggplot(tmp, aes( x = Year)) + 
   geom_line(aes(y = Deaths)) +
-  geom_line(aes(y = round(deaths/reporting_propn), colour = quantile)) +
-  facet_wrap(~Countries)+ 
+  geom_ribbon(aes(ymin = round(q0.025/reporting_propn), 
+                  ymax = round(q0.975/reporting_propn)), 
+              fill = alpha(snapalette("Pop", 5, "discrete")[5], 0.5)) +
+  facet_wrap(~Countries, scales = "free_y")+ 
   theme_bw()
 ```
 

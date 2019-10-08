@@ -13,7 +13,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(
   dev = "png",
-  #fig.path = "images/",
+  fig.path = "images/",
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -91,7 +91,7 @@ vc2d %<>% filter(!is.na(adm0_adm1))
 ```{r load_foi}
 
 
-foi = read.csv( "FOI_samples_step_1_continentprior_lowriskpriorchange.csv", stringsAsFactors = FALSE)
+foi = read.csv( "FOI_samples_step_1_continentprior.csv", stringsAsFactors = FALSE)
 
 ve = 0.9533031#median(exp(mcmc_out$vac_eff))
 
@@ -103,6 +103,10 @@ vc2d %<>% filter(adm0_adm1 %in% names(foi))
 pop1 %<>% arrange(adm0_adm1)
 vc2d %<>% arrange(adm0_adm1)
 foi = foi[unique(vc2d$adm0_adm1)]
+
+
+# no vacc
+#vc2d[, 4:ncol(vc2d)] = 0*vc2d[, 4:ncol(vc2d)]
 ```
 
 
@@ -227,6 +231,31 @@ image.plot(legend.only=TRUE,
 
 ```
 
+```{r deaths_precap_map, fig.cap="Mean death per capita in 2018- log 10 scale.", fig.width=10, fig.height=8}
+tmp  = infections_df %>% 
+  group_by(adm0_adm1) %>% 
+  summarise(mean_deaths = mean(deaths, na.rm = TRUE)/mean(pop, na.rm = TRUE))
+
+shp1$deaths = NA
+shp1$deaths = tmp$mean_deaths[match(shp1$GID_1, tmp$adm0_adm1)]
+
+mybreaks= seq(min(log10(shp1$deaths), na.rm = TRUE), 
+              max(log10(shp1$deaths), na.rm = TRUE)+0.01, 
+              length.out=1001)
+
+vcols = findInterval(log10(shp1$deaths),mybreaks)
+
+plot(shp0)
+plot(shp1, col=colours[vcols], lty=2, add=T)
+plot(shp0, add = TRUE, lwd = 2)
+image.plot(legend.only=TRUE, 
+           breaks=mybreaks, 
+           col=colours, 
+           zlim=c(0,1), 
+           horizontal = TRUE,
+           legend.mar = 3.5)
+
+```
 
 ```{r map_deaths_country, fig.width=10, fig.height=8, fig.cap = "Mean deaths per country in 2018- log 10 scale."}
 tmp = infections_df %>% 
@@ -266,9 +295,10 @@ df = infections_df %>%
   group_by(adm0, sample) %>% 
   summarise(severe_infections = sum(severe_infections, na.rm = TRUE))
 
-# ggplot(df) + 
-#   geom_boxplot( aes(x = adm0, y = severe_infections))  + 
-#   theme(axis.text.x = element_text(angle = 90))
+ggplot(df) +
+  geom_boxplot( aes(x = adm0, y = severe_infections, fill = adm0))  +
+  theme(axis.text.x = element_text(angle = 90), legend.position = "none") +
+  scale_y_log10()
 
 ```
 

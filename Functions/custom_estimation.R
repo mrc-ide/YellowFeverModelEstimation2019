@@ -118,7 +118,7 @@ GLMprior = function(param) {
                             "norm",
                             mean = 0,
                             sd = 30,
-                            a = 1, b = Inf)))# brute force the adm05 low risk to be positive
+                            a = -Inf, b = Inf)))# brute force the adm05 low risk to be positive
   
   Prior[5] =  sum(dnorm(param[grep("continent", names(param))],
                         mean = 0,

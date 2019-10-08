@@ -1,5 +1,5 @@
 ---
-title: "Comapre with old estimates"
+title: "Compare with old estimates"
 author: "Katy Gaythorpe"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 header-includes: 
@@ -13,7 +13,7 @@ output:
 
 knitr::opts_chunk$set(
   dev = "png",
-  #fig.path = "images/",
+  fig.path = "images/",
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -62,7 +62,7 @@ old_foi %<>% mutate(Country = gsub("FOI_", "", Country))
 
 ```{r read_new_foi}
 
-foi <- read.csv( "FOI_samples_step_1_continentprior_lowriskpriorchange.csv", stringsAsFactors = FALSE)
+foi <- read.csv( "FOI_samples_step_1_continentprior.csv", stringsAsFactors = FALSE)
 
 foi %<>% mutate(sample = rownames(foi))
 
@@ -97,12 +97,13 @@ ggplot(foi_comb) +
   geom_boxplot(aes(x = old_new, y = foi, fill = old_new)) +
   theme_bw() +
   scale_fill_manual(values = snapalette("Pop", 5, type = "discrete")[c(1,5)])+
-  scale_fill_viridis_d()
+  scale_fill_viridis_d() +
+  facet_wrap(~Country)
 
 ```
 
 
-```{r boxplot, fig.height=12, fig.width=12}
+```{r density, fig.height=12, fig.width=12}
 
 ggplot(foi_comb) + 
   geom_density(aes(x = foi, y = ..density.., fill = old_new)) +

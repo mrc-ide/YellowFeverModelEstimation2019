@@ -13,7 +13,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(
   dev = "png",
-  #fig.path = "images/",
+  fig.path = "images/",
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -47,7 +47,7 @@ if(!exists("mcmc_out")){
                         burnin = 8e5, thin = 100)
 }
 
-glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20191007_step_1_continentprior_lowriskpriorchange",
+glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20191007_step_1_continentprior",
                           burnin =7e4, thin = 1)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
@@ -439,7 +439,7 @@ for(i in 1:n_samples){
 colnames(foi_out) = shp1$GID_1
 
 
-write.csv(foi_out, "FOI_samples_step_1_continentprior_lowriskpriorchange.csv", row.names = FALSE)
+write.csv(foi_out, "FOI_samples_step_1_continentprior.csv", row.names = FALSE)
 
 ```
 
@@ -447,7 +447,7 @@ write.csv(foi_out, "FOI_samples_step_1_continentprior_lowriskpriorchange.csv", r
 ```{r coeff_of_var}
 
 if(!exists("foi_out")){
-  foi_out = read.csv( "FOI_samples_step_1_continentprior_lowriskpriorchange.csv", stringsAsFactors = FALSE)
+  foi_out = read.csv( "FOI_samples_step_1_continentprior.csv", stringsAsFactors = FALSE)
 } 
 
 coeff_of_var = sapply(1:ncol(foi_out), FUN = function(i) sd(foi_out[,i])/
