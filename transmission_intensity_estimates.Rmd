@@ -47,8 +47,8 @@ if(!exists("mcmc_out")){
                         burnin = 8e5, thin = 100)
 }
 
-glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20191007_step_1_continentprior",
-                          burnin =7e4, thin = 1)
+glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20191009_step_2",
+                          burnin =6e4, thin = 1)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
 
@@ -78,7 +78,7 @@ filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
 dat <- read.csv(filename, stringsAsFactors = FALSE)
 
 #remove families of NHP that are not to be included
-model_form_whole <- read.csv("Model_form_step_1.csv", stringsAsFactors = FALSE)$x
+model_form_whole <- read.csv("Model_form_step_2.csv", stringsAsFactors = FALSE)$x
 covar_family <- unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
 
 dat <- dat[, -which(!names(dat) %in% covar_family & grepl("family", names(dat)))] 
@@ -172,7 +172,7 @@ pop_moments_whole = calc_pop_moments(p_prop_3d,
 if(!exists("list_aggregate_pop_vc")){
   list_aggregate_pop_vc = 
     YFestimation::Make_aggregate_pop_vc_3d(pop1=pop1, 
-                                           vc2d=vc2d %>% select(-adm0), 
+                                           vc2d=vc2d %>% dplyr::select(-adm0), 
                                            sero_studies=seroout$sero_studies, 
                                            adm1s=seroout$adm1s) 
 }
@@ -439,7 +439,7 @@ for(i in 1:n_samples){
 colnames(foi_out) = shp1$GID_1
 
 
-write.csv(foi_out, "FOI_samples_step_1_continentprior.csv", row.names = FALSE)
+write.csv(foi_out, "FOI_samples_step_2.csv", row.names = FALSE)
 
 ```
 
@@ -447,7 +447,7 @@ write.csv(foi_out, "FOI_samples_step_1_continentprior.csv", row.names = FALSE)
 ```{r coeff_of_var}
 
 if(!exists("foi_out")){
-  foi_out = read.csv( "FOI_samples_step_1_continentprior.csv", stringsAsFactors = FALSE)
+  foi_out = read.csv( "FOI_samples_step_2.csv", stringsAsFactors = FALSE)
 } 
 
 coeff_of_var = sapply(1:ncol(foi_out), FUN = function(i) sd(foi_out[,i])/

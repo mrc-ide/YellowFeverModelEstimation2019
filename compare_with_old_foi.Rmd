@@ -62,7 +62,7 @@ old_foi %<>% mutate(Country = gsub("FOI_", "", Country))
 
 ```{r read_new_foi}
 
-foi <- read.csv( "FOI_samples_step_1_continentprior.csv", stringsAsFactors = FALSE)
+foi <- read.csv( "FOI_samples_step_2.csv", stringsAsFactors = FALSE)
 
 foi %<>% mutate(sample = rownames(foi))
 

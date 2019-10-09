@@ -43,8 +43,8 @@ library(KsetupR)
 R.utils::sourceDirectory("Functions")
 
 
-glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20191007_step_1_continentprior",
-                          burnin =7e4, thin = 1)
+glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20191009_step_2",
+                          burnin =6e4, thin = 1)
 
 
 names(glm_mcmc_out) <- gsub("^log.", "", names(glm_mcmc_out))
@@ -107,7 +107,7 @@ ggs_caterpillar(glm_mcmc_out2)
 ggs_crosscorrelation(glm_mcmc_out2)
 ```
 
-```{r continent_correlation}
+```{r continent_correlation, eval = F}
 
 ggplot(glm_mcmc_out, aes(x = adm05COL, y = continent_factor)) + 
   geom_point() + 
@@ -169,7 +169,7 @@ filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
 dat <- read.csv(filename, stringsAsFactors = FALSE)
 
 #remove families of NHP that are not to be included
-model_form_whole <- read.csv("Model_form_step_1.csv", stringsAsFactors = FALSE)$x
+model_form_whole <- read.csv("Model_form_step_2.csv", stringsAsFactors = FALSE)$x
 covar_family <- unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
 
 dat <- dat[, -which(!names(dat) %in% covar_family & grepl("family", names(dat)))] 
