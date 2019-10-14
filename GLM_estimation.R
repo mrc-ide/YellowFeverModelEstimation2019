@@ -37,15 +37,19 @@ run_estimation = function(run_id =1){
   dat %<>% dplyr::select(-year)
   dat %<>% filter( is.finite(MIR.max))
   dat %<>% filter(!is.na(temp_mean))
-  #dat %<>% tidyr::drop_na()
+
   dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
                                      "Africa", continent))
+  
   
   # make extra elements and normalise
   dat = adjust_env_dat(dat)
   
-  
-  
+  # fit to just one continent
+  # dat %<>% filter(continent == "Africa")
+# limit it to c34
+  # c34 = readr::read_csv("../Data/Countries.csv")$c34
+  # dat %<>% filter(adm0 %in% c34)
   
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
   # FIT MODEL #
@@ -54,9 +58,9 @@ run_estimation = function(run_id =1){
   
   model_form = paste0("cases_or_outbreaks~", 
                       paste(covar, collapse = "+"),
-                      "+aggregate_family", "+adm05", "+surv.qual.adm0") #
-  
-  
+                      "+adm05", "+surv.qual.adm0", "+aggregate_family")
+                      #"+aggregate_family", "+dtp3_coverage")
+                      
   
   object_glm = YFestimation::fit_glm(dat = dat, 
                        depi = match("cases_or_outbreaks", names(dat)), 
@@ -80,6 +84,8 @@ run_estimation = function(run_id =1){
   pars_ini = pars_ini*0
   pars_ini[grep("low_risk", names(pars_ini))] = 1
   
+  pars_ini[grep("family", names(pars_ini))] = 1
+  
   pars_ini[is.na(pars_ini)] = 0
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
   # SET SEED #
@@ -98,7 +104,7 @@ run_estimation = function(run_id =1){
   
   # create a directory to save the output in 
   
-  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_step_2")
+  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_step_2_pushBRACOL")
   
   dir.create(name_dir)
   

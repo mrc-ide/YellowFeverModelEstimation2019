@@ -45,10 +45,12 @@ sourceDirectory("Functions", modifiedOnly = FALSE)
 if(!exists("mcmc_out")){
   mcmc_out = get_chains("multi_model_MCMC_chain_20190903", 
                         burnin = 8e5, thin = 100)
+  
+  write.csv(sample(exp(mcmc_out$vac_eff), 100), "vac_eff_samples.csv", row.names = FALSE)
 }
 
-glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20191009_step_2",
-                          burnin =6e4, thin = 1)
+glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20191014_step_2_dtp3_posprior",
+                          burnin =1e4, thin = 1)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
 
@@ -89,8 +91,7 @@ covar = names(glm_mcmc_out %>% dplyr::select(-c(Intercept,
                                                 posteriorProb, 
                                                 acceptRate))) 
 
-   #try fitting just to high/moderate
-    #dat %<>% filter(risk %in% c("high", "moderate"))
+
 
 # make extra elements and normalise
 dat %<>% dplyr::select(-year)
@@ -102,6 +103,13 @@ dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
 dat = adjust_env_dat(dat)
 
 dat %<>% mutate(adm0_adm1 = adm1)
+
+# fit to one continent
+#dat %<>% filter(continent == "Africa")
+# c34 = readr::read_csv("../Data/Countries.csv")$c34
+# dat %<>% filter(adm0 %in% c34)
+
+
 ### POPULATION AND VACCINATION DATA ###
 if(!exists("all_res_pop_3d")){
   all_res_pop_3d = get_pop_data_3d() 
@@ -209,7 +217,7 @@ list_pop_at_survey = create_pop_at_survey(pop_agg3d,
 p_at_survey = list_pop_at_survey$p_at_survey_3d
 P_tot_survey = list_pop_at_survey$P_tot_survey_2d
 
-model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+")  ,  "+adm05") 
+model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+")  )#,  "+adm05") 
 
 
 object_glm <- YFestimation::fit_glm(dat = dat, 
@@ -255,7 +263,7 @@ Foi_param = out$Foi_param
 ```{r Foi_map,  message = F, warning=F, fig.cap = "\\label{fig:Foi_map}Map of FOI values.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 5 }
 
 ii = c(2:(grep("Foi", names(Foi_param[,1]))[1]-1))
-varsin_nc = grep("adm05|surv|posterior|acc", names(glm_mcmc_out), invert = TRUE)
+varsin_nc = grep("adm05|surv|posterior|acc|dtp", names(glm_mcmc_out), invert = TRUE)
 
 colours = snapalette("Pop", 100, type = "continuous")
 
@@ -396,7 +404,7 @@ ggplot(foi %>%
 
 
 ```{r getting_samples, eval=F}
-n_samples = 100
+n_samples = 10
 foi_out = NULL
 
 for(i in 1:n_samples){
@@ -439,12 +447,12 @@ for(i in 1:n_samples){
 colnames(foi_out) = shp1$GID_1
 
 
-write.csv(foi_out, "FOI_samples_step_2.csv", row.names = FALSE)
+write.csv(foi_out, "FOI_samples_step_2_dtp3_posprior.csv", row.names = FALSE)
 
 ```
 
 
-```{r coeff_of_var}
+```{r coeff_of_var, eval = F}
 
 if(!exists("foi_out")){
   foi_out = read.csv( "FOI_samples_step_2.csv", stringsAsFactors = FALSE)

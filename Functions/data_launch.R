@@ -66,7 +66,11 @@ adjust_env_dat = function(dat) {
   dat = dplyr::mutate(dat, risk = as.numeric(as.factor(risk)))
   dat$risk[is.na(dat$risk)] = max(dat$risk, na.rm = TRUE)+1
   
-
+  # add DTP
+  dtp = read.csv("../Data/Healthcare/Outputs/dtp3_coverage_by_country.csv", stringsAsFactors = FALSE)
+  dtp %<>% rename(adm0 = iso)
+  dat %<>% left_join(dtp %>% dplyr::select(-name))
+  dat$dtp3_coverage[is.na(dat$dtp3_coverage)] = 0
   
   v1 = apply(dat,2,var, na.rm = TRUE)
   for(i in 9:(ncol(dat))) {

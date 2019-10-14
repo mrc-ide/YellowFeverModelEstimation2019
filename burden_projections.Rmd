@@ -91,9 +91,9 @@ vc2d %<>% filter(!is.na(adm0_adm1))
 ```{r load_foi}
 
 
-foi = read.csv( "FOI_samples_step_2.csv", stringsAsFactors = FALSE)
+foi = read.csv( "FOI_samples_step_2_dtp3_posprior.csv", stringsAsFactors = FALSE)
 
-ve = 0.9533031#median(exp(mcmc_out$vac_eff))
+ve = read.csv("vac_eff_samples.csv", stringsAsFactors = FALSE)$x
 
 # sort pop and vc to included adm1
 pop1 %<>% filter(adm0_adm1 %in% names(foi))
@@ -113,7 +113,7 @@ foi = foi[unique(vc2d$adm0_adm1)]
 ```{r calculate burden}
 
 # ---------------------------------------------------------------------------
-fun_calcBurden = function(fois, year , adm1 = NA, vc2d, pop1) { # Tini's burden function
+fun_calcBurden = function(fois, year , adm1 = NA, vc2d, pop1, ve) { # Tini's burden function
   
   if(anyNA(adm1)){
     adm1 = names(fois)
@@ -140,7 +140,8 @@ infections_out = sapply(1:nrow(foi), FUN = function(i) fun_calcBurden(foi[i,],
                                                                       year_out, 
                                                                       adm1 = names(foi), 
                                                                       vc2d, 
-                                                                      pop1))
+                                                                      pop1,
+                                                                      ve[i]))
 
 infections_df = as.data.frame(infections_out)
 infections_df %<>% mutate(adm0_adm1 = rownames(infections_out),
@@ -357,6 +358,8 @@ df2 = df %>%
   summarise(deaths = round(mean(deaths))) %>% 
   arrange(-deaths) %>% 
   mutate(reported_deaths = deaths/reporting_propn)
+
+df2
 
 tmp = data.frame(countries = unique(shp0$NAME_0), adm0 = unique(shp0$GID_0))
 tmp$continent <- countrycode::countrycode(sourcevar = tmp$countries,

@@ -90,9 +90,9 @@ vc2d %<>% filter(!is.na(adm0_adm1))
 ```{r load_foi}
 
 
-fois = read.csv( "FOI_samples_step_2.csv", stringsAsFactors = FALSE)
+fois = read.csv( "FOI_samples_step_2_dtp3_posprior.csv", stringsAsFactors = FALSE)
 
-ve = 0.9533031#median(exp(mcmc_out$vac_eff))
+ve = median(read.csv("vac_eff_samples.csv", stringsAsFactors = FALSE)$x)
 
 # sort pop and vc to included adm1
 pop1 %<>% filter(adm0_adm1 %in% names(fois))
@@ -125,7 +125,7 @@ for(q in c(0.025, 0.5, 0.975)){
   
   
   # ---------------------------------------------------------------------------
-  fun_calcBurden = function(fois, year , adm1 = NA, vc2d, pop1) { # Tini's burden function
+  fun_calcBurden = function(fois, year , adm1 = NA, vc2d, pop1, ve) { # Tini's burden function
     
     if(anyNA(adm1)){
       adm1 = names(fois)
@@ -150,7 +150,7 @@ for(q in c(0.025, 0.5, 0.975)){
   
   infections_df <- bind_rows(lapply(unique(paho_dat$Year), FUN = function(y) {
     
-    infections_out = fun_calcBurden(foi, y, adm1 = names(foi), vc2d, pop1) 
+    infections_out = fun_calcBurden(foi, y, adm1 = names(foi), vc2d, pop1, ve) 
     
     inf_df = data.frame(infections = as.numeric(infections_out),
                         adm0_adm1 = names(infections_out),
@@ -230,7 +230,8 @@ ggplot(tmp, aes( x = Year)) +
   geom_line(aes(y = Cases)) +
   geom_ribbon(aes(ymin = round(q0.025/reporting_propn), 
                   ymax = round(q0.975/reporting_propn)), 
-              fill = alpha(snapalette("Pop", 5, "discrete")[5], 0.5)) +
+              fill = alpha(snapalette("Pop", 5, "discrete")[5], 0.4)) +
+  geom_line(aes(y = round(q0.5/reporting_propn) ), color = snapalette("Pop", 5, "discrete")[5], size = 1)+
   facet_wrap(~Countries, scales = "free_y")+ 
   theme_bw()
 ```
@@ -247,8 +248,10 @@ ggplot(tmp, aes( x = Year)) +
   geom_line(aes(y = Deaths)) +
   geom_ribbon(aes(ymin = round(q0.025/reporting_propn), 
                   ymax = round(q0.975/reporting_propn)), 
-              fill = alpha(snapalette("Pop", 5, "discrete")[5], 0.5)) +
+              fill = alpha(snapalette("Pop", 5, "discrete")[5], 0.4)) +
+    geom_line(aes(y = round(q0.5/reporting_propn) ), color = snapalette("Pop", 5, "discrete")[5], size = 1)+
   facet_wrap(~Countries, scales = "free_y")+ 
   theme_bw()
 ```
+
 
