@@ -120,11 +120,16 @@ GLMprior = function(param) {
                             sd = 30,
                             a = 0, b = Inf)))# brute force the adm05 low risk to be positive
   
-  Prior[5] = sum(log(dtrunc(param[grep("dtp", names(param))],
-                            "norm",
-                            mean = 0,
-                            sd = 30,
-                            a = 0, b = Inf)))
+  Prior[5] =  sum(dnorm(param[grep("continent", names(param))],
+                        mean = 0,
+                        sd = 2,
+                        log = TRUE))
+  
+  # Prior[6] = sum(log(dtrunc(param[grep("BRA|COL", names(param))],
+  #                           "norm",
+  #                           mean = 10,
+  #                           sd = 1,
+  #                           a = 0, b = Inf)))
   
   # this term is for normally distributed non-country parameters : normal distrib with high sd (flat distrib)
   out = as.numeric( Prior )

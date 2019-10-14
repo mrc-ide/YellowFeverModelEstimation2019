@@ -78,6 +78,7 @@ covar_to_test <- covar_to_test[grep("population", covar_to_test, invert = TRUE)]
 covar_to_test <- covar_to_test[grep("aggregate", covar_to_test, invert = TRUE)]
 covar_to_test <- covar_to_test[grep("adm05", covar_to_test, invert = TRUE)]
 covar_to_test <- covar_to_test[grep("continent", covar_to_test, invert = TRUE)]
+covar_to_test <- covar_to_test[grep("dtp", covar_to_test, invert = TRUE)]
 
 as.data.frame(covar_to_test)
 ```

@@ -49,7 +49,7 @@ if(!exists("mcmc_out")){
   write.csv(sample(exp(mcmc_out$vac_eff), 100), "vac_eff_samples.csv", row.names = FALSE)
 }
 
-glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20191014_step_2_dtp3_posprior",
+glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20191014_step_1_nosurv",
                           burnin =1e4, thin = 1)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
@@ -80,7 +80,7 @@ filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
 dat <- read.csv(filename, stringsAsFactors = FALSE)
 
 #remove families of NHP that are not to be included
-model_form_whole <- read.csv("Model_form_step_2.csv", stringsAsFactors = FALSE)$x
+model_form_whole <- read.csv("Model_form_step_1.csv", stringsAsFactors = FALSE)$x
 covar_family <- unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
 
 dat <- dat[, -which(!names(dat) %in% covar_family & grepl("family", names(dat)))] 
@@ -217,7 +217,7 @@ list_pop_at_survey = create_pop_at_survey(pop_agg3d,
 p_at_survey = list_pop_at_survey$p_at_survey_3d
 P_tot_survey = list_pop_at_survey$P_tot_survey_2d
 
-model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+")  )#,  "+adm05") 
+model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+")  ,  "+adm05") 
 
 
 object_glm <- YFestimation::fit_glm(dat = dat, 
@@ -404,7 +404,7 @@ ggplot(foi %>%
 
 
 ```{r getting_samples, eval=F}
-n_samples = 10
+n_samples = 100
 foi_out = NULL
 
 for(i in 1:n_samples){
@@ -447,7 +447,7 @@ for(i in 1:n_samples){
 colnames(foi_out) = shp1$GID_1
 
 
-write.csv(foi_out, "FOI_samples_step_2_dtp3_posprior.csv", row.names = FALSE)
+write.csv(foi_out, "FOI_samples_step_1_nosurv.csv", row.names = FALSE)
 
 ```
 
