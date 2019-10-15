@@ -109,7 +109,7 @@ dat_subs = dat[, c("cases_or_outbreaks" ,covar_to_test)] # subset again to only 
 #use stepAIC to get list of important covariates
 alt_mod = MASS::stepAIC(glm("cases_or_outbreaks~.", data = dat_subs, 
                             family=binomial(link="cloglog")), trace = FALSE)
-alt_mod$formula
+summary(alt_mod)
 
 # remove those that are not significant
 pvalues <- coef(summary(alt_mod))[,4]

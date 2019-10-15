@@ -101,18 +101,20 @@ GLMprior = function(param) {
   
   sd.prior = 2
   
-  Prior[1] =  - 0.5 * sum((param[jj] / sd.prior) ^ 2) # adjustment for reduced variation between countries?
+  Prior[1] =  - 0.5 * sum((param[jj] / sd.prior) ^ 2) # adjustment for reduced variation between countries
   
   Prior[2] =  sum(dnorm(param[grep("^log.adm05|family|continent|dtp", names(param), invert = TRUE)],
                         mean = 0,
                         sd = 30,
                         log = TRUE))
   
-  Prior[3] = sum(log(dtrunc(param[grep("family", names(param))],
-                        "norm",
-                       mean = 0,
-                       sd = 30,
-                       a = 0, b = Inf)))
+  # Prior[3] = sum(log(dtrunc(param[grep("family", names(param))],
+  #                       "norm",
+  #                      mean = 0,
+  #                      sd = 30,
+  #                      a = 0, b = Inf)))
+  Prior[3] =  - 0.5 * sum((param[grep("family", names(param))] / 0.1) ^ 2) # collecting family priors in same way as adm05
+  
   
   Prior[4] = sum(log(dtrunc(param[grep("low_risk", names(param))],
                             "norm",
