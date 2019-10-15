@@ -83,24 +83,104 @@ covar_to_test <- covar_to_test[grep("dtp", covar_to_test, invert = TRUE)]
 as.data.frame(covar_to_test)
 ```
 
-```{r remove_cor}
+```{r fit_univariate}
+
+mod <- list()
+pvalues <- rep(NA, length(covar_to_test))
+for(i in 1:length(covar_to_test)){
+  mod[[i]] <- glm( paste0("cases_or_outbreaks~",covar_to_test[i]), 
+           data = dat, family=binomial(link="cloglog"))
+  
+  pvalues[i] <- coef(summary(mod[[i]]))[,4]
+}
+
+data.frame(covariate = covar_to_test, pvalue = pvalues) %>% arrange(-pvalues)
+
+covar_to_test <-  covar_to_test[pvalues < 0.1]
+
+```
+
+```{r remove_cor, fig.height=12, fig.width=12}
 
 # remove very correlated
 reduced_dat <-  dat[, covar_to_test]
 
 reduced_dat_cor <-  cor(reduced_dat)
 
-highly_cor <- caret::findCorrelation(reduced_dat_cor, cutoff = .7)
+heatmap(reduced_dat_cor, keep.dendro = TRUE)
 
-reduced_dat <- reduced_dat[,-highly_cor]
+#get sorting 
+cor_df <- as.data.frame(reduced_dat_cor) 
+cor_df$param1 <- rownames(cor_df)
+cor_df %<>% gather(param2, correlation, -param1)
 
-covar_to_test = names(reduced_dat)
+# cor_df %>% group_by(param1) %>% summarise(cormax = max(correlation)) %>% arrange(-cormax)
 
-as.data.frame(covar_to_test)
+cor_df %>% filter(correlation > 0.75)
+
+#highly_cor <- caret::findCorrelation(reduced_dat_cor, cutoff = .75)
+
+# reduced_dat <- reduced_dat[,-highly_cor]
+# 
+# covar_to_test = names(reduced_dat)
+# 
+# as.data.frame(covar_to_test)
 
 ```
 
 
+
+```{r clusters, fig.height=12, fig.width=10}
+x <- as.dist( 1-abs(cor(na.omit(dat[, na.omit(covar_to_test)]))))
+out <- hclust(x)
+#plot(out)
+
+df <-  data.frame(param1 = unique(cor_df$param1))
+
+#for(i in 2:length(na.omit(covar_to_test))){
+i = length(covar_to_test)
+pairwise_cor = 1
+while(i >1 & pairwise_cor>0.75){
+      i <- i-1
+      
+  y <- cutree(out, k = i)
+  
+  tmp = data.frame(param1 = names(y), as.numeric(y))
+  names(tmp)[2] = paste0("cluster", i)
+  
+  df %<>% left_join(tmp)
+  
+
+  for(c in unique(y)){
+    cluster_parm = df$param1[df[,paste0("cluster", i)] == c]
+    if(length(cluster_parm)>1){
+      out_cor = cor(as.matrix(dat[, as.character(cluster_parm)]))
+      pairwise_cor = min(min(out_cor[out_cor<1]), pairwise_cor)
+    }
+  }
+
+}
+
+# final is i-1
+df_out = df[, c(1, (ncol(df)-1))]
+names(df_out)[2] = "cluster"
+
+df_out %>% arrange(cluster)
+```
+
+
+```{r cor with cas}
+
+df_out %<>% mutate(cor_with_case = NA)
+
+for(i in 1:nrow(df_out)){
+  df_out$cor_with_case[i] = abs(cor(dat[, c("cases_or_outbreaks", as.character(df_out$param1[i]))])[1,2])
+}
+
+df_covar = df_out %>% group_by(cluster) %>% arrange(-cor_with_case) %>% summarise(param1 = first(param1))
+
+covar_to_test = as.character(df_covar$param1)
+```
 
 ```{r stepAIC}
 
@@ -115,7 +195,8 @@ summary(alt_mod)
 pvalues <- coef(summary(alt_mod))[,4]
 
 parm_out <- names(pvalues)[pvalues < 0.05]
-parm_out <- parm_out[-1] # remove intercept
+parm_out <- parm_out[-1] # remove intercepty
+
 
 model_form <- paste0("cases_or_outbreaks~", paste(parm_out, collapse = "+") )
   
@@ -124,7 +205,7 @@ mod <- glm( model_form, data = dat, family=binomial(link="cloglog"))
 as.data.frame(parm_out)
 
 # write.csv(data.frame(x = model_form),
-#                  "Model_form_step_2.csv",
+#                  "Model_form_step_3.csv",
 #                  row.names = FALSE)
 
 ```
