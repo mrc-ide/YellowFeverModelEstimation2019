@@ -89,7 +89,16 @@ run_estimation = function(run_id=1){
   vc2d %<>% filter(!is.na(adm0_adm1))
   
   vc2d %<>% filter(adm0_adm1 %in% pop1$adm0_adm1)
-  vc2d %<>% ungroup()  %>% mutate(year = as.numeric(as.character(year)))
+  vc2d %<>% ungroup()  %>% mutate(year = as.numeric(as.character(year)),
+                                  adm0 = as.character(adm0))
+  
+  # expand vc2d to match pop1
+  vc2d %<>% mutate(year = as.numeric(as.character(year)))
+  vc_tmp = pop1 %>% filter(!adm0_adm1 %in% vc2d$adm0_adm1)
+  vc_tmp[, grep("adm0_adm1|year|adm0", names(vc_tmp), invert = TRUE)] = 0
+  
+  vc2d %<>% bind_rows(vc_tmp)
+  vc2d %<>% filter(!is.na(adm0_adm1))
   
   #########################################################################################################
   ### AGGREGATE POPULATION AND VACCINATION DATA ###
@@ -98,12 +107,13 @@ run_estimation = function(run_id=1){
   if(!file.exists("agg_pop_vc.RData")){ 
 
     #aggregate
-    agg=Make_aggregate_pop_vc(select(pop1, -adm0), select(vc2d, -adm0), sero_studies, adm1s)
+    agg=Make_aggregate_pop_vc(select(pop1, -adm0), select(vc2d, -adm0),
+                              seroout$sero_studies, seroout$adm1s)
     
     pop_agg=agg$pop_agg
     vc_agg=agg$vc_agg
     
-    dim_survey = sero_studies
+    dim_survey = seroout$sero_studies
     dim_year = as.numeric(unique(pop_agg$year))
     dim_age = names(pop1 %>% select(-c(adm0_adm1, year, adm0)))
     
