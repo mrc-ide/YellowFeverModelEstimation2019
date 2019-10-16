@@ -7,13 +7,15 @@ header-includes:
 output: 
   pdf_document:
     df_print: "kable"
+params:
+  model_variant: 1
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = "images/",
+  fig.path = paste0("images", params$model_variant, "/"),
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -91,7 +93,7 @@ vc2d %<>% filter(!is.na(adm0_adm1))
 ```{r load_foi}
 
 
-foi = read.csv( "FOI_samples_step_2.csv", stringsAsFactors = FALSE)
+foi = read.csv( paste0("FOI_samples_bestglm_1_", params$model_variant, ".csv"), stringsAsFactors = FALSE)
 
 ve = read.csv("vac_eff_samples.csv", stringsAsFactors = FALSE)$x
 

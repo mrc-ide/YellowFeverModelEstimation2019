@@ -7,13 +7,15 @@ header-includes:
 output: 
   pdf_document:
     df_print: "kable"
+params:
+  model_variant: 1 
 ---
 
 ```{r knitsetup, include=FALSE}
 
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = "images/",
+  fig.path = paste0("images", params$model_variant, "/"),
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -52,7 +54,8 @@ shp1 = rgdal::readOGR("../../shapefiles/Africa_America_1_smooth.shp",
 
 ```{r read_old_foi}
 
-old_foi <- read.csv("../VIMC_ModelRuns/central_and_code/stochastic_parameters.csv", stringsAsFactors = FALSE)
+old_foi <- read.csv("../VIMC_ModelRuns/central_and_code/stochastic_parameters.csv", 
+                    stringsAsFactors = FALSE)
 
 old_foi %<>% select(-c(P_severe, P_death)) %>% gather(Country, old_FOI, -run_id)
 
@@ -62,7 +65,8 @@ old_foi %<>% mutate(Country = gsub("FOI_", "", Country))
 
 ```{r read_new_foi}
 
-foi <- read.csv( "FOI_samples_step_1_continentprior.csv", stringsAsFactors = FALSE)
+foi <- read.csv( paste0("FOI_samples_bestglm_1_", params$model_variant, ".csv"), 
+                 stringsAsFactors = FALSE)
 
 foi %<>% mutate(sample = rownames(foi))
 

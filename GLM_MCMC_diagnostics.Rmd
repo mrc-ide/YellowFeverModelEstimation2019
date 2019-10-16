@@ -7,13 +7,16 @@ header-includes:
 output: 
   pdf_document:
     df_print: "kable"
+params:
+  model_variant: 
+    value: 1
 ---
 
 ```{r knitsetup, include=FALSE}
 
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = "images/",
+  fig.path = paste0("images", params$model_variant, "/"),
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -43,15 +46,16 @@ library(KsetupR)
 R.utils::sourceDirectory("Functions")
 
 
-glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20191015_step_2_noagg_groupprior2",
-                          burnin =5e4, thin = 1)
+glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20191016_bestglm_1_", 
+                                                params$model_variant),
+                          burnin =6e4, thin = 1)
 
 
 names(glm_mcmc_out) <- gsub("^log.", "", names(glm_mcmc_out))
 
 glm_mcmc_out2 <- ggs( convert.mcmc.list(  glm_mcmc_out %>% 
                                            dplyr::select(-c(posteriorProb, 
-                                                     acceptRate))))#,starts_with("adm05")))) )
+                                                     acceptRate))))
 
 snapal <- "Pop"
 ```
@@ -169,8 +173,9 @@ filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
 dat <- read.csv(filename, stringsAsFactors = FALSE)
 
 #remove families of NHP that are not to be included
-model_form_whole <- read.csv("Model_form_step_2.csv", stringsAsFactors = FALSE)$x
-covar_family <- unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
+model_form_whole = read.csv("bestglm_1.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
+
+covar_family = names(model_form_whole)[ which(model_form_whole[params$model_variant, ] == TRUE) ] 
 
 dat <- dat[, -which(!names(dat) %in% covar_family & grepl("family", names(dat)))] 
 

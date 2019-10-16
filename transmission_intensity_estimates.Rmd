@@ -7,13 +7,16 @@ header-includes:
 output: 
   pdf_document:
     df_print: "kable"
+params:
+  model_variant: 1
+  foi_sample: false
 ---
 
 ```{r knitsetup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = "images/",
+  fig.path = paste0("images", params$model_variant, "/"),
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -49,8 +52,8 @@ if(!exists("mcmc_out")){
   write.csv(sample(exp(mcmc_out$vac_eff), 100), "vac_eff_samples.csv", row.names = FALSE)
 }
 
-glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20191009_step_2",
-                          burnin =5e4, thin = 1)
+glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20191016_bestglm_1_", params$model_variant),
+                          burnin =6e4, thin = 1)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
 
@@ -80,8 +83,9 @@ filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
 dat <- read.csv(filename, stringsAsFactors = FALSE)
 
 #remove families of NHP that are not to be included
-model_form_whole <- read.csv("Model_form_step_2.csv", stringsAsFactors = FALSE)$x
-covar_family <- unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
+model_form_whole = read.csv("bestglm_1.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
+
+covar_family = names(model_form_whole)[ which(model_form_whole[params$model_variant, ] == TRUE) ] 
 
 dat <- dat[, -which(!names(dat) %in% covar_family & grepl("family", names(dat)))] 
 
@@ -403,52 +407,54 @@ ggplot(foi %>%
 
 
 
-```{r getting_samples, eval=F}
-n_samples = 10
-foi_out = NULL
+```{r getting_samples}
 
-for(i in 1:n_samples){
-  sample_ind1 = sample(1:nrow(mcmc_out),1)
-  sample_ind2 = sample(1:nrow(glm_mcmc_out),1)
+if(params$foi_sample){
+  n_samples = 10
+  foi_out = NULL
   
-  params = bind_cols(vac_eff = exp(mcmc_out[sample_ind1, "vac_eff"]),
-                     glm_mcmc_out[sample_ind2, 1:(ncol(glm_mcmc_out)-2)],
-                     exp(mcmc_out[sample_ind1, grep("^Foi", names(mcmc_out))]),
-                     vc_factor_CMRs = exp(mcmc_out[sample_ind1, "vc_factor_CMRs"]))
-  class(params) = "numeric"
+  for(i in 1:n_samples){
+    sample_ind1 = sample(1:nrow(mcmc_out),1)
+    sample_ind2 = sample(1:nrow(glm_mcmc_out),1)
+    
+    params = bind_cols(vac_eff = exp(mcmc_out[sample_ind1, "vac_eff"]),
+                       glm_mcmc_out[sample_ind2, 1:(ncol(glm_mcmc_out)-2)],
+                       exp(mcmc_out[sample_ind1, grep("^Foi", names(mcmc_out))]),
+                       vc_factor_CMRs = exp(mcmc_out[sample_ind1, "vc_factor_CMRs"]))
+    class(params) = "numeric"
+    
+    
+    runs = fun_calc_transmission_Africa(x,
+                                        ii ,
+                                        seroout ,
+                                        params,
+                                        dat ,
+                                        t0_vac_africa ,
+                                        dim_year ,
+                                        dim_age ,
+                                        p_prop_3d ,
+                                        P_tot_2d ,
+                                        inc_v3d ,
+                                        pop1,
+                                        vc2d=vc2d %>% dplyr::select(-adm0),
+                                        varsin_nc,
+                                        polydeg=5,
+                                        R0_lookup,
+                                        model_type = "Foi")
+    
+    shp1$runs = NA 
+    shp1$runs = runs[match(shp1$GID_1,dat$adm1)]
+    
+    
+    
+    foi_out  %<>% rbind(shp1$runs)
+    
+  }
+  colnames(foi_out) = shp1$GID_1
   
   
-  runs = fun_calc_transmission_Africa(x,
-                                      ii ,
-                                      seroout ,
-                                      params,
-                                      dat ,
-                                      t0_vac_africa ,
-                                      dim_year ,
-                                      dim_age ,
-                                      p_prop_3d ,
-                                      P_tot_2d ,
-                                      inc_v3d ,
-                                      pop1,
-                                      vc2d=vc2d %>% dplyr::select(-adm0),
-                                      varsin_nc,
-                                      polydeg=5,
-                                      R0_lookup,
-                                      model_type = "Foi")
-  
-  shp1$runs = NA 
-  shp1$runs = runs[match(shp1$GID_1,dat$adm1)]
-  
-  
-  
- foi_out  %<>% rbind(shp1$runs)
-   
+  write.csv(foi_out, paste0("FOI_samples_bestglm_1_", params$model_variant, ".csv"), row.names = FALSE)
 }
-colnames(foi_out) = shp1$GID_1
-
-
-write.csv(foi_out, "FOI_samples_step_2_noagg_grouprior2.csv", row.names = FALSE)
-
 ```
 
 
