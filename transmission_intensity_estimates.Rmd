@@ -49,7 +49,7 @@ if(!exists("mcmc_out")){
   write.csv(sample(exp(mcmc_out$vac_eff), 100), "vac_eff_samples.csv", row.names = FALSE)
 }
 
-glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20191015_step_2_noagg_groupprior2",
+glm_mcmc_out <- YFestimation::get_chains("GLM_MCMC_chain_20191009_step_2",
                           burnin =5e4, thin = 1)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))

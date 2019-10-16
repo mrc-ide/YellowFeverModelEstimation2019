@@ -44,12 +44,7 @@ run_estimation = function(run_id =1){
   
   # make extra elements and normalise
   dat = adjust_env_dat(dat)
-  
-  # fit to just one continent
-  # dat %<>% filter(continent == "Africa")
-# limit it to c34
-  # c34 = readr::read_csv("../Data/Countries.csv")$c34
-  # dat %<>% filter(adm0 %in% c34)
+
   
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
   # FIT MODEL #
@@ -104,7 +99,7 @@ run_estimation = function(run_id =1){
   
   # create a directory to save the output in 
   
-  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_step_2_noagg_groupprior")
+  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_step_2_noagg_groupprior2")
   
   dir.create(name_dir)
   

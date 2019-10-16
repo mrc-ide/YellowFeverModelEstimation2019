@@ -27,7 +27,6 @@ library(tidyr)
 library(caret)
 library(MASS)
 library(bestglm)
-library(kableExtra)
 
 source('Functions/data_launch.R')
 source("Functions/temp_suit.R")
@@ -96,44 +95,46 @@ for(i in 1:length(covar_to_test)){
   BICs[i] <- BIC(mod[[i]])
 }
 
-data.frame(covariate = covar_to_test, 
+df <-  data.frame(covariate = covar_to_test, 
                         pvalue = pvalues, 
                         coeff = coeffs,
                         BIC = BICs) %>% 
                arrange(-pvalues)
 
-covar_to_test <-  covar_to_test[pvalues < 0.1]
+df
+
+df %<>% filter(pvalue < 0.1)
+
+covar_to_test = as.character(df$covariate)
 
 ```
 
-We examine covariates that are highly correlations.
+We examine covariates that are highly correlated.
 
 ```{r remove_cor, fig.height=12, fig.width=12, fig.cap="Heatmap of parameter correlatons."}
 
-# correlated
 reduced_dat <-  dat[, covar_to_test]
 
 reduced_dat_cor <-  cor(reduced_dat)
 
 heatmap(reduced_dat_cor, keep.dendro = TRUE)
 
-#get sorting 
 cor_df <- as.data.frame(reduced_dat_cor) 
 cor_df$param1 <- rownames(cor_df)
 cor_df %<>% gather(param2, correlation, -param1)
 
 ```
 
-We find that some covariates are highly correlated. As such, we group these into clusters where the abs piecewise correlation is above 0.75.
+\FloatBarrier
+
+We find that some covariates are highly correlated. As such, we group these into clusters where the absolute piecewise correlation is above 0.75.
 
 ```{r clusters, fig.height=12, fig.width=10}
 x <- as.dist( 1-abs(cor(na.omit(dat[, na.omit(covar_to_test)]))))
 out <- hclust(x)
-#plot(out)
 
 df <-  data.frame(param1 = unique(cor_df$param1))
 
-#for(i in 2:length(na.omit(covar_to_test))){
 i = length(covar_to_test)
 pairwise_cor = 1
 while(i >1 & pairwise_cor>0.75){
@@ -164,7 +165,7 @@ names(df_out)[2] = "cluster"
 df_out %>% arrange(cluster)
 ```
 
-In order to reduce the number of covariates to test, we choose those covariates in each cluster that are most correlated with our outcome variable.
+In order to reduce the number of covariates to test, we may choose those covariates in each cluster that are most correlated with our outcome variable. This is omitted in the current analysis.
 
 ```{r cor with cas}
 
@@ -180,8 +181,10 @@ df_covar <-  df_out %>%
   arrange(-cor_with_case) %>% 
   summarise(param1 = first(param1))
 
-#covar_to_test = as.character(df_covar$param1)
+covar_to_test = as.character(df_covar$param1)
 ```
+
+We use the `stepAIC` function from the `MASS` package to step through model possibilities. This uses BIC as a criteria to assess the inclusion of each model covariate.
 
 ```{r stepAIC}
 
@@ -198,35 +201,13 @@ summary(alt_mod)
 pvalues <- coef(summary(alt_mod))[,4]
 
 parm_out <- names(head(sort(pvalues), 16)) #get 15 most significant
-parm_out <- parm_out[-1] # remove intercepty
-
-
-model_form <- paste0("cases_or_outbreaks~", paste(parm_out, collapse = "+") )
-  
-mod <- glm( model_form, data = dat, family=binomial(link="cloglog"))
+parm_out <- parm_out[grep("(Intercept)", parm_out, invert = T)] # remove intercept
 
 as.data.frame(parm_out)
 
-
 ```
 
-```{r add_aggregate, eval = F, echo = F}
-
-dat_subs2 = dat_subs[, c("cases_or_outbreaks" ,parm_out)]
-
-dat_subs2 %<>% mutate(aggregate_family = rowSums(dat_subs2[, grep("family", names(dat_subs2))]))
-
-dat_subs2 %<>% dplyr::select(-starts_with("family"))
-
-parm = names(dat_subs2)[-1]
-
-model_form <- paste0("cases_or_outbreaks~", paste(parm, collapse = "+") )
-  
-mod <- glm( model_form, data = dat, family=binomial(link="cloglog"))
-
-summary(mod)
-```
-
+Finally, we use the `bestglm` function from `bestglm` to find the top 20 models from this subset of covariates. This uses the complete enumeration algorithm.
 
 ```{r bestglm, eval = T}
 
