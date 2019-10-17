@@ -410,7 +410,7 @@ ggplot(foi %>%
 ```{r getting_samples}
 
 if(params$foi_sample){
-  n_samples = 10
+  n_samples = 100
   foi_out = NULL
   
   for(i in 1:n_samples){

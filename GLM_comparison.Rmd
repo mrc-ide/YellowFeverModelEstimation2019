@@ -61,7 +61,7 @@ snapal <- "Pop"
 
 # Compare estimates of parameters and posterior probability
 
-```{r posteriorProb}
+```{r posteriorProb, fig.cap = "Posterior porbability from entire MCMC chain, thinned by a factor 100."}
 
 glm_mcmc_out %<>% mutate(variant = as.character(variant))
 ggplot(glm_mcmc_out) + 
@@ -185,7 +185,7 @@ for(i in 1:20){
 ```
 
 
-```{r plot_AUC}
+```{r plot_AUC, fig.cap="AUC for 100 samples of posterior for each model variant."}
 df_AUC %>% mutate(variant = as.character(variant)) %>%
 ggplot( aes(x = reorder(variant, -AUC), y = AUC, fill = variant)) +
   geom_violin() +
