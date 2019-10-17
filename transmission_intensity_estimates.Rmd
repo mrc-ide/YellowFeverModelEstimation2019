@@ -279,7 +279,7 @@ x = x[, names(Foi_param[ii,2])]
 foi = plot_transmission_intensity2(x,
                                    ii,
                                    seroout,
-                                   params = Foi_param[,2],
+                                   Foi_param[,2],
                                    dat ,
                                    t0_vac_africa,
                                    dim_year,
@@ -410,24 +410,24 @@ ggplot(foi %>%
 ```{r getting_samples}
 
 if(params$foi_sample){
-  n_samples = 100
+  n_samples = 10
   foi_out = NULL
   
   for(i in 1:n_samples){
     sample_ind1 = sample(1:nrow(mcmc_out),1)
     sample_ind2 = sample(1:nrow(glm_mcmc_out),1)
     
-    params = bind_cols(vac_eff = exp(mcmc_out[sample_ind1, "vac_eff"]),
+    parm = bind_cols(vac_eff = exp(mcmc_out[sample_ind1, "vac_eff"]),
                        glm_mcmc_out[sample_ind2, 1:(ncol(glm_mcmc_out)-2)],
                        exp(mcmc_out[sample_ind1, grep("^Foi", names(mcmc_out))]),
                        vc_factor_CMRs = exp(mcmc_out[sample_ind1, "vc_factor_CMRs"]))
-    class(params) = "numeric"
+    class(parm) = "numeric"
     
     
     runs = fun_calc_transmission_Africa(x,
                                         ii ,
                                         seroout ,
-                                        params,
+                                        parm,
                                         dat ,
                                         t0_vac_africa ,
                                         dim_year ,

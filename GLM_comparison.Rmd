@@ -1,0 +1,196 @@
+---
+title: "GLM MCMC diagnostics Comparison"
+author: "Katy Gaythorpe"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+header-includes: 
+- \usepackage{placeins}
+output: 
+  pdf_document:
+    df_print: "kable"
+---
+
+```{r knitsetup, include=FALSE}
+
+knitr::opts_chunk$set(
+  dev = "png",
+  fig.path = paste0("images"),
+  dpi = 300,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+```{r setup}
+library(mcmcplots)
+library(ggmcmc)
+library(gridExtra)
+library(maptools)
+library(readr)
+library(fields)
+library(rgdal)
+library(R.utils)
+library(magrittr)
+library(pROC)
+library(dplyr)
+
+# homemade
+library(snapalette)
+library(YFestimation)
+library(KsetupR)
+
+R.utils::sourceDirectory("Functions")
+
+glm_mcmc_out = NULL
+for(i in 1:20){
+  tmp <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20191016_bestglm_1_", 
+                                         i),
+                                  burnin =6e4, thin = 100)
+  
+  
+  names(tmp) <- gsub("^log.", "", names(tmp))
+  
+  tmp %<>% mutate(variant = i)
+  
+  glm_mcmc_out %<>% bind_rows(tmp)
+  
+}
+
+snapal <- "Pop"
+```
+
+
+# Compare estimates of parameters and posterior probability
+
+```{r posteriorProb}
+
+glm_mcmc_out %<>% mutate(variant = as.character(variant))
+ggplot(glm_mcmc_out) + 
+  geom_violin(aes(x = reorder(variant, -posteriorProb), y = posteriorProb, fill = variant)) +
+  theme_bw()+
+  theme(legend.position = "none")+
+  xlab("Variant") +
+  ylab("Posterior probability")
+
+```
+
+```{r individual_parameters, fig.height=12, fig.width=16}
+
+glm_mcmc_out %>% 
+  dplyr::select(-c(posteriorProb, acceptRate)) %>% 
+  gather(parameter, estimates, -c(variant)) %>%
+  ggplot(aes(x = variant, y = estimates, fill = variant)) +
+  geom_violin()+
+  theme_bw()+
+  theme(legend.position = "none")+
+  facet_wrap(parameter~., scales = "free")
+  
+```
+
+# Compare AUC
+
+```{r shp_etc}
+
+### LOADING SHAPEFILES AND COUNTRIES ###
+#read shapefiles in
+shp0 <- rgdal::readOGR("../../shapefiles/Africa_America_0_smooth.shp",
+                          stringsAsFactors = FALSE,
+                          encoding = "UTF-8",
+                          use_iconv = TRUE)
+shp1 <- rgdal::readOGR("../../shapefiles/Africa_America_1_smooth.shp",
+                          stringsAsFactors = FALSE,
+                          encoding = "UTF-8",
+                          use_iconv = TRUE)
+
+
+#sort age vector
+maxAge <- 100
+ageVec <- c(0:maxAge)
+
+### LOAD ENVIRONMENTAL DATA ###
+Env_Table_path <- "../Data/Environment/global_dat"
+
+filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
+
+
+```
+
+```{r calc_auc}
+
+df_AUC = NULL
+
+for(i in 1:20){
+  for(s in 1:100){
+  glm_tmp <-  glm_mcmc_out %>% filter(variant == i) %>% dplyr::select(-c(posteriorProb, acceptRate, variant))
+  Est_beta <- glm_tmp %>% sample_n(1)
+  
+  dat <- read.csv(filename, stringsAsFactors = FALSE)
+  
+  #remove families of NHP that are not to be included
+  model_form_whole = read.csv("bestglm_1.csv", stringsAsFactors = FALSE) %>% 
+    dplyr::select(-Criterion)
+  
+  covar_family = names(model_form_whole)[ which(model_form_whole[i, ] == TRUE) ] 
+  
+  dat <- dat[, -which(!names(dat) %in% covar_family & grepl("family", names(dat)))] 
+  
+  # change to just read covariates from mcmc
+  covar = covar_family
+  
+  dat %<>% dplyr::select(-year)
+  dat %<>% filter( is.finite(MIR.max))
+  dat %<>% filter(!is.na(temp_mean))
+  #dat %<>% tidyr::drop_na()
+  dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
+                                     "Africa", continent))
+  
+  #dat %<>% filter(risk %in% c("high", "moderate"))
+  
+  # make extra elements and normalise
+  dat = adjust_env_dat(dat)
+  
+  
+  # -----------------------------------------------------------------------
+  # FIT MODEL #
+  covar = covar[grep("cases_or_outbreaks|family", covar, invert = TRUE)] #
+  
+  
+  model_form = paste0("cases_or_outbreaks~", 
+                      paste(covar, collapse = "+"),
+                      "+aggregate_family","+adm05", "+surv.qual.adm0") 
+  
+
+  object_glm <- YFestimation::fit_glm(dat = dat, 
+                                      depi = match("cases_or_outbreaks", 
+                                                   names(dat)), 
+                                      models = model_form)
+  
+  beta0 <- object_glm[[1]]
+  x <- object_glm[[2]]
+  y <- object_glm[[3]]
+  
+  #order Est_beta to match beta0
+  Est_beta = na.omit(Est_beta[names(beta0)])
+  
+  
+  glmpreds <- YFestimation::fun_calcPred( as.numeric(Est_beta) , x, type="response")
+  
+  ROC_out <- pROC::roc(response = dat$cases_or_outbreaks, predictor = glmpreds)
+  
+  df_AUC %<>% bind_rows(data.frame(variant = i,
+                                  sample = s,
+                                  AUC = round(auc(ROC_out), 4)))
+  }
+}
+
+```
+
+
+```{r plot_AUC}
+df_AUC %>% mutate(variant = as.character(variant)) %>%
+ggplot( aes(x = reorder(variant, -AUC), y = AUC, fill = variant)) +
+  geom_violin() +
+  theme_bw()+
+  theme(legend.position = "none") +
+  xlab("Variant")
+  
+```
