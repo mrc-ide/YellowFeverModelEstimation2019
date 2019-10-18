@@ -357,7 +357,7 @@ combined %<>% mutate(sample = as.character(sample))
 
 ```
 
-```{r compare_cases, fig.height=10, fig.width=8}
+```{r compare_cases_paho, fig.height=10, fig.width=8}
 
 tmp <- combined %>% group_by(Countries, Year, Cases) %>% summarise(q0.025 = quantile(severe_infections, 0.025),
                                                          q0.5 = quantile(severe_infections, 0.5),
