@@ -1,0 +1,120 @@
+---
+title: "FOI Comparison"
+author: "Katy Gaythorpe"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+header-includes: 
+- \usepackage{placeins}
+output: 
+  pdf_document:
+    df_print: "kable"
+---
+
+```{r knitsetup, include=FALSE}
+
+knitr::opts_chunk$set(
+  dev = "png",
+  fig.path = "images",
+  dpi = 300,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+```{r setup}
+library(mcmcplots)
+library(ggmcmc)
+library(gridExtra)
+library(maptools)
+library(readr)
+library(fields)
+library(rgdal)
+library(R.utils)
+library(magrittr)
+library(pROC)
+library(dplyr)
+
+# homemade
+library(snapalette)
+library(YFestimation)
+library(KsetupR)
+
+snapal = "Pop"
+```
+
+```{r read in foi}
+foi_out = NULL
+for(i in 1:20){
+  tmp <-  read.csv(paste0("FOI_samples_bestglm_1_", i, ".csv"), stringsAsFactors = FALSE)
+  tmp %<>% mutate(variant = i, sample = row.names(tmp))
+  foi_out %<>% bind_rows(tmp)
+}
+
+# get in useful format
+foi_samples = foi_out %>% gather(adm1, foi, -c(sample, variant))
+foi_samples %<>% mutate(adm0 = substr(adm1, 1,3))
+foi_samples %<>% mutate(variant = as.factor(variant))
+```
+
+```{r compare countries, fig.height=12, fig.width=20}
+foi_samples %>% group_by(adm0, sample, variant) %>% summarise(foi = mean(foi, na.rm = TRUE)) %>%
+  ggplot(aes(x = variant, y = foi, fill = variant))+
+  geom_violin() + 
+  theme_bw()+
+  theme(legend.position = "none") +
+  xlab("Country")+
+  scale_fill_manual(values = snapalette(snapal, 20, "continuous")) +
+  facet_wrap(adm0~.)+
+  scale_y_log10()
+```
+
+```{r density, fig.height=12, fig.width=20}
+foi_samples %>% group_by(adm0, sample) %>% summarise(foi = mean(foi, na.rm = TRUE)) %>%
+ggplot(aes(x = foi, fill = adm0)) + 
+  geom_density() +
+  theme_bw()+
+  theme(legend.position = "none", axis.text.x = element_text(angle = 90, hjust = 1)) +
+  xlab("Force of infection")+
+  scale_fill_manual(values = snapalette(snapal, 86, "continuous")) +
+  facet_wrap(adm0~., scales = "free") 
+
+```
+
+```{r load shapefiles}
+if(!exists("shp0")){
+  shp0 = rgdal::readOGR("../../shapefiles/Africa_America_0_smooth.shp",
+                        stringsAsFactors = FALSE,
+                        encoding = "UTF-8",
+                        use_iconv = TRUE)
+}
+if(!exists("shp1")){
+  shp1 = rgdal::readOGR("../../shapefiles/Africa_America_1_smooth.shp",
+                        stringsAsFactors = FALSE,
+                        encoding = "UTF-8",
+                        use_iconv = TRUE)
+}
+```
+
+```{r coeff_of_var, fig.cap="Coefficient of variation between all model variants.", fig.width=12, fig.height=8}
+
+
+coeff_of_var = sapply(1:ncol(foi_out), FUN = function(i) sd(foi_out[,i])/
+                        mean(foi_out[,i])) *100
+names(coeff_of_var) = colnames(foi_out)
+
+colours = snapalette("Space", 1000, type = "continuous")
+
+shp1$cv = NA
+shp1$cv = log10(coeff_of_var[match(shp1$GID_1, names(coeff_of_var))])
+
+mybreaks= seq(min(shp1$cv, na.rm = TRUE), max(shp1$cv, na.rm = TRUE)+0.01, length.out=1001)
+
+vcols = findInterval(shp1$cv,mybreaks)
+
+plot(shp0)
+plot(shp1,col=colours[vcols], lty=2, add=T)
+
+image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), 
+           horizontal = TRUE,
+           legend.mar = 3.5)
+
+```

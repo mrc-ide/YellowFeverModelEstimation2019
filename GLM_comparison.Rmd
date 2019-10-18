@@ -13,7 +13,7 @@ output:
 
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = paste0("images"),
+  fig.path = "images",
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -32,6 +32,7 @@ library(R.utils)
 library(magrittr)
 library(pROC)
 library(dplyr)
+library(truncdist)
 
 # homemade
 library(snapalette)
@@ -63,13 +64,72 @@ snapal <- "Pop"
 
 ```{r posteriorProb, fig.cap = "Posterior porbability from entire MCMC chain, thinned by a factor 100."}
 
-glm_mcmc_out %<>% mutate(variant = as.character(variant))
+glm_mcmc_out %<>% mutate(variant = as.factor(variant))
 ggplot(glm_mcmc_out) + 
   geom_violin(aes(x = reorder(variant, -posteriorProb), y = posteriorProb, fill = variant)) +
   theme_bw()+
   theme(legend.position = "none")+
   xlab("Variant") +
-  ylab("Posterior probability")
+  ylab("Posterior probability") +
+  scale_fill_manual(values = snapalette(snapal, 20, "continuous"))
+
+```
+
+```{r loglike, fig.cap = "Posterior porbability from entire MCMC chain, thinned by a factor 100."}
+GLMprior_rename = function(param) {
+  
+  Prior = rep(0,4)
+  
+  #GLM
+  jj = grep("^adm05", names(param)) # select country parameters (parameter_type=2) the sd.prior=2 is from Kevin's original code create status
+  ign = grep("low_risk", names(param))
+  if(length(ign)>0)  jj = jj[jj!=ign]
+  
+  sd.prior = 2
+  
+  Prior[1] =  - 0.5 * sum((param[jj] / sd.prior) ^ 2) # adjustment for reduced variation between countries
+  
+  Prior[2] =  sum(dnorm(as.numeric(param[grep("^adm05|family|continent|dtp", 
+                                              names(param), 
+                                              invert = TRUE)]),
+                        mean = 0,
+                        sd = 30,
+                        log = TRUE), na.rm = T)
+  
+  Prior[3] = sum(log(dtrunc(param[grep("family", names(param))],
+                        "norm",
+                       mean = 0,
+                       sd = 30,
+                       a = 0, b = Inf)), na.rm = T)
+  
+  Prior[4] = sum(log(dtrunc(param[grep("low_risk", names(param))],
+                            "norm",
+                            mean = 0,
+                            sd = 30,
+                            a = 0, b = Inf)), na.rm = T)# brute force the adm05 low risk to be positive
+  
+  
+  out = as.numeric( Prior )
+  return( sum(out) )
+}
+
+
+
+glm_mcmc_out$prior <-  sapply(1:nrow(glm_mcmc_out),
+                            FUN = function(i){
+                              GLMprior_rename(dplyr::select(glm_mcmc_out, 
+                                                            -c(posteriorProb, acceptRate, variant))[i, ])
+                              })
+
+glm_mcmc_out %<>% mutate(like = posteriorProb - prior)
+
+ggplot(glm_mcmc_out) + 
+  geom_violin(aes(x = reorder(variant, -like), y = like, fill = variant)) +
+  theme_bw()+
+  theme(legend.position = "none")+
+  xlab("Variant") +
+  ylab("Log Likelihood") +
+  scale_fill_manual(values = snapalette(snapal, 20, "continuous"))
 
 ```
 
@@ -81,8 +141,9 @@ glm_mcmc_out %>%
   ggplot(aes(x = variant, y = estimates, fill = variant)) +
   geom_violin()+
   theme_bw()+
-  theme(legend.position = "none")+
-  facet_wrap(parameter~., scales = "free")
+  theme(legend.position = "none", axis.text.x = element_blank())+
+  facet_wrap(parameter~., scales = "free")+
+  scale_fill_manual(values = snapalette(snapal, 20, "continuous"))
   
 ```
 
@@ -120,7 +181,8 @@ df_AUC = NULL
 
 for(i in 1:20){
   for(s in 1:100){
-  glm_tmp <-  glm_mcmc_out %>% filter(variant == i) %>% dplyr::select(-c(posteriorProb, acceptRate, variant))
+  glm_tmp <-  glm_mcmc_out %>% filter(variant == i) %>% 
+    dplyr::select(-c(posteriorProb, acceptRate, variant))
   Est_beta <- glm_tmp %>% sample_n(1)
   
   dat <- read.csv(filename, stringsAsFactors = FALSE)
@@ -186,11 +248,12 @@ for(i in 1:20){
 
 
 ```{r plot_AUC, fig.cap="AUC for 100 samples of posterior for each model variant."}
-df_AUC %>% mutate(variant = as.character(variant)) %>%
+df_AUC %>% mutate(variant = as.factor(variant)) %>%
 ggplot( aes(x = reorder(variant, -AUC), y = AUC, fill = variant)) +
   geom_violin() +
   theme_bw()+
   theme(legend.position = "none") +
-  xlab("Variant")
+  xlab("Variant")+
+  scale_fill_manual(values = snapalette(snapal, 20, "continuous"))
   
 ```
