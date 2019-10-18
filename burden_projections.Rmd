@@ -375,6 +375,19 @@ tmp2 %>% group_by(continent) %>% summarise(deaths = sum(as.numeric(deaths), na.r
 sum(tmp2$deaths)
 ```
 
+```{r death range by country}
+df <-  infections_df %>% 
+  group_by(adm0, sample) %>% 
+  summarise(deaths = sum(deaths, na.rm = TRUE))
+
+df %>% group_by(adm0) %>% 
+  summarise(deaths_low = round(quantile(as.numeric(deaths), probs = 0.025, na.rm = T)),
+            deaths_median = round(quantile(as.numeric(deaths), probs = 0.5, na.rm = T)),
+            deaths_high = round(quantile(as.numeric(deaths), probs = 0.975, na.rm = T)) ) %>%
+  arrange(-deaths_median)
+
+```
+
 
 ```{r c34}
 

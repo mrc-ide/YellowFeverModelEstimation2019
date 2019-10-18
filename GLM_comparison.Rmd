@@ -62,7 +62,7 @@ snapal <- "Pop"
 
 # Compare estimates of parameters and posterior probability
 
-```{r posteriorProb, fig.cap = "Posterior porbability from entire MCMC chain, thinned by a factor 100."}
+```{r posteriorProb, fig.cap = "Posterior probability from entire MCMC chain, thinned by a factor 100."}
 
 glm_mcmc_out %<>% mutate(variant = as.factor(variant))
 ggplot(glm_mcmc_out) + 
@@ -75,19 +75,19 @@ ggplot(glm_mcmc_out) +
 
 ```
 
-```{r loglike, fig.cap = "Posterior porbability from entire MCMC chain, thinned by a factor 100."}
+```{r loglike, fig.cap = "Log likelihood from entire MCMC chain, thinned by a factor 100."}
 GLMprior_rename = function(param) {
   
   Prior = rep(0,4)
   
   #GLM
-  jj = grep("^adm05", names(param)) # select country parameters (parameter_type=2) the sd.prior=2 is from Kevin's original code create status
+  jj = grep("^adm05", names(param)) 
   ign = grep("low_risk", names(param))
   if(length(ign)>0)  jj = jj[jj!=ign]
   
   sd.prior = 2
   
-  Prior[1] =  - 0.5 * sum((param[jj] / sd.prior) ^ 2) # adjustment for reduced variation between countries
+  Prior[1] =  - 0.5 * sum((param[jj] / sd.prior) ^ 2) 
   
   Prior[2] =  sum(dnorm(as.numeric(param[grep("^adm05|family|continent|dtp", 
                                               names(param), 
@@ -106,7 +106,7 @@ GLMprior_rename = function(param) {
                             "norm",
                             mean = 0,
                             sd = 30,
-                            a = 0, b = Inf)), na.rm = T)# brute force the adm05 low risk to be positive
+                            a = 0, b = Inf)), na.rm = T)
   
   
   out = as.numeric( Prior )
@@ -115,11 +115,12 @@ GLMprior_rename = function(param) {
 
 
 
-glm_mcmc_out$prior <-  sapply(1:nrow(glm_mcmc_out),
-                            FUN = function(i){
-                              GLMprior_rename(dplyr::select(glm_mcmc_out, 
-                                                            -c(posteriorProb, acceptRate, variant))[i, ])
-                              })
+glm_mcmc_out$prior <-  
+  sapply(1:nrow(glm_mcmc_out),
+         FUN = function(i){
+           GLMprior_rename(dplyr::select(glm_mcmc_out, 
+                                         -c(posteriorProb, acceptRate, variant))[i, ])
+         })
 
 glm_mcmc_out %<>% mutate(like = posteriorProb - prior)
 
