@@ -43,3 +43,23 @@ lapply(1:20, FUN = function(x) render_report(x, "compare_with_old_foi"))
 #-----------------------------------------------------------------------------
 # compare S America
 lapply(1:20, FUN = function(x) render_report(x, "Compare_SAmerica_burden"))
+
+
+#-----------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
+rmarkdown::render(
+  paste0("GLM_comparison", ".Rmd"), 
+  output_file = paste0("GLM_comparison", ".pdf")
+)
+
+
+rmarkdown::render(
+  paste0("FOI_comparison", ".Rmd"), 
+  output_file = paste0("FOI_comparison", ".pdf")
+)
+
+
+rmarkdown::render(
+  paste0("burden_comparison", ".Rmd"), 
+  output_file = paste0("burden_comparison", ".pdf")
+)
