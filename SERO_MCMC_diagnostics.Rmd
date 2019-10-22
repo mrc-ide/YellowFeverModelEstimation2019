@@ -13,7 +13,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = "images/",
+  fig.path = "sero_images/",
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -42,10 +42,13 @@ sourceDirectory("Functions", modifiedOnly = FALSE)
  
 snapal <- "Pop"
 
-mcmc_out <- get_chains("multi_model_MCMC_chain_20190903", 
-                       burnin = 8e5, thin = 1)
+# mcmc_out <- get_chains("multi_model_MCMC_chain_20190903", 
+#                        burnin = 8e5, thin = 1)
 
-mcmc_out %<>% select(-starts_with("R0"))
+mcmc_out <- get_chains("R0_multi_model_MCMC_chain_20191022", 
+                        burnin = 1, thin = 1)
+
+mcmc_out %<>% select(-starts_with("Foi"))#select(-starts_with("R0"))
 
 
 plot(mcmc_out$posteriorProb, type="l", 
@@ -226,21 +229,22 @@ P_tot_survey = list_pop_at_survey$P_tot_survey_2d
 
 ```{r hpd, message=F, warning=F}
 
-hpd_sero = get_hpd(mcmc_out = mcmc_out, glm_mcmc_out = NA)$hpd_sero
+hpd_sero = get_hpd(mcmc_out = mcmc_out, glm_mcmc_out = NA, model_type = "R0")$hpd_sero
 
 ```
 
 ```{r sero_predict1,  message = F, warning=F, fig.cap = "\\label{fig:sero_predict1}Seroprevalence predictions (blue).", fig.align='center', fig.pos = 'h', fig.height = 12, fig.width = 20, strip.white=F}
 
 
-plot_sero(seroout, 
+plot_sero_R0(seroout, 
           hpd_sero, 
           pop_agg3d, 
           dim_year = unique(pop1$year), 
-          dim_age =  unique(pop1$age), 
+          dim_age =  0:100, 
           inc_v3d, 
           pop_moments_agg, 
           vc_agg3d)
+
 
 ```
 

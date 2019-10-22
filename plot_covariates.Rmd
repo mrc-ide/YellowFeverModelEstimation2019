@@ -126,3 +126,20 @@ for(c in covar){
 }
 
 ```
+
+```{r plot_occ}
+
+  parm = shp1@data[, "cases_or_outbreaks"]
+  mybreaks = seq(min(parm, na.rm = TRUE) - 1e-5, 
+                 max(parm, na.rm = TRUE) + 1e-5, length.out=1001)
+  
+  mycols =  colours
+  vcols = findInterval(shp1@data[, "cases_or_outbreaks"], mybreaks)
+  
+  plot(shp0)
+  plot(shp1, col=mycols[vcols] , lty=0, add=TRUE)
+  plot(shp0, add=TRUE)
+  
+
+
+```

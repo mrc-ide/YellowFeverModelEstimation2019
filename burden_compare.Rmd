@@ -386,5 +386,5 @@ ggplot( aes( x = Year)) +
               fill = alpha(snapalette("Pop", 5, "discrete")[5], 0.4)) +
   geom_line(aes(y = round(q0.5/reporting_propn) ), color = snapalette("Pop", 5, "discrete")[5], size = 1)+
   theme_bw() +
-  ylim(0, 2e4)
+  scale_y_log10()
 ```

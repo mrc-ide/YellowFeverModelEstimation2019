@@ -156,17 +156,140 @@ plot_sero = function(seroout,
 }
 
 #------------------------------------------------------------------------------------------------------#
+plot_sero_R0 = function(seroout,
+         hpd_sero,
+         pop_agg3d,
+         dim_year,
+         dim_age,
+         inc_v3d,
+         pop_moments_agg,
+         vc_agg3d){
+  
+  
+  
+  p = create_pop_at_survey(pop_agg3d,
+                           seroout$sero_studies,
+                           dim_year)
+  
+  p_at_survey_3d=p$p_at_survey_3d
+  P_tot_survey_2d=p$P_tot_survey_2d
+  
+  
+  for (i in 1:3){
+    
+    #set parameters
+    param =  hpd_sero[,i]
+    v_e = hpd_sero[1, i]
+    
+    seroprev_predict_survey_r = NULL
+    
+    for (index_survey in 1:seroout$no_sero_surveys){
+      
+      vcfac = ifelse(!is.na(seroout$vc_factor[index_survey]),
+                     seroout$vc_factor[index_survey],
+                     param[grep("vc_fac", names( param))])
+      
+      # SEROPREVALENCE R0 #
+      R0surv = param[grep("R0", names( param))][index_survey]
+      res = R0_recurrence_seroprev_survey(R0=R0surv,
+                                          foi_const = 0,
+                                          t0_vac=seroout$t0_vac[index_survey],
+                                          dim_year=dim_year,
+                                          dim_age=dim_age,
+                                          p_at_survey= p_at_survey_3d[index_survey,,],
+                                          P_tot_survey= P_tot_survey_2d[index_survey,],
+                                          inc_v3d=inc_v3d_agg[index_survey,,],
+                                          pop_moments=pop_moments_agg[index_survey,],
+                                          vac_eff_arg = v_e)
+      
+      
+      res_out = vcfac*(1 - res$i_neg_v_neg_tau3[seroout$study_years[[index_survey]]-1939,]) +
+        (1-vcfac)*(1 - res$i_neg_v_neg_tau3[seroout$study_years[[index_survey]]-1939,]/
+                     (res$i_pos_v_neg_tau3[seroout$study_years[[index_survey]]-1939,] +
+                        res$i_neg_v_neg_tau3[seroout$study_years[[index_survey]]-1939,]))
+      
+      seroprev_predict_survey_r = rbind(seroprev_predict_survey_r,  res_out)
+      
+      
+    } # end of for(index_survey)
+    
+    seroprev_predict_survey_print_r = data.frame(sero_studies=rep(seroout$sero_studies, times = 1),
+                                                 seroprev_predict_survey_r)
+    
+    
+    if (i==1) {
+      r_sero_predictions_lo=seroprev_predict_survey_print_r[1:seroout$no_sero_surveys,2:102]
+    }
+    if (i==2) {
+      r_sero_predictions=seroprev_predict_survey_print_r[1:seroout$no_sero_surveys,2:102]
+    }
+    if (i==3) {
+      r_sero_predictions_hi=seroprev_predict_survey_print_r[1:seroout$no_sero_surveys,2:102]
+    }
+    
+    
+  } #end of for(i)
+  
+  
+  ### PLOT ###
+  par(mfrow=c(6,7),  oma = c(4, 4, 0, 0), mar = c(2, 2, 1, 1))
+  for (i in 1:seroout$no_sero_surveys){
+    #get upper bound for plot axes
+    maxsero = max(as.numeric(r_sero_predictions_hi[i,1:86]),
+                  na.rm = TRUE)
+    
+    #pull out key parts of data for plotting
+    age_points = ( seroout$survey_dat[[i]]$age_min+seroout$survey_dat[[i]]$age_max )/2
+    seroprevalence = seroout$survey_dat[[i]]$positives / seroout$survey_dat[[i]]$samples
+    
+    #plot the data
+    plot( age_points,
+          seroprevalence,
+          main = paste0((seroout$sero_studies[i])),
+          cex = 1,
+          ylab = "Seroprevalence", pch=19, col = alpha("black",0.5),
+          xlim=c(0,85), ylim=c(0,maxsero+0.1 ), xlab = "Age")
+    
+    #add the HPD of predictions
+    polygon(c(85:0,0:85), c(rev(as.numeric(r_sero_predictions_hi[i,1:86])),
+                            (as.numeric(r_sero_predictions_lo[i,1:86]))) ,
+            border=NA, col = rgb(1, 0, 0,0.2) )
+    
+    #add the median predictions
+    lines(0:85,as.numeric(r_sero_predictions[i,1:86]),
+          type="l",col = "red")
+    
+    ## add binomial confidence for the data
+    conf_int = Hmisc::binconf(seroout$survey_dat[[i]]$positives,
+                              seroout$survey_dat[[i]]$samples)
+    
+    arrows(age_points,
+           conf_int[,2],
+           age_points,
+           conf_int[,3], length=0.05, angle=90, code=3)
+    
+    points(age_points, conf_int[,1])
+  }
+  mtext('Age', side = 1, outer = TRUE, line = 2)
+  mtext('Seroprevalence', side = 2, outer = TRUE, line = 2)
+}
+
+#------------------------------------------------------------------------------------------------------#
 get_hpd = function(mcmc_out,
-                   glm_mcmc_out){
+                   glm_mcmc_out, 
+                   model_type = "Foi"){
   
   if(!anyNA(mcmc_out)){
     ### hpd for serology ###
     #full uncertainty for shared parameters
     hpd_sero = hpd_out(mcmc_out[,grep("^vac", names(mcmc_out))])
     
-    
+    if(model_type == "Foi"){
     #hpd by model type
-    hpd_sero = rbind(hpd_sero, hpd_out(mcmc_out[,grep("^Foi", names(mcmc_out))]) )
+      hpd_sero = rbind(hpd_sero, hpd_out(mcmc_out[,grep("^Foi", names(mcmc_out))]) )
+    } else {
+      hpd_sero = rbind(hpd_sero, hpd_out(mcmc_out[,grep("^R0", names(mcmc_out))]) )
+    }
     
     #last shared parameter
     hpd_sero = rbind(hpd_sero, hpd_out(mcmc_out[,grep("^vc", names(mcmc_out))]))
