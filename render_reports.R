@@ -60,6 +60,6 @@ rmarkdown::render(
 
 
 rmarkdown::render(
-  paste0("burden_comparison", ".Rmd"), 
-  output_file = paste0("burden_comparison", ".pdf")
+  paste0("burden_compare", ".Rmd"), 
+  output_file = paste0("burden_compare", ".pdf")
 )

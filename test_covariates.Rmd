@@ -165,7 +165,7 @@ names(df_out)[2] = "cluster"
 df_out %>% arrange(cluster)
 ```
 
-In order to reduce the number of covariates to test, we may choose those covariates in each cluster that are most correlated with our outcome variable. This is omitted in the current analysis.
+In order to reduce the number of covariates to test, we may choose those covariates in each cluster that are most correlated with our outcome variable. 
 
 ```{r cor with cas}
 

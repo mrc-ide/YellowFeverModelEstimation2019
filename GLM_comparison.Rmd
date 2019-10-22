@@ -13,7 +13,7 @@ output:
 
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = "images",
+  fig.path = "images/",
   dpi = 300,
   warning = FALSE,
   message = FALSE

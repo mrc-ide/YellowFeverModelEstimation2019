@@ -13,7 +13,7 @@ output:
 
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = "images",
+  fig.path = "images/",
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -37,6 +37,8 @@ library(dplyr)
 library(snapalette)
 library(YFestimation)
 library(KsetupR)
+
+R.utils::sourceDirectory("Functions")
 
 snapal = "Pop"
 ```
@@ -228,7 +230,7 @@ df %>% group_by(adm0) %>%
   theme_bw() +
   theme(legend.position = "none", axis.text.x = element_text(angle = 45, hjust = 1)) +
   xlab("Country")+ ylab("Deaths in 2018")+
-  scale_fill_manual(values = snapalette(snapal, 70, "continuous")) +
+  scale_fill_manual(values = snapalette(snapal, 71, "continuous")) +
   scale_y_log10()
 ```
 
@@ -271,7 +273,7 @@ paho_dat %<>% spread(`Measure Names`, `Measure Values`)
 paho_dat %<>% filter(Year>1983)
 ```
 
-```{r calculate burden}
+```{r calculate burden 2}
 
 infections_year = NULL
 for(v in 1:20){
@@ -281,7 +283,7 @@ for(v in 1:20){
   
   inf_out = NULL
   
-  for(s in 1:nrow(fois)){
+  for(s in 1:10){ #nrow(fois)){
     # take quantile
     foi = fois[s,]
     

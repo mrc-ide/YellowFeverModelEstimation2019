@@ -59,13 +59,15 @@ dat <- read.csv(filename, stringsAsFactors = FALSE)
 
 
 #remove families of NHP that are not to be included
-model_form_whole <- read.csv("Model_form_step_1.csv", stringsAsFactors = FALSE)$x
-covar_family <- unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
+model_form_whole = read.csv("bestglm_1.csv", stringsAsFactors = FALSE) %>% 
+  dplyr::select(-Criterion)
+
+covar_family = names(model_form_whole)
 
 dat <- dat[, -which(!names(dat) %in% covar_family & grepl("family", names(dat)))] 
 
 # change to just read covariates from mcmc
-covar = unlist(strsplit(unlist(strsplit(model_form_whole, "\\+")), "\\~"))
+covar = covar_family
    
 dat %<>% dplyr::select(-year)
 dat %<>% filter( is.finite(MIR.max))
