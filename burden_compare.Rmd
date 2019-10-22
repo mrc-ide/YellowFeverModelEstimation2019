@@ -230,7 +230,7 @@ df %>% group_by(adm0) %>%
   theme_bw() +
   theme(legend.position = "none", axis.text.x = element_text(angle = 45, hjust = 1)) +
   xlab("Country")+ ylab("Deaths in 2018")+
-  scale_fill_manual(values = snapalette(snapal, 71, "continuous")) +
+  scale_fill_manual(values = snapalette(snapal, length(unique(df$adm0)), "continuous")) +
   scale_y_log10()
 ```
 
@@ -373,4 +373,18 @@ ggplot(tmp, aes( x = Year)) +
   geom_line(aes(y = round(q0.5/reporting_propn) ), color = snapalette("Pop", 5, "discrete")[5], size = 1)+
   facet_wrap(~Countries, scales = "free_y")+ 
   theme_bw()
+```
+
+```{r compare_cases_paho_BRA, fig.height=10, fig.width=8}
+
+
+tmp %>% filter(Countries == "Brazil")%>%
+ggplot( aes( x = Year)) + 
+  geom_line(aes(y = Cases)) +
+  geom_ribbon(aes(ymin = round(q0.025/reporting_propn), 
+                  ymax = round(q0.975/reporting_propn)), 
+              fill = alpha(snapalette("Pop", 5, "discrete")[5], 0.4)) +
+  geom_line(aes(y = round(q0.5/reporting_propn) ), color = snapalette("Pop", 5, "discrete")[5], size = 1)+
+  theme_bw() +
+  ylim(0, 2e4)
 ```
