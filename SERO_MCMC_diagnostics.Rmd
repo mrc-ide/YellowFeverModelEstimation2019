@@ -46,7 +46,7 @@ snapal <- "Pop"
 #                        burnin = 8e5, thin = 1)
 
 mcmc_out <- get_chains("R0_multi_model_MCMC_chain_20191022", 
-                        burnin = 1, thin = 1)
+                        burnin = 5e4, thin = 1)
 
 mcmc_out %<>% select(-starts_with("Foi"))#select(-starts_with("R0"))
 
