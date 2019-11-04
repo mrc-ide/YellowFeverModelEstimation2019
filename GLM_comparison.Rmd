@@ -239,9 +239,12 @@ for(i in 1:20){
   
   ROC_out <- pROC::roc(response = dat$cases_or_outbreaks, predictor = glmpreds)
   
-  df_AUC %<>% bind_rows(data.frame(variant = i,
+  df_AUC %<>% bind_rows(c(data.frame(variant = i,
                                   sample = s,
-                                  AUC = round(auc(ROC_out), 4)))
+                                  AUC = round(auc(ROC_out), 4)),
+                          Est_beta))
+  
+
   }
 }
 
@@ -257,4 +260,111 @@ ggplot( aes(x = reorder(variant, -AUC), y = AUC, fill = variant)) +
   xlab("Variant")+
   scale_fill_manual(values = snapalette(snapal, 20, "continuous"))
   
+```
+
+
+# Sample using AUC
+
+
+```{r sample_proportionally}
+
+n_sample = 1000
+
+df_sample = df_AUC %>% sample_n(size = n_sample, weight = AUC)
+
+hist(df_sample$variant)
+
+df_glm = NULL
+
+for(i in 1:nrow(df_sample)){
+
+  Est_beta <- df_sample[i, ] %>% select(-c(variant, sample, AUC))
+  
+  dat <- read.csv(filename, stringsAsFactors = FALSE)
+  
+  #remove families of NHP that are not to be included
+  model_form_whole = read.csv("bestglm_1.csv", stringsAsFactors = FALSE) %>% 
+    dplyr::select(-Criterion)
+  
+  covar_family = names(model_form_whole)[ which(model_form_whole[df_sample$variant[i], ] == TRUE) ] 
+  
+  dat <- dat[, -which(!names(dat) %in% covar_family & grepl("family", names(dat)))] 
+  
+  # change to just read covariates from mcmc
+  covar = covar_family
+  
+  dat %<>% dplyr::select(-year)
+  dat %<>% filter( is.finite(MIR.max))
+  dat %<>% filter(!is.na(temp_mean))
+  #dat %<>% tidyr::drop_na()
+  dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
+                                     "Africa", continent))
+  
+  #dat %<>% filter(risk %in% c("high", "moderate"))
+  
+  # make extra elements and normalise
+  dat = adjust_env_dat(dat)
+  
+  
+  # -----------------------------------------------------------------------
+  # FIT MODEL #
+  covar = covar[grep("cases_or_outbreaks|family", covar, invert = TRUE)] #
+  
+  
+  model_form = paste0("cases_or_outbreaks~", 
+                      paste(covar, collapse = "+"),
+                      "+aggregate_family","+adm05", "+surv.qual.adm0") 
+  
+
+  object_glm <- YFestimation::fit_glm(dat = dat, 
+                                      depi = match("cases_or_outbreaks", 
+                                                   names(dat)), 
+                                      models = model_form)
+  
+  beta0 <- object_glm[[1]]
+  x <- object_glm[[2]]
+  y <- object_glm[[3]]
+  
+  #order Est_beta to match beta0
+  Est_beta = na.omit(Est_beta[names(beta0)])
+  
+  glmpreds <- YFestimation::fun_calcPred( as.numeric(Est_beta) , x, type="response")
+  
+  names(glmpreds) <- dat$adm1
+  
+  df_glm %<>% bind_rows(glmpreds)
+  
+}
+
+write.csv(df_glm, "Sampled_glm_predictions.csv", row.names = FALSE)
+
+```
+
+
+```{r map_mean_predictions}
+
+
+colours <- snapalette::snapalette(snapal, 100, type = "continuous")
+
+median_pred <-  apply(df_glm, 2, median)
+
+shp1$predictions <- median_pred[match( shp1$GID_1, names(df_glm))]
+
+mybreaks <- seq(0, 1.0001, length.out=101)
+mycols <-  colours
+vcols <- findInterval(shp1$predictions, mybreaks)
+
+
+plot(shp0)
+plot(shp1, col=mycols[vcols] , lty=0, add=TRUE)
+plot(shp0, add=TRUE)
+fields::image.plot(legend.only=TRUE, 
+                   breaks=mybreaks, 
+                   col=mycols, 
+                   zlim=c(0,1), 
+                   horizontal = TRUE)
+
+ROC_out <- pROC::roc(response = dat$cases_or_outbreaks, predictor = median_pred)
+round(auc(ROC_out), 4)
+
 ```
