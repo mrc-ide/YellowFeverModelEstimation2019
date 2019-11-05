@@ -395,9 +395,17 @@ plot_transmission_intensity2 = function(x,
              axis.args = list(at = c(-7:1), labels =c("1e-07", "1e-06","1e-05","1e-04", "0.001", "0.01", "0.1","1","10"), las =2),
              legend.mar = 3.5)
   
-  return(data.frame(adm0 = shp1$GID_0,
-                    adm0_adm1 = shp1$GID_1,
-                    FOI = shp1$runs))
+  if(model_type == "Foi"){
+  df <-  data.frame(adm0 = shp1$GID_0,
+                  adm0_adm1 = shp1$GID_1,
+                  FOI = shp1$runs)
+  } else  {
+    df <-  data.frame(adm0 = shp1$GID_0,
+                      adm0_adm1 = shp1$GID_1,
+                      R0 = shp1$runs)
+  }
+  
+  return(df)
   
 }
 
