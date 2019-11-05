@@ -1,0 +1,500 @@
+---
+title: "R0 estimates"
+author: "Katy Gaythorpe"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+header-includes: 
+- \usepackage{placeins}
+output: 
+  pdf_document:
+    df_print: "kable"
+params:
+  model_variant: 1
+  foi_sample: false
+---
+
+```{r knitsetup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  dev = "png",
+  fig.path = paste0("images", params$model_variant, "/"),
+  dpi = 300,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+In the following we construct yellow fever transmission intensity estimates across the African endemic region. We assume at this stage that you have folders of posterior samples from both the GLM of yellow fever occurrence and the transmission models for seroprevalence.
+
+```{r setup}
+library(mcmcplots)
+library(ggmcmc)
+library(gridExtra)
+library(maptools)
+library(readr)
+library(fields)
+library(Hmisc)
+library(viridis)
+library(R.utils)
+library(magrittr)
+library(ggplot2)
+library(dplyr)
+
+library(YFestimation)
+library(snapalette)
+library(KsetupR)
+
+sourceDirectory("Functions", modifiedOnly = FALSE)
+
+if(!exists("mcmc_out")){
+  mcmc_out = get_chains("R0_multi_model_MCMC_chain_20191022", 
+                        burnin = 8e5, thin = 100)
+  
+  write.csv(sample(exp(mcmc_out$vac_eff), 100), "vac_eff_samples.csv", row.names = FALSE)
+}
+
+glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20191016_bestglm_1_", params$model_variant),
+                          burnin =6e4, thin = 1)
+
+names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
+
+
+
+```
+
+```{r setup_fit,  message = F, warning=F}
+
+### LOADING SEROLOGY DATA ###
+Serology = read.csv(paste0("../Data/","Serology/Serology_newgadm_2019.csv"), 
+                    stringsAsFactors = FALSE)
+
+Serology$gadm36 = gsub("_", "." ,Serology$gadm36)
+
+seroout = process_serology(Serology, adm = "gadm36")
+for(s in 1:seroout$no_sero_surveys){
+  seroout$adm1s[[s]] = paste(seroout$adm1s[[s]], "_1", sep = "")
+}
+
+# LOAD ENVIRONMENTAL DATA #
+Env_Table_path <- "../Data/Environment/global_dat"
+
+filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
+
+dat <- read.csv(filename, stringsAsFactors = FALSE)
+
+#remove families of NHP that are not to be included
+model_form_whole = read.csv("bestglm_1.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
+
+covar_family = names(model_form_whole)[ which(model_form_whole[params$model_variant, ] == TRUE) ] 
+
+dat <- dat[, -which(!names(dat) %in% covar_family & grepl("family", names(dat)))] 
+
+# get model covariates
+covar = names(glm_mcmc_out %>% dplyr::select(-c(Intercept, 
+                                                starts_with("adm05"), 
+                                                posteriorProb, 
+                                                acceptRate))) 
+
+
+
+# make extra elements and normalise
+dat %<>% dplyr::select(-year)
+dat %<>% filter( is.finite(MIR.max))
+dat %<>% filter(!is.na(temp_mean))
+#dat %<>% tidyr::drop_na()
+dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
+                                   "Africa", continent))
+dat = adjust_env_dat(dat)
+
+dat %<>% mutate(adm0_adm1 = adm1)
+
+# fit to one continent
+#dat %<>% filter(continent == "Africa")
+# c34 = readr::read_csv("../Data/Countries.csv")$c34
+# dat %<>% filter(adm0 %in% c34)
+
+
+### POPULATION AND VACCINATION DATA ###
+if(!exists("all_res_pop_3d")){
+  all_res_pop_3d = get_pop_data_3d() 
+}
+pop1 = all_res_pop_3d$pop1                                      
+P_tot = all_res_pop_3d$P_tot                                   
+p_prop = all_res_pop_3d$p_prop                                   
+
+pop1 %<>% rename(adm0_adm1 = adm1)
+
+pop1 %<>% arrange(year) %>% dplyr::select(-c(country_code, country))
+
+names(pop1)[3:ncol(pop1)] = paste0("a", 0:100)
+
+pop1 %<>% filter(year<2051)
+p_prop %<>% filter(year<2051)
+P_tot %<>% filter(year<2051)
+
+# VACCINATION DATA #
+vc2d = readRDS("vacc_1940_1950.RDS")
+vc2d = as.data.frame(vc2d)
+
+# expand vc2d to match pop1
+vc2d %<>% mutate(year = as.numeric(as.character(year)))
+vc_tmp = pop1 %>% filter(!adm0_adm1 %in% vc2d$adm0_adm1)
+vc_tmp[, grep("adm0_adm1|year", names(vc_tmp), invert = TRUE)] = 0
+
+vc2d %<>% bind_rows(vc_tmp)
+vc2d %<>% unique()
+vc2d %<>% filter(!is.na(adm0_adm1))
+
+
+#-------------------------------------------------------
+# filter vac and pop to match dat
+vc2d %<>% filter(adm0_adm1 %in% dat$adm1)
+pop1 %<>% filter(adm0_adm1 %in% dat$adm1)
+
+
+#-------------------------------------------------------
+#vc3d
+vc3d = transform_into_vc3d(vc2d) 
+#------------------------------------------------------
+class(vc3d) = "numeric"
+# t0_vac_africa #
+t0_vac_africa = calc_t0_vac_africa(vc3d)
+
+# inc_v3d #
+if(!exists("inc_v3d")){
+  inc_v3d = calc_incidence_vac_general(vc3d)
+}
+    
+# CALCULATE population moments #
+p_prop_3d = array( data = p_prop$population,
+                   dim = c(length(unique(p_prop$adm1)),
+                           length(unique(p_prop$year)),
+                           length(unique(p_prop$age))),
+                   dimnames = list(unique(p_prop$adm1),
+                                   unique(p_prop$year),
+                                   unique(p_prop$age)))
+
+pop_moments_whole = calc_pop_moments(p_prop_3d, 
+                                     t0_vac_africa,
+                                     dim_adm = dimnames(vc3d)[[1]],
+                                     dim_year = dimnames(vc3d)[[2]],
+                                     dim_age = dimnames(vc3d)[[3]])
+
+#aggregate
+if(!exists("list_aggregate_pop_vc")){
+  list_aggregate_pop_vc = 
+    YFestimation::Make_aggregate_pop_vc_3d(pop1=pop1, 
+                                           vc2d=vc2d %>% dplyr::select(-adm0), 
+                                           sero_studies=seroout$sero_studies, 
+                                           adm1s=seroout$adm1s) 
+}
+pop_agg3d = list_aggregate_pop_vc$pop_agg3d 
+vc_agg3d = list_aggregate_pop_vc$vc_agg3d 
+
+pop_agg3d[is.na(pop_agg3d)] = 0
+vc_agg3d[is.na(vc_agg3d)] = 0
+
+#calculate aggregated incidence (same function as before)
+class(vc_agg3d) = "numeric"
+inc_v3d_agg = calc_incidence_vac_general(vc_agg3d)  
+
+#calculate aggregated moments (different fucntion before)
+class(pop_agg3d) = "numeric"
+pop_moments_agg = calc_pop_moments_agg(pop_agg3d,
+                                       seroout$t0_vac,
+                                       dim_year = unique(pop1$year),
+                                       seroout$study_years) 
+
+    
+
+# CREATE R0 LOOKUP TABLE #
+# CREATE R0 LOOKUP TABLE #
+if(!file.exists(paste0("R0_lookup_table.Rdata") )){
+    
+    ptm = proc.time()
+    create_R0_lookup(dim_adm = dimnames(vc3d)[[1]], 
+                     dat, 
+                     dim_year = dimnames(vc3d)[[2]],
+                     dim_age = dimnames(vc3d)[[3]],
+                     p_prop_3d,
+                     P_tot_2d = P_tot,
+                     inc_v3d,
+                     pop_moments_whole,
+                     pop_moments_agg, 
+                     vac_eff_arg = 0.975)
+    proc.time()-ptm
+  } else {
+    load(paste0("R0_lookup_table.Rdata") )
+  }
+
+
+
+# pop at survey #
+foi_const_surv = rep(0, seroout$no_sero_surveys)
+
+list_pop_at_survey = create_pop_at_survey(pop_agg3d, 
+                                          seroout$sero_studies, 
+                                          dim_year = unique(pop1$year))
+p_at_survey = list_pop_at_survey$p_at_survey_3d
+P_tot_survey = list_pop_at_survey$P_tot_survey_2d
+
+model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+")  ,  "+adm05") 
+
+
+object_glm <- YFestimation::fit_glm(dat = dat, 
+                                   depi = match("cases_or_outbreaks", 
+                                                names(dat)), 
+                                   models = model_form)
+
+beta0 <- object_glm[[1]]
+x <- object_glm[[2]]
+y <- object_glm[[3]]
+
+
+
+# read shapefiles in #
+if(!exists("shp0")){
+  shp0 = rgdal::readOGR("../../shapefiles/Africa_America_0_smooth.shp",
+                        stringsAsFactors = FALSE,
+                        encoding = "UTF-8",
+                        use_iconv = TRUE)
+}
+if(!exists("shp1")){
+  shp1 = rgdal::readOGR("../../shapefiles/Africa_America_1_smooth.shp",
+                        stringsAsFactors = FALSE,
+                        encoding = "UTF-8",
+                        use_iconv = TRUE)
+}
+
+
+```
+
+
+```{r hpd, message=F, warning=F}
+
+out = get_hpd(mcmc_out, glm_mcmc_out)
+
+R0_param = out$R0_param
+
+
+
+```
+
+
+```{r Foi_map,  message = F, warning=F, fig.cap = "\\label{fig:Foi_map}Map of FOI values.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 5 }
+
+ii = c(2:(grep("R0", names(Foi_param[,1]))[1]-1))
+varsin_nc = grep("adm05|surv|posterior|acc|dtp", names(glm_mcmc_out), invert = TRUE)
+
+colours = snapalette("Pop", 100, type = "continuous")
+
+vc2d %<>% arrange( adm0_adm1)
+
+#order x by FOI_param
+x = x[, names(Foi_param[ii,2])]
+
+R0 = plot_transmission_intensity2(x,
+                                   ii,
+                                   seroout,
+                                   R0_param[,2],
+                                   dat ,
+                                   t0_vac_africa,
+                                   dim_year,
+                                   dim_age,
+                                   p_prop_3d,
+                                   P_tot_2d,
+                                   inc_v3d,
+                                   pop1,
+                                   vc2d=vc2d %>% dplyr::select(-adm0),
+                                   varsin_nc,
+                                   polydeg = 5,
+                                   R0_lookup,
+                                   model_type = "R0",
+                                   shp1,
+                                   shp0,
+                                   colours)
+
+
+```
+
+```{r map_foi_by_country, warning=FALSE}
+
+tmp = R0 %>% group_by(adm0) %>% summarise(median_R0 = median(R0, na.rm = TRUE))
+
+colours = snapalette("Pop", 100, type = "continuous")
+
+shp0$FOI = NA
+shp0$FOI = tmp$median_foi[match(shp0$GID_0, tmp$adm0)]
+
+mybreaks= seq(min(log10(shp0$FOI), na.rm = TRUE), 
+              max(log10(shp0$FOI), na.rm = TRUE)+0.01, 
+              length.out=101)
+  
+vcols = findInterval(log10(shp0$FOI),mybreaks)
+  
+plot(shp0)
+plot(shp0,col=colours[vcols], lty=2, add=T)
+
+image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), horizontal = TRUE,
+             axis.args = list(at = c(-7:1), 
+                              labels =c("1e-07","1e-06","1e-05","1e-04", 
+                                        "0.001", "0.01", "0.1","1","10"), las =2),
+             legend.mar = 3.5)
+
+```
+
+```{r weighted_mean_foi}
+tmp_pop = pop1 %>% filter(year==2018)
+tmp_pop = data.frame(adm0_adm1 = tmp_pop$adm0_adm1,
+                     pop = rowSums(tmp_pop[, -c(1:2)]))
+
+foi %<>% left_join(tmp_pop)
+
+tmp_foi = foi %>% group_by(adm0) %>% summarise(weighted_mean = weighted.mean(FOI, pop, na.rm = TRUE))
+
+#colours = snapalette("Ember", 100, type = "continuous")
+
+shp0$FOI = NA
+shp0$FOI = tmp_foi$weighted_mean[match(shp0$GID_0, tmp_foi$adm0)]
+
+mybreaks= seq(min(log10(shp0$FOI), na.rm = TRUE), max(log10(shp0$FOI), na.rm = TRUE)+0.01, length.out=101)
+  
+vcols = findInterval(log10(shp0$FOI),mybreaks)
+  
+plot(shp0)
+plot(shp0,col=colours[vcols], lty=2, add=T)
+
+image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), horizontal = TRUE,
+             axis.args = list(at = c(-7:1), labels =c("1e-07","1e-06","1e-05","1e-04", "0.001", "0.01", "0.1","1","10"), las =2),
+             legend.mar = 3.5)
+```
+
+
+```{r FOI_by_country, fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10}
+
+
+ggplot(foi %>% 
+         left_join(dat, by = c("adm0_adm1")) %>% 
+         group_by(adm0.x) %>% 
+         summarise(median_FOI = median(FOI, na.rm = TRUE), risk = median(risk))) + 
+  geom_col(aes(x = reorder(adm0.x, -median_FOI), y =(median_FOI), fill = risk)) + 
+  xlab("Country") + 
+  ylab("Median FOI")+
+  theme_bw()+
+  scale_fill_viridis(option = "magma") +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 90, hjust = 1))
+
+```
+
+```{r FOI_by_country2, fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10, eval = FALSE}
+
+
+
+ggplot(foi %>% 
+         left_join(dat, by = c("adm0_adm1")), 
+       aes(x = reorder(adm0.x, -FOI), y = log10(FOI), fill = risk)) + 
+  geom_boxplot() + 
+  xlab("Country") + 
+  ylab("FOI")+
+  theme_bw()+
+  scale_fill_viridis(option = "magma") +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 90, hjust = 1))
+
+```
+
+```{r FOI_by_risk, fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10, eval = FALSE}
+
+
+
+ggplot(foi %>% 
+         left_join(dat, by = c("adm0_adm1")) %>%
+         mutate(risk = as.numeric(risk)), 
+       aes(x = risk, y = log10(FOI), fill = risk)) + 
+  geom_point() + 
+  stat_smooth(method = "lm", col = "red")+
+  xlab("risk") + 
+  ylab("FOI")+
+  theme_bw()+
+  scale_fill_viridis(option = "magma") +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 90, hjust = 1))
+
+```
+
+## Producing average model predictions
+
+
+
+```{r getting_samples}
+
+if(params$foi_sample){
+  n_samples = 100
+  foi_out = NULL
+  
+  for(i in 1:n_samples){
+    sample_ind1 = sample(1:nrow(mcmc_out),1)
+    sample_ind2 = sample(1:nrow(glm_mcmc_out),1)
+    
+    parm = bind_cols(vac_eff = exp(mcmc_out[sample_ind1, "vac_eff"]),
+                       glm_mcmc_out[sample_ind2, 1:(ncol(glm_mcmc_out)-2)],
+                       exp(mcmc_out[sample_ind1, grep("^Foi", names(mcmc_out))]),
+                       vc_factor_CMRs = exp(mcmc_out[sample_ind1, "vc_factor_CMRs"]))
+    class(parm) = "numeric"
+    
+    
+    runs = fun_calc_transmission_Africa(x,
+                                        ii ,
+                                        seroout ,
+                                        parm,
+                                        dat ,
+                                        t0_vac_africa ,
+                                        dim_year ,
+                                        dim_age ,
+                                        p_prop_3d ,
+                                        P_tot_2d ,
+                                        inc_v3d ,
+                                        pop1,
+                                        vc2d=vc2d %>% dplyr::select(-adm0),
+                                        varsin_nc,
+                                        polydeg=5,
+                                        R0_lookup,
+                                        model_type = "Foi")
+    
+    shp1$runs = NA 
+    shp1$runs = runs[match(shp1$GID_1,dat$adm1)]
+    
+    
+    
+    foi_out  %<>% rbind(shp1$runs)
+    
+  }
+  colnames(foi_out) = shp1$GID_1
+  
+  
+  write.csv(foi_out, paste0("FOI_samples_bestglm_1_", params$model_variant, ".csv"), row.names = FALSE)
+}
+```
+
+
+```{r coeff_of_var, eval = T}
+
+
+coeff_of_var = sapply(1:ncol(foi_out), FUN = function(i) sd(foi_out[,i])/
+                        mean(foi_out[,i])) *100
+names(coeff_of_var) = colnames(foi_out)
+
+colours = snapalette("Space", 100, type = "continuous")
+
+shp1$cv = NA
+shp1$cv = log10(coeff_of_var[match(shp1$GID_1, names(coeff_of_var))])
+
+mybreaks= seq(min(shp1$cv, na.rm = TRUE), max(shp1$cv, na.rm = TRUE)+0.01, length.out=101)
+
+vcols = findInterval(shp1$cv,mybreaks)
+
+plot(shp0)
+plot(shp1,col=colours[vcols], lty=2, add=T)
+
+image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), 
+           horizontal = TRUE,
+           legend.mar = 3.5)
+
+```
