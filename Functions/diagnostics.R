@@ -157,13 +157,13 @@ plot_sero = function(seroout,
 
 #------------------------------------------------------------------------------------------------------#
 plot_sero_R0 = function(seroout,
-         hpd_sero,
-         pop_agg3d,
-         dim_year,
-         dim_age,
-         inc_v3d,
-         pop_moments_agg,
-         vc_agg3d){
+                        hpd_sero,
+                        pop_agg3d,
+                        dim_year,
+                        dim_age,
+                        inc_v3d,
+                        pop_moments_agg,
+                        vc_agg3d){
   
   
   
@@ -285,7 +285,7 @@ get_hpd = function(mcmc_out,
     hpd_sero = hpd_out(mcmc_out[,grep("^vac", names(mcmc_out))])
     
     if(model_type == "Foi"){
-    #hpd by model type
+      #hpd by model type
       hpd_sero = rbind(hpd_sero, hpd_out(mcmc_out[,grep("^Foi", names(mcmc_out))]) )
     } else {
       hpd_sero = rbind(hpd_sero, hpd_out(mcmc_out[,grep("^R0", names(mcmc_out))]) )
@@ -390,19 +390,21 @@ plot_transmission_intensity2 = function(x,
   plot(shp0, lwd=2, add=T)
   
   
-  
-  image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), horizontal = TRUE,
-             axis.args = list(at = c(-7:1), labels =c("1e-07", "1e-06","1e-05","1e-04", "0.001", "0.01", "0.1","1","10"), las =2),
-             legend.mar = 3.5)
-  
   if(model_type == "Foi"){
-  df <-  data.frame(adm0 = shp1$GID_0,
-                  adm0_adm1 = shp1$GID_1,
-                  FOI = shp1$runs)
+    df <-  data.frame(adm0 = shp1$GID_0,
+                      adm0_adm1 = shp1$GID_1,
+                      FOI = shp1$runs)
+    
+    image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), horizontal = TRUE,
+               axis.args = list(at = c(-7:1), labels =c("1e-07", "1e-06","1e-05","1e-04", "0.001", "0.01", "0.1","1","10"), las =2),
+               legend.mar = 3.5)
   } else  {
     df <-  data.frame(adm0 = shp1$GID_0,
                       adm0_adm1 = shp1$GID_1,
-                      R0 = shp1$runs)
+                      R0 = shp1$runs+1)
+    image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), horizontal = TRUE,
+               axis.args = list(at = c(-3:1), labels =c("1.001", "1.01", "1.1","2","11"), las =2),
+               legend.mar = 3.5)
   }
   
   return(df)
@@ -469,4 +471,383 @@ plot_prior_post2 = function(mcmc_out,
     
     polygon(density(exp(mcmc_out$vc_factor_CMRs)), col = rgb(0,0,0,0.5))
   }
+}
+
+#------------------------------------------------------------------------------------------------------#
+
+foi_prevac2 = function(adm,
+                       R0,
+                       pop_moments,
+                       polydeg = 6) {
+  
+  lambda = NULL
+  if (polydeg > 0) {
+    for (deg in 1:polydeg) {
+      if (is.na(max(adm)) == 0) {
+        PM = as.numeric(pop_moments[, deg + 1])
+      } else {
+        PM = pop_moments[deg]
+      }  #INDEX IS DIFFERENT AS INCLUDES NAMES
+      lambda = cbind(lambda, (-1)^(deg + 1) * PM/factorial(deg - 1))  #
+    }
+  }
+  lambda[, 1] = lambda[, 1] - 1/R0  # we have to put the equation =0, so the term of order 0 (first column) should integrate -1/R0
+  
+  out = sapply(1:nrow(lambda), function(j) polyroot(lambda[j, ]))
+  
+  out[abs(Arg(out)) <= 1e-10] = Re(out)[abs(Arg(out)) <= 1e-10]
+  out[abs(Arg(out)) > 1e-10] = NA  # here we have a resolution problem : in case of survey=5 and R0=5 (for instance), we have no solution in Real
+  dt = dim(out)
+  out = as.numeric(out)
+  dim(out) = dt
+  if (polydeg > 2) {
+    out = apply(out, 2, min, na.rm = T)
+  }
+  if (is.na(max(adm)) == 0){
+    names(out) = paste("FOI", pop_moments[,1], sep = "_")
+  }  #NAME IS ATTACHED TO POP_MOMENTS FOR WHOLE
+  return(out)
+}
+
+#------------------------------------------------------------------------------------------------------#
+
+create_R0_lookup2 = function(dim_adm,
+                             dat,
+                             dim_year,
+                             dim_age,
+                             p_prop_3d,
+                             P_tot_2d,
+                             inc_v3d,
+                             pop_moments_whole,
+                             pop_moments_agg,
+                             vac_eff_arg = 1,
+                             granularity = "coarse") {
+  
+  dn_R0 = switch(granularity,
+                 "fine" = c(seq(1, 1.099 , by=0.001), seq(1.1, 1.198, b=0.002), seq(1.2, 1.495, by=0.005), seq(1.5, 1.99, by=0.01),
+                            seq(2, 2.9, by= 0.05 ), seq(3,3.9, by = 0.1), seq(4,10, by=0.2)),
+                 "medium" = c(seq(1,2,by=0.01), seq(2.1,4.9,by=0.1), seq(5,10, by=1) ),
+                 "coarse" = c(seq(1,1.9,by=0.1), seq(2,4.5,by=0.5), seq(5,10, by=1) ) )
+  
+  
+  R0_lookup = rep(NA, length(dim_adm)*length(dn_R0))
+  dim(R0_lookup) = c(length(dim_adm),length(dn_R0))
+  colnames(R0_lookup) = dn_R0
+  rownames(R0_lookup) = dat$adm0_adm1
+  adm_ind = 1:length(dim_adm)
+  
+  ptm = proc.time()
+  for (r in 1:length(dn_R0)){
+    print(paste(r,"/", length(dn_R0), ";   R0=", dn_R0[r]))
+    R0_rep = rep(dn_R0[r], length(dim_adm))
+    
+    tmp = R0_recurrence_seroprev_whole2(adm = adm_ind,
+                                        dat = dat,
+                                        R0 = R0_rep,
+                                        t0_vac_adm = t0_vac_africa,
+                                        dim_year = dim_year,
+                                        dim_age = dim_age,
+                                        p_prop_3d = p_prop_3d,
+                                        P_tot_2d = P_tot_2d,
+                                        inc_v3d = inc_v3d,
+                                        pop_moments_whole = pop_moments_whole,
+                                        vac_eff_arg = vac_eff_arg
+    )$Ninf_t_province # this is for each year from 1940 to 2050
+    
+    R0_lookup[,r] = rowSums(tmp[, which(dim_year==1984):which(dim_year==2019)])
+  }
+  save(R0_lookup, file="R0_lookup_table.Rdata")
+  
+}
+
+#------------------------------------------------------------------------------------------------------#
+R0_recurrence_seroprev_whole2 = function(adm,
+                                         dat,
+                                         R0,
+                                         t0_vac_adm,
+                                         dim_year,
+                                         dim_age,
+                                         p_prop_3d,
+                                         P_tot_2d,
+                                         inc_v3d,
+                                         pop_moments_whole,
+                                         vac_eff_arg) {
+  #
+  #THIS NOW ACTS AS A WRAPPER FOR fun_recurrence_seroprev WHICH CONTAINS THE one COPY OF THE EQUATIONS
+  #COMBINING THE FUNCTIONS IN THIS WAY SHOULD REDUCE INCONSISTENCIES BETWEEN DIFFERENT MODEL VERSIONs
+  #SUCH AS: THE INCLUSION OF ENVIRONMENTAL TRANSMISSION
+  
+  # Declare outputs
+  n_inf_at = s_atau3 = s_atau2= s_atau1= Stot_at = Ninf_t = NULL
+  
+  # create the 4 compartments accounting for natural infection i (+/-) and vaccination v (+/-)
+  i_neg_v_neg_tau3 = i_pos_v_neg_tau3 = i_neg_v_pos_tau3 = i_pos_v_pos_tau3 = NULL
+  
+  # I firstly need to calculate for each adm the FOI at t0_vac
+  pop_mom=NULL
+  for(j in 1:length(adm)){
+    pop_mom = rbind (pop_mom, pop_moments_whole[adm[j], ])
+  }
+  pop_mom = cbind(dat$adm0_adm1[adm], pop_mom)
+  
+  #get foi before vaccination
+  foi = YFburden::foi_prevac(adm = adm, R0=R0, pop_moments = pop_mom, polydeg=6)
+  
+  for (i in 1:length(adm) ){
+    
+    time_limit = min(1981, max(t0_vac_adm[i], 1940) )  
+    p_at= p_prop_3d[adm[i], ,]
+    P_tot=P_tot_2d[adm[i], ]
+    inc_v=inc_v3d[adm[i], ,]
+    
+    seroprev_out = R0_recurrence_seroprev(R0 = R0[i],
+                                          foi = foi[i],
+                                          foi_const = 0,
+                                          time_limit = time_limit,
+                                          dim_year = dim_year,
+                                          dim_age = dim_age,
+                                          p_at = p_at,
+                                          P_tot = P_tot,
+                                          inc_v = inc_v,
+                                          vac_eff_arg = vac_eff_arg
+    )
+    
+    if(i==1){
+      
+      i_neg_v_neg_tau3 = seroprev_out$i_neg_v_neg_tau3 #FIRST JUST ASSIGN MATRIX
+      i_pos_v_neg_tau3 = seroprev_out$i_pos_v_neg_tau3
+      i_neg_v_pos_tau3 = seroprev_out$i_neg_v_pos_tau3
+      i_pos_v_pos_tau3 = seroprev_out$i_pos_v_pos_tau3
+      Ninf_t = seroprev_out$Ninf_t
+      Stot_at = seroprev_out$Stot
+      n_inf_at = seroprev_out$n_inf
+      
+    } else if(i==2){
+      
+      i_neg_v_neg_tau3 = abind::abind(i_neg_v_neg_tau3, seroprev_out$i_neg_v_neg_tau3, along=0) #THEN BIND ALONG NEW FIRST DIMENSION, RESULT IS AN ARRAY
+      i_pos_v_neg_tau3 = abind::abind(i_pos_v_neg_tau3, seroprev_out$i_pos_v_neg_tau3, along=0)
+      i_neg_v_pos_tau3 = abind::abind(i_neg_v_pos_tau3, seroprev_out$i_neg_v_pos_tau3, along=0)
+      i_pos_v_pos_tau3 = abind::abind(i_pos_v_pos_tau3, seroprev_out$i_pos_v_pos_tau3, along=0)
+      Ninf_t = abind::abind(Ninf_t, seroprev_out$Ninf_t,along=0)
+      Stot_at = abind::abind(Stot_at, seroprev_out$Stot,along=0)
+      n_inf_at = abind::abind(n_inf_at, seroprev_out$n_inf,along=0)
+      
+    } else {
+      
+      i_neg_v_neg_tau3 = abind::abind(i_neg_v_neg_tau3, seroprev_out$i_neg_v_neg_tau3, along=1) #NOW FIRST DIMENSION EXISTS, BIND ALONG THAT
+      i_pos_v_neg_tau3 = abind::abind(i_pos_v_neg_tau3, seroprev_out$i_pos_v_neg_tau3, along=1)
+      i_neg_v_pos_tau3 = abind::abind(i_neg_v_pos_tau3, seroprev_out$i_neg_v_pos_tau3, along=1)
+      i_pos_v_pos_tau3 = abind::abind(i_pos_v_pos_tau3, seroprev_out$i_pos_v_pos_tau3, along=1)
+      Ninf_t = abind::abind(Ninf_t, seroprev_out$Ninf_t,along=1)
+      Stot_at = abind::abind(Stot_at, seroprev_out$Stot,along=1)
+      n_inf_at = abind::abind(n_inf_at, seroprev_out$n_inf,along=1)
+      
+    }
+    
+  }
+  
+  return(list(i_neg_v_neg_tau3 = i_neg_v_neg_tau3,
+              i_pos_v_neg_tau3 = i_pos_v_neg_tau3,
+              i_neg_v_pos_tau3 = i_neg_v_pos_tau3,
+              i_pos_v_pos_tau3 = i_pos_v_pos_tau3,
+              Stot_at = Stot_at,
+              Ninf_t_province = Ninf_t,
+              n_inf_at_province = n_inf_at))
+}
+
+#------------------------------------------------------------------------------------------------------#
+
+fun_calc_transmission_Africa2 = function(x,
+                                  ii,
+                                  seroout,
+                                  params,
+                                  dat,
+                                  t0_vac_africa,
+                                  dim_year,
+                                  dim_age,
+                                  p_prop_3d,
+                                  P_tot_2d,
+                                  inc_v3d,
+                                  pop1,
+                                  vc2d,
+                                  varsin_nc,
+                                  polydeg=5,
+                                  R0_lookup,
+                                  model_type) {
+  
+  #get aggregated vc and pop over observation period
+  aggout=create_pop30_agg_vc30_agg(pop1, vc2d)
+  
+  #glm predictions
+  mypreds_nc  = fun_calcPred(coefs = as.numeric(params)[ii],
+                             newdata=x,
+                             type="link",
+                             varsin=varsin_nc)
+  
+  #probability of detection
+  p_detect =  fun_calc_pdetect_multi_both2(x,
+                                           ii,
+                                           seroout,
+                                           params,
+                                           dat,
+                                           t0_vac_africa,
+                                           dim_year,
+                                           dim_age,
+                                           p_prop_3d,
+                                           P_tot_2d,
+                                           inc_v3d,
+                                           pop_moments_whole,
+                                           varsin_nc,
+                                           aggout$vc30_agg,
+                                           aggout$pop30_agg,
+                                           model_type)
+  
+  
+  p_detect_link = mean(p_detect)
+  
+  #calculating number of infections over the observation period for the whole region
+  Ninf_whole = exp( mypreds_nc - p_detect_link)
+  
+  #translate this number into a transmission intensity for each model type
+  if(model_type == "Foi"){
+    pop_vc_moments = aggout$pop_vc_moments
+    
+    if(polydeg>ncol(pop_vc_moments)) error("fun_calc_transmission_Africa: invalid value for polydeg.\n")
+    
+    z = -Ninf_whole
+    
+    if(polydeg>0) for(i in 1:polydeg) {
+      z = cbind(z,(-1)^(i+1)*pop_vc_moments[,i+1]/factorial(i-1))
+    }
+    
+    transmission_whole = sapply(1:nrow(x), function(i) polyroot(z[i,]))
+    transmission_whole[abs(Arg(transmission_whole))<=1e-10] = Re(transmission_whole)[abs(Arg(transmission_whole))<=1e-10]
+    transmission_whole[abs(Arg(transmission_whole))>1e-10] = NA
+    
+    dt = dim(transmission_whole)
+    transmission_whole = as.numeric(transmission_whole)
+    dim(transmission_whole) = dt
+    transmission_whole = apply(transmission_whole,2,min,na.rm=T)
+    
+  } else if(model_type == "R0"){
+    
+    transmission_whole = rep(NA, length(Ninf_whole))
+    
+    for (i in 1: length(t0_vac_africa) ){
+      inf_bound = findInterval(Ninf_whole[i], R0_lookup[i,])
+      sup_bound = inf_bound + 1
+      
+      if( sup_bound <= ncol(R0_lookup)){
+        x_R0_1 = R0_lookup[i,inf_bound]# find inf bound
+        x_R0_2 = R0_lookup[i,sup_bound] # sup bound
+        
+        y_R0_1 = as.numeric(colnames(R0_lookup)[inf_bound]) # find inf bound
+        y_R0_2 = as.numeric(colnames(R0_lookup)[sup_bound]) # sup bound
+        
+        ## manually calculate the linear interpolation
+        a_lin_inter = (y_R0_2 - y_R0_1)/(x_R0_2-x_R0_1)
+        b_lin_inter = y_R0_1 - a_lin_inter*x_R0_1
+        
+        transmission_whole[i] = a_lin_inter*Ninf_whole[i] + b_lin_inter
+        
+      } else if (sup_bound  > ncol(R0_lookup)){
+        transmission_whole[i] = as.numeric(colnames(R0_lookup)[ncol(R0_lookup)])
+      }
+    }
+    
+  }
+  
+  return(transmission_whole)
+}
+
+
+#------------------------------------------------------------------------------------------------------#
+fun_calc_pdetect_multi_both2 = function(x,
+                                        ii,
+                                        seroout,
+                                        params,
+                                        dat,
+                                        t0_vac_africa,
+                                        dim_year,
+                                        dim_age,
+                                        p_prop_3d,
+                                        P_tot_2d,
+                                        inc_v3d,
+                                        pop_moments_whole,
+                                        varsin_nc,
+                                        vc30_agg,
+                                        pop30_agg,
+                                        model_type){
+  
+  adm1s = seroout$adm1s
+  sero_studies = seroout$sero_studies
+  no_sero_surveys = seroout$no_sero_surveys
+  
+  # calculate the b term from the left part of equation 6(plos Med paper)
+  adm = match(unlist(adm1s), vc30_agg$adm0_adm1)
+  t0_vac_adm = t0_vac_africa[adm]
+  
+  # now I have to calculate the Number of infections over observation period among each PROVINCE covered by a survey
+  vac_eff = params[1]
+  
+  if(model_type == "R0"){
+    
+    R0_vec = NULL
+    for(k in 1:no_sero_surveys) { # repeat the numbers of time of each adm1s
+      R0_vec = c(R0_vec,
+                 rep(params[which(names(params)==paste0("R0_", sero_studies[k]))],
+                     length(adm1s[[k]])) )
+    }
+    
+    res = R0_recurrence_seroprev_whole(adm = adm,
+                                       dat = dat,
+                                       R0 = R0_vec,
+                                       t0_vac_adm,
+                                       dim_year,
+                                       dim_age,
+                                       p_prop_3d,
+                                       P_tot_2d,
+                                       inc_v3d,
+                                       pop_moments_whole,
+                                       vac_eff_arg = vac_eff)
+    
+    # res returns the total Nb of infection on the whole period, I only need 1984 to 2019
+    Ninf = rowSums( res$Ninf_t_province[,which(dim_year==1984):which(dim_year==2019)] )
+    Ninf = ifelse(Ninf<1, 1, Ninf)
+    
+  } else if(model_type == "Foi"){
+    
+    vec_foi = vec_vc_factor = NULL
+    for(i in 1:no_sero_surveys) {
+      vec_foi = c(vec_foi,
+                  rep(params[which(names(params)==paste("Foi_",sero_studies[i],sep=""))],
+                      length(adm1s[[i]])))
+      if(!is.na(seroout$vc_factor[i])) {
+        vec_vc_factor = c(vec_vc_factor, rep(seroout$vc_factor[i],length(adm1s[[i]])))
+      } else {
+        vec_vc_factor = c(vec_vc_factor,
+                          rep(params[which(names(params)==paste("vc_factor_",sero_studies[i],sep=""))],
+                              length(adm1s[[i]])))
+      }
+    }
+    
+    vec_foi = vec_foi[match(vc30_agg[adm,1],unlist(adm1s))]
+    vec_vc_factor = vec_vc_factor[match(vc30_agg[adm,1], unlist(adm1s))]
+    
+    popvc = (1-vac_eff*vec_vc_factor*vc30_agg[adm,-(1)])*pop30_agg[adm,-(1)]
+    expfoi = exp(outer(-vec_foi, 0:100))
+    Ninf = vec_foi*rowSums(expfoi*popvc, na.rm = T)
+  }
+  
+  #calcualte glm predictions
+  mypreds_nc = fun_calcPred(coefs = params[ii],
+                            newdata=x,
+                            type="link",
+                            varsin=varsin_nc)
+  
+  #calculate b
+  b = mypreds_nc[adm]-log(Ninf)
+  names(b) = unlist(adm1s)
+  
+  return( b )
 }

@@ -66,7 +66,8 @@ snapal <- "Pop"
 
 glm_mcmc_out %<>% mutate(variant = as.factor(variant))
 ggplot(glm_mcmc_out) + 
-  geom_violin(aes(x = reorder(variant, -posteriorProb), y = posteriorProb, fill = variant)) +
+  geom_violin(aes(x = reorder(variant, -posteriorProb), 
+                  y = posteriorProb, fill = variant)) +
   theme_bw()+
   theme(legend.position = "none")+
   xlab("Variant") +
@@ -266,13 +267,17 @@ ggplot( aes(x = reorder(variant, -AUC), y = AUC, fill = variant)) +
 # Sample using AUC
 
 
-```{r sample_proportionally}
+```{r sample_proportionally, fig.cap="Histogram of model variant sampled according to AUC."}
 
 n_sample = 1000
 
-df_sample = df_AUC %>% sample_n(size = n_sample, weight = AUC)
+tmp = df_AUC %>% group_by(variant) %>% summarise(median_AUC = median(AUC)) %>% ungroup()
 
-hist(df_sample$variant)
+df_AUC %<>% left_join(tmp)
+
+df_sample = df_AUC  %>% sample_n(size = n_sample, weight = AUC)
+
+ggplot(df_sample) + geom_bar(aes(x = variant, fill = variant)) + theme_bw()
 
 df_glm = NULL
 
@@ -286,7 +291,8 @@ for(i in 1:nrow(df_sample)){
   model_form_whole = read.csv("bestglm_1.csv", stringsAsFactors = FALSE) %>% 
     dplyr::select(-Criterion)
   
-  covar_family = names(model_form_whole)[ which(model_form_whole[df_sample$variant[i], ] == TRUE) ] 
+  covar_family = names(model_form_whole)[ 
+    which(model_form_whole[df_sample$variant[i], ] == TRUE) ] 
   
   dat <- dat[, -which(!names(dat) %in% covar_family & grepl("family", names(dat)))] 
   
@@ -336,6 +342,7 @@ for(i in 1:nrow(df_sample)){
   
 }
 
+write.csv(df_sample, "Sampled_glm_parameters.csv", row.names = FALSE)
 write.csv(df_glm, "Sampled_glm_predictions.csv", row.names = FALSE)
 
 ```

@@ -52,12 +52,23 @@ rmarkdown::render(
   output_file = paste0("GLM_comparison", ".pdf")
 )
 
+rmarkdown::render(
+  paste0("Foi_proportional_samples", ".Rmd"), 
+  output_file = paste0("Foi_proportional_samples", ".pdf")
+)
 
 rmarkdown::render(
   paste0("FOI_comparison", ".Rmd"), 
   output_file = paste0("FOI_comparison", ".pdf")
 )
 
+for(y in c(1995, 2005, 2013, 2018)){
+  rmarkdown::render(
+    paste0("burden_proportional_samples", ".Rmd"), 
+    params = list(year = y),
+    output_file = paste0("burden_proportional_samples_",y , ".pdf")
+  )
+}
 
 rmarkdown::render(
   paste0("burden_compare", ".Rmd"), 

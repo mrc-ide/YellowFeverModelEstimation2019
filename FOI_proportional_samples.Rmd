@@ -1,5 +1,5 @@
 ---
-title: "R0 estimates"
+title: "Foi proportional samples"
 author: "Katy Gaythorpe"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 header-includes: 
@@ -7,16 +7,13 @@ header-includes:
 output: 
   pdf_document:
     df_print: "kable"
-params:
-  model_variant: 1
-  R0_sample: false
 ---
 
 ```{r knitsetup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = paste0("images", params$model_variant, "/"),
+  fig.path = paste0("images/"),
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -46,16 +43,17 @@ library(KsetupR)
 sourceDirectory("Functions", modifiedOnly = FALSE)
 
 if(!exists("mcmc_out")){
-  mcmc_out = get_chains("R0_multi_model_MCMC_chain_20191022", 
+  mcmc_out = get_chains("multi_model_MCMC_chain_20190903", 
                         burnin = 8e5, thin = 100)
   
-  write.csv(sample(exp(mcmc_out$vac_eff), 100), "R0_vac_eff_samples.csv", row.names = FALSE)
+  write.csv(sample(exp(mcmc_out$vac_eff), 100), "vac_eff_samples.csv", row.names = FALSE)
 }
 
-glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20191016_bestglm_1_", params$model_variant),
+glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20191016_bestglm_1_", 1),
                           burnin =6e4, thin = 1)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
+
 
 
 
@@ -84,7 +82,7 @@ dat <- read.csv(filename, stringsAsFactors = FALSE)
 #remove families of NHP that are not to be included
 model_form_whole = read.csv("bestglm_1.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
 
-covar_family = names(model_form_whole)[ which(model_form_whole[params$model_variant, ] == TRUE) ] 
+covar_family = names(model_form_whole)[ which(model_form_whole[1, ] == TRUE) ] 
 
 dat <- dat[, -which(!names(dat) %in% covar_family & grepl("family", names(dat)))] 
 
@@ -145,16 +143,16 @@ vc2d %<>% unique()
 vc2d %<>% filter(!is.na(adm0_adm1))
 
 
+vc2d %<>% arrange( adm0_adm1)
 #-------------------------------------------------------
 # filter vac and pop to match dat
 vc2d %<>% filter(adm0_adm1 %in% dat$adm1)
 pop1 %<>% filter(adm0_adm1 %in% dat$adm1)
 
 
-vc2d %<>% arrange( adm0_adm1)
 #-------------------------------------------------------
 #vc3d
-vc3d = transform_into_vc3d(vc2d %>% dplyr::select(-adm0)) 
+vc3d = transform_into_vc3d(vc2d) 
 #------------------------------------------------------
 class(vc3d) = "numeric"
 # t0_vac_africa #
@@ -207,32 +205,9 @@ pop_moments_agg = calc_pop_moments_agg(pop_agg3d,
 
     
 
-  
-P_tot_2d <-  tidyr::spread( P_tot, year, pop)
-P_tot_2d <- as.data.frame(P_tot_2d)
-P_tot_2d %<>% dplyr::select(-adm1)
-P_tot_2d <- as.matrix(P_tot_2d)
-class(P_tot_2d) <- "numeric"
 # CREATE R0 LOOKUP TABLE #
-if(!file.exists(paste0("R0_lookup_table.Rdata") )){
-
-  
-  ptm = proc.time()
-  create_R0_lookup(dim_adm = dimnames(vc3d)[[1]], 
-                   dat, 
-                   t0_vac_africa,
-                   dim_year = as.numeric(dimnames(vc3d)[[2]]),
-                   dim_age = dimnames(vc3d)[[3]],
-                   p_prop_3d,
-                   P_tot_2d,
-                   inc_v3d,
-                   pop_moments_whole,
-                   vac_eff_arg = 0.975)
-  proc.time()-ptm
-} else {
-  load(paste0("R0_lookup_table.Rdata") )
-}
-
+load(paste0("../YellowFeverModelEstimation2017/",
+                "R0_lookup_table.Rdata") )
 
 
 # pop at survey #
@@ -244,17 +219,7 @@ list_pop_at_survey = create_pop_at_survey(pop_agg3d,
 p_at_survey = list_pop_at_survey$p_at_survey_3d
 P_tot_survey = list_pop_at_survey$P_tot_survey_2d
 
-model_form <- paste0("cases_or_outbreaks~", paste(covar, collapse = "+")  ,  "+adm05") 
 
-
-object_glm <- YFestimation::fit_glm(dat = dat, 
-                                   depi = match("cases_or_outbreaks", 
-                                                names(dat)), 
-                                   models = model_form)
-
-beta0 <- object_glm[[1]]
-x <- object_glm[[2]]
-y <- object_glm[[3]]
 
 
 
@@ -278,65 +243,162 @@ if(!exists("shp1")){
 
 ```{r hpd, message=F, warning=F}
 
-out = get_hpd(mcmc_out, glm_mcmc_out, model_type = "R0")
+out = get_hpd(mcmc_out, glm_mcmc_out)
 
-R0_param = out$R0_param
+Foi_param = out$Foi_param
+
+
+```
+
+
+```{r samples, message=F, warning=F}
+
+df_sample <- read.csv("Sampled_glm_parameters.csv", stringsAsFactors = FALSE)
+
+colours = snapalette("Pop", 100, type = "continuous")
+
+Env_Table_path <- "../Data/Environment/global_dat"
+
+filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
+
+
+n_samples = nrow(df_sample)
+foi_out = NULL
+
+for(i in 1:n_samples){
+  sample_ind1 = sample(1:nrow(mcmc_out),1)
+  
+  parm = bind_cols(vac_eff = exp(mcmc_out[sample_ind1, "vac_eff"]),
+                   df_sample[i, ] %>% select(-c(variant, sample,AUC, median_AUC)),
+                   exp(mcmc_out[sample_ind1, grep("^Foi", names(mcmc_out))]),
+                   vc_factor_CMRs = exp(mcmc_out[sample_ind1, "vc_factor_CMRs"]))
+  class(parm) = "numeric"
+  
+  parm = parm[!is.na(parm)]
+  
+  ii = c(2:(grep("Foi", names(parm))[1]-1))
+  varsin_nc = grep("adm05|surv|posterior|acc|dtp", names(parm)[ii], invert = TRUE)
+
+  # ---------------------#
+  #for each we need a new x
+  dat <- read.csv(filename, stringsAsFactors = FALSE)
+  
+  #remove families of NHP that are not to be included
+  model_form_whole = read.csv("bestglm_1.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
+  
+  covar_family = names(model_form_whole)[ which(model_form_whole[df_sample$variant[i], ] == TRUE) ] 
+  
+  dat <- dat[, -which(!names(dat) %in% covar_family & grepl("family", names(dat)))] 
+  
+  # get model covariates
+  covar = covar_family[grep("cases_or_outbreaks|family", covar_family, invert = TRUE)] #
+  
+  
+  # make extra elements and normalise
+  dat %<>% dplyr::select(-year)
+  dat %<>% filter( is.finite(MIR.max))
+  dat %<>% filter(!is.na(temp_mean))
+  #dat %<>% tidyr::drop_na()
+  dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
+                                     "Africa", continent))
+  dat = adjust_env_dat(dat)
+  
+  dat %<>% mutate(adm0_adm1 = adm1)
+  
+  model_form = paste0("cases_or_outbreaks~", 
+                      paste(covar, collapse = "+"),
+                      "+aggregate_family","+adm05", "+surv.qual.adm0") 
+  
+  
+  object_glm <- YFestimation::fit_glm(dat = dat, 
+                                      depi = match("cases_or_outbreaks", 
+                                                   names(dat)), 
+                                      models = model_form)
+  
+  beta0 <- object_glm[[1]]
+  x <- object_glm[[2]]
+  y <- object_glm[[3]]
+  
+  x <- x[, names(parm)[ii]]
+  #-----------------#
+  
+  
+  runs = fun_calc_transmission_Africa(x=x,
+                                      ii=ii ,
+                                      seroout=seroout ,
+                                      params = parm,
+                                      dat =  dat ,
+                                      t0_vac_africa =  t0_vac_africa ,
+                                      dim_year,
+                                      dim_age,
+                                      p_prop_3d =  p_prop_3d ,
+                                      P_tot_2d =  P_tot_2d ,
+                                      inc_v3d =  inc_v3d ,
+                                      pop1 =  pop1,
+                                      vc2d =vc2d %>% dplyr::select(-adm0),
+                                      varsin_nc =  varsin_nc,
+                                      polydeg = 5,
+                                      R0_lookup =  R0_lookup,
+                                      model_type = "Foi")
+  
+  shp1$runs = NA 
+  shp1$runs = runs[match(shp1$GID_1,dat$adm1)]
+  
+  
+  
+  foi_out  %<>% rbind(shp1$runs)
+  
+}
+colnames(foi_out) = shp1$GID_1
+
 
 
 
 ```
 
 
-```{r R0_map,  message = F, warning=F, fig.cap = "Map of R0 values.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 5 }
+```{r Foi_map_median_proportional,  message = F, warning=F, fig.cap = "\\label{fig:Foi_map}Map of FOI values.", fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 5 }
 
-ii = c(2:(grep("R0", names(R0_param[,1]))[1]-1))
-varsin_nc = grep("adm05|surv|posterior|acc|dtp", names(glm_mcmc_out), invert = TRUE)
+foi = apply(foi_out, 2, median)[match(shp1$GID_1,colnames(foi_out))]
 
-colours = snapalette("Pop", 100, type = "continuous")
+shp1$runs = NA 
+shp1$runs = foi
 
+mybreaks= seq(log10(min(shp1$runs, na.rm = TRUE)), log10(max(shp1$runs, na.rm = TRUE))+0.01, length.out=101)
 
-#order x by FOI_param
-x = x[, names(R0_param[ii,2])]
+vcols = findInterval(log10(shp1$runs),mybreaks)
 
-R0 = plot_transmission_intensity2(x,
-                                   ii,
-                                   seroout,
-                                   R0_param[,2],
-                                   dat ,
-                                   t0_vac_africa,
-                                   dim_year = as.numeric(dimnames(vc3d)[[2]]),
-                                   dim_age = dimnames(vc3d)[[3]],
-                                   p_prop_3d,
-                                   P_tot_2d,
-                                   inc_v3d,
-                                   pop1,
-                                   vc2d=vc2d %>% dplyr::select(-adm0),
-                                   varsin_nc,
-                                   polydeg = 5,
-                                   R0_lookup,
-                                   model_type = "R0",
-                                   shp1,
-                                   shp0,
-                                   colours)
+plot(shp0)
+plot(shp1,col=colours[vcols], lty=0, add=T)
+
+plot(shp0, lwd=2, add=T)
 
 
+
+image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), horizontal = TRUE,
+           axis.args = list(at = c(-7:1), labels =c("1e-07", "1e-06","1e-05","1e-04", "0.001", "0.01", "0.1","1","10"), las =2),
+           legend.mar = 3.5)
 
 ```
 
-```{r map_R0_by_country, warning=FALSE}
+```{r map_foi_by_country_proportional, warning=FALSE}
 
-tmp = R0 %>% group_by(adm0) %>% summarise(median_R0 = median(R0, na.rm = TRUE))
+foi_df = data.frame(foi = foi, 
+                    adm0_adm1 = names(foi),
+                    adm0 = substr(names(foi), 1, 3))
+
+tmp = foi_df %>% group_by(adm0) %>% summarise(median_foi = median(foi, na.rm = TRUE))
 
 colours = snapalette("Pop", 100, type = "continuous")
 
-shp0$R0 = NA
-shp0$R0 = tmp$median_R0[match(shp0$GID_0, tmp$adm0)]
+shp0$FOI = NA
+shp0$FOI = tmp$median_foi[match(shp0$GID_0, tmp$adm0)]
 
-mybreaks= seq(min(log10(shp0$R0), na.rm = TRUE), 
-              max(log10(shp0$R0), na.rm = TRUE)+0.01, 
+mybreaks= seq(min(log10(shp0$FOI), na.rm = TRUE), 
+              max(log10(shp0$FOI), na.rm = TRUE)+0.01, 
               length.out=101)
   
-vcols = findInterval(log10(shp0$R0),mybreaks)
+vcols = findInterval(log10(shp0$FOI),mybreaks)
   
 plot(shp0)
 plot(shp0,col=colours[vcols], lty=2, add=T)
@@ -349,23 +411,23 @@ image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), horizont
 
 ```
 
-```{r weighted_mean_R0}
+```{r weighted_mean_foi_proportional}
 tmp_pop = pop1 %>% filter(year==2018)
 tmp_pop = data.frame(adm0_adm1 = tmp_pop$adm0_adm1,
                      pop = rowSums(tmp_pop[, -c(1:2)]))
 
-R0 %<>% left_join(tmp_pop)
+foi_df %<>% left_join(tmp_pop)
 
-tmp_R0 = R0 %>% group_by(adm0) %>% summarise(weighted_mean = weighted.mean(R0, pop, na.rm = TRUE))
+tmp_foi = foi_df %>% group_by(adm0) %>% summarise(weighted_mean = weighted.mean(foi, pop, na.rm = TRUE))
 
 #colours = snapalette("Ember", 100, type = "continuous")
 
-shp0$R0 = NA
-shp0$R0 = tmp_R0$weighted_mean[match(shp0$GID_0, tmp_R0$adm0)]
+shp0$FOI = NA
+shp0$FOI = tmp_foi$weighted_mean[match(shp0$GID_0, tmp_foi$adm0)]
 
-mybreaks= seq(min(log10(shp0$R0), na.rm = TRUE), max(log10(shp0$R0), na.rm = TRUE)+0.01, length.out=101)
+mybreaks= seq(min(log10(shp0$FOI), na.rm = TRUE), max(log10(shp0$FOI), na.rm = TRUE)+0.01, length.out=101)
   
-vcols = findInterval(log10(shp0$R0),mybreaks)
+vcols = findInterval(log10(shp0$FOI),mybreaks)
   
 plot(shp0)
 plot(shp0,col=colours[vcols], lty=2, add=T)
@@ -376,133 +438,53 @@ image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), horizont
 ```
 
 
-```{r R0_by_country, fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10}
+```{r FOI_by_country_proportional, fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10}
 
 
-ggplot(R0 %>% 
+ggplot(foi_df %>% 
          left_join(dat, by = c("adm0_adm1")) %>% 
          group_by(adm0.x) %>% 
-         summarise(median_R0 = median(R0, na.rm = TRUE), risk = median(risk))) + 
-  geom_col(aes(x = reorder(adm0.x, -median_R0), y =(median_R0), fill = risk)) + 
+         summarise(median_FOI = median(foi, na.rm = TRUE), risk = median(risk))) + 
+  geom_col(aes(x = reorder(adm0.x, -median_FOI), y =(median_FOI), fill = risk)) + 
   xlab("Country") + 
-  ylab("Median R0")+
+  ylab("Median FOI")+
   theme_bw()+
   scale_fill_viridis(option = "magma") +
   theme(legend.position = "none", axis.text.x = element_text(angle = 90, hjust = 1))
 
 ```
 
-```{r R0_by_country2, fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10, eval = FALSE}
 
 
+```{r save_samples}
 
-ggplot(R0 %>% 
-         left_join(dat, by = c("adm0_adm1")), 
-       aes(x = reorder(adm0.x, -R0), y = log10(R0), fill = risk)) + 
-  geom_boxplot() + 
-  xlab("Country") + 
-  ylab("R0")+
-  theme_bw()+
-  scale_fill_viridis(option = "magma") +
-  theme(legend.position = "none", axis.text.x = element_text(angle = 90, hjust = 1))
+write.csv(foi_out, "sampled_foi_predictions.csv", row.names = FALSE)
 
 ```
 
-```{r R0_by_risk, fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10, eval = FALSE}
+```{r coeff_of_var_proportional, fig.cap="Coefficient of variation between all model variants.", fig.width=12, fig.height=8}
 
 
+coeff_of_var = sapply(1:ncol(foi_out), FUN = function(i) sd(foi_out[,i])/
+                        mean(foi_out[,i])) *100
+names(coeff_of_var) = colnames(foi_out)
 
-ggplot(R0 %>% 
-         left_join(dat, by = c("adm0_adm1")) %>%
-         mutate(risk = as.numeric(risk)), 
-       aes(x = risk, y = log10(R0), fill = risk)) + 
-  geom_point() + 
-  stat_smooth(method = "lm", col = "red")+
-  xlab("risk") + 
-  ylab("R0")+
-  theme_bw()+
-  scale_fill_viridis(option = "magma") +
-  theme(legend.position = "none", axis.text.x = element_text(angle = 90, hjust = 1))
+colours = snapalette("Space", 1000, type = "continuous")
 
-```
+shp1$cv = NA
+shp1$cv = log10(coeff_of_var[match(shp1$GID_1, names(coeff_of_var))])
 
-## Producing average model predictions
+mybreaks= seq(min(shp1$cv, na.rm = TRUE), max(shp1$cv, na.rm = TRUE)+0.01, length.out=1001)
 
+vcols = findInterval(shp1$cv,mybreaks)
 
+plot(shp0)
+plot(shp1,col=colours[vcols], lty=2, add=T)
 
-```{r getting_samples}
-
-if(params$R0_sample){
-  n_samples = 100
-  R0_out = NULL
-  
-  for(i in 1:n_samples){
-    sample_ind1 = sample(1:nrow(mcmc_out),1)
-    sample_ind2 = sample(1:nrow(glm_mcmc_out),1)
-    
-    parm = bind_cols(vac_eff = exp(mcmc_out[sample_ind1, "vac_eff"]),
-                       glm_mcmc_out[sample_ind2, 1:(ncol(glm_mcmc_out)-2)],
-                       exp(mcmc_out[sample_ind1, grep("^R0", names(mcmc_out))]),
-                       vc_factor_CMRs = exp(mcmc_out[sample_ind1, "vc_factor_CMRs"]))
-    class(parm) = "numeric"
-    
-    
-    runs = fun_calc_transmission_Africa(x,
-                                        ii ,
-                                        seroout ,
-                                        parm,
-                                        dat ,
-                                        t0_vac_africa ,
-                                        dim_year ,
-                                        dim_age ,
-                                        p_prop_3d ,
-                                        P_tot_2d ,
-                                        inc_v3d ,
-                                        pop1,
-                                        vc2d=vc2d %>% dplyr::select(-adm0),
-                                        varsin_nc,
-                                        polydeg=5,
-                                        R0_lookup,
-                                        model_type = "R0")
-    
-    shp1$runs = NA 
-    shp1$runs = runs[match(shp1$GID_1,dat$adm1)]
-    
-    
-    
-    R0_out  %<>% rbind(shp1$runs)
-    
-  }
-  colnames(R0_out) = shp1$GID_1
-  
-  
-  write.csv(R0_out, paste0("R0_samples_bestglm_1_", params$model_variant, ".csv"), row.names = FALSE)
-}
-```
-
-
-```{r coeff_of_varR0, eval = T}
-if(exists("R0_out")){
-  
-  coeff_of_var = sapply(1:ncol(R0_out), FUN = function(i) sd(foi_out[,i])/
-                          mean(R0_out[,i])) *100
-  names(coeff_of_var) = colnames(R0_out)
-  
-  colours = snapalette("Space", 100, type = "continuous")
-  
-  shp1$cv = NA
-  shp1$cv = log10(coeff_of_var[match(shp1$GID_1, names(coeff_of_var))])
-  
-  mybreaks= seq(min(shp1$cv, na.rm = TRUE), max(shp1$cv, na.rm = TRUE)+0.01, length.out=101)
-  
-  vcols = findInterval(shp1$cv,mybreaks)
-  
-  plot(shp0)
-  plot(shp1,col=colours[vcols], lty=2, add=T)
-  
-  image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), 
-             horizontal = TRUE,
-             legend.mar = 3.5)
-}
+image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), 
+           horizontal = TRUE,
+           axis.args = list(at = c(-1:3), 
+                            labels =c("0.1%","1%","10%","100%", "1000%")),
+           legend.mar = 3.5)
 
 ```

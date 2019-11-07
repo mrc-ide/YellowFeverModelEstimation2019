@@ -1,0 +1,404 @@
+---
+title: "Burden proportional samples"
+author: "Katy Gaythorpe"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+header-includes: 
+- \usepackage{placeins}
+output: 
+  pdf_document:
+    df_print: "kable"
+params:
+  year: 2018
+---
+
+```{r knitsetup, include=FALSE}
+
+knitr::opts_chunk$set(
+  dev = "png",
+  fig.path = paste0("images/", params$year, "_"),
+  dpi = 300,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+```{r setup}
+library(mcmcplots)
+library(ggmcmc)
+library(gridExtra)
+library(maptools)
+library(readr)
+library(fields)
+library(rgdal)
+library(R.utils)
+library(magrittr)
+library(pROC)
+library(dplyr)
+
+# homemade
+library(snapalette)
+library(YFestimation)
+library(KsetupR)
+
+R.utils::sourceDirectory("Functions")
+
+snapal = "Pop"
+```
+
+```{r read in foi}
+foi_out <- read.csv("sampled_foi_predictions.csv", stringsAsFactors = FALSE)
+
+# get in useful format
+foi_samples = foi_out %>% gather(adm1, foi)
+
+foi_samples %<>% mutate(adm0 = substr(adm1, 1,3))
+
+```
+
+```{r load_data}
+
+# ---------------------------------------------------------------------------
+### POPULATION DATA ###
+
+all_res_pop_3d = get_pop_data_3d() 
+
+pop1 = all_res_pop_3d$pop1                                      
+P_tot = all_res_pop_3d$P_tot                               
+p_prop = all_res_pop_3d$p_prop                                  
+
+pop1 %<>% rename(adm0_adm1 = adm1)
+
+pop1 %<>% arrange(year) %>% dplyr::select(-c(country_code, country))
+
+names(pop1)[3:ncol(pop1)] = paste0("a", 0:100)
+
+pop1 %<>% filter(year<2051)
+p_prop %<>% filter(year<2051)
+P_tot %<>% filter(year<2051)
+
+# ---------------------------------------------------------------------------
+# VACCINATION DATA #
+vc2d = readRDS("vacc_1940_1950.RDS")
+vc2d = as.data.frame(vc2d)
+
+# expand vc2d to match pop1
+vc2d %<>% mutate(year = as.numeric(as.character(year)))
+vc_tmp = pop1 %>% filter(!adm0_adm1 %in% vc2d$adm0_adm1)
+vc_tmp[, grep("adm0_adm1|year", names(vc_tmp), invert = TRUE)] = 0
+
+vc2d %<>% bind_rows(vc_tmp)
+vc2d %<>% unique()
+vc2d %<>% filter(!is.na(adm0_adm1))
+
+```
+
+```{r load shapefiles}
+if(!exists("shp0")){
+  shp0 = rgdal::readOGR("../../shapefiles/Africa_America_0_smooth.shp",
+                        stringsAsFactors = FALSE,
+                        encoding = "UTF-8",
+                        use_iconv = TRUE)
+}
+if(!exists("shp1")){
+  shp1 = rgdal::readOGR("../../shapefiles/Africa_America_1_smooth.shp",
+                        stringsAsFactors = FALSE,
+                        encoding = "UTF-8",
+                        use_iconv = TRUE)
+}
+```
+
+```{r load_foi}
+
+ve = read.csv("vac_eff_samples.csv", stringsAsFactors = FALSE)$x
+
+ve = rep_len(ve, length.out = nrow(foi_out))
+
+# sort pop and vc to included adm1
+pop1 %<>% filter(adm0_adm1 %in% names(foi_out))
+vc2d %<>% filter(adm0_adm1 %in% names(foi_out))
+
+#arrange
+pop1 %<>% arrange(adm0_adm1)
+vc2d %<>% arrange(adm0_adm1)
+
+
+```
+
+
+```{r calculate burden}
+
+# ---------------------------------------------------------------------------
+fun_calcBurden = function(fois, year , adm1 = NA, vc2d, pop1, ve) { 
+  
+  if(anyNA(adm1)){
+    adm1 = names(fois)
+  }
+  
+  foi.mat = matrix(fois, nrow=length(fois), ncol=101, byrow=FALSE)
+  
+  class(foi.mat) = "numeric"
+  
+  a.mat = matrix(0:100, nrow=length(fois), ncol=101, byrow=TRUE)
+  
+  burden = fois * rowSums(exp(-foi.mat*a.mat) * 
+                            (1-ve*vc2d[vc2d$year==year & 
+                                         vc2d$adm0_adm1 %in% adm1,-(1:3)]) *
+                            pop1[pop1$year==year & 
+                                   pop1$adm0_adm1 %in% adm1, -(1:2)], na.rm=TRUE)
+  return(burden)
+}
+
+# ---------------------------------------------------------------------------
+year_out = params$year
+
+burden_df = NULL
+
+foi = foi_out
+
+foi = foi[unique(vc2d$adm0_adm1)] # order it in the same way
+
+infections_out <-  sapply(1:nrow(foi), FUN = function(i) fun_calcBurden(foi[i,], 
+                                                                        year_out, 
+                                                                        adm1 = names(foi), 
+                                                                        vc2d, 
+                                                                        pop1,
+                                                                        ve[i]))
+
+infections_df <-  as.data.frame(infections_out)
+infections_df %<>% mutate(adm0_adm1 = rownames(infections_out),
+                          year = year_out)
+
+infections_df %<>% gather(sample, infections, -c(adm0_adm1, year))
+
+infections_df %<>% mutate(adm0 = substr(adm0_adm1, 1, 3)) %>%
+  
+  mutate(infections = as.numeric(infections)) %>%
+  
+  mutate(prob_severe = rbeta(nrow(infections_df),
+                             6.367309,44.60736),
+         prob_severe_death = rbeta(nrow(infections_df),
+                                   16.43466, 18.49048))
+
+infections_df %<>% mutate(severe_infections = prob_severe*infections,
+                          deaths = prob_severe_death*severe_infections)
+
+pop_df = data.frame(adm0_adm1 = pop1$adm0_adm1,
+                    year = pop1$year,
+                    pop = rowSums(pop1[, -c(1:2)], na.rm = TRUE))
+
+infections_df %<>% left_join(pop_df)
+
+infections_df %<>% mutate(severe_inci = severe_infections/pop,
+                          deaths_inci = deaths/pop)
+
+burden_df %<>% bind_rows(infections_df)
+
+```
+
+
+```{r table_deaths_all}
+
+df <-  burden_df %>% 
+  group_by(adm0,sample) %>% 
+  summarise(deaths = sum(deaths, na.rm = TRUE))
+
+df2 <- df %>% group_by(adm0) %>% 
+  summarise(deaths_low = round(quantile(as.numeric(deaths), 
+                                        probs = 0.025, na.rm = T)),
+            deaths_median = round(quantile(as.numeric(deaths), 
+                                           probs = 0.5, na.rm = T)),
+            deaths_high = round(quantile(as.numeric(deaths), 
+                                         probs = 0.975, na.rm = T)) ) %>%
+  arrange(-deaths_median)
+
+df2
+
+tmp = data.frame(countries = unique(shp0$NAME_0), adm0 = unique(shp0$GID_0))
+tmp$continent <- countrycode::countrycode(sourcevar = tmp$countries,
+                            origin = "country.name",
+                            destination = "continent")
+
+tmp2 = left_join(df2, tmp)
+
+tmp2 %>% group_by(continent) %>% summarise(deaths_median = sum(deaths_median),
+                                           deaths_low = sum(deaths_low),
+                                           deaths_high = sum(deaths_high),
+                                           percent_median = round(deaths_median/
+                                                                    sum(tmp2$deaths_median),2)*100
+                                           ) 
+
+write.csv(tmp2, paste0("Table_of_deaths_proportional_", params$year,  ".csv"), 
+          row.names = FALSE)
+```
+
+
+```{r plot_deaths_all, fig.height=8, fig.width=16, fig.cap="Deaths in 2018 by country for all model variants. Mid line denotes median whereas the box denotes the 95% Credible interval."}
+
+df %>% group_by(adm0) %>% 
+  summarise(deaths_low = round(quantile(as.numeric(deaths), 
+                                        probs = 0.025, na.rm = T)),
+            deaths_median = round(quantile(as.numeric(deaths), 
+                                           probs = 0.5, na.rm = T)),
+            deaths_high = round(quantile(as.numeric(deaths), 
+                                         probs = 0.975, na.rm = T)) ) %>%
+  arrange(-deaths_median) %>%
+  ggplot(aes(x = reorder(adm0, -deaths_median), 
+             ymin = deaths_low, 
+             ymax = deaths_high, 
+             y = deaths_median, 
+             fill = as.factor(deaths_median))) +
+  geom_crossbar() +
+  theme_bw() +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 45, hjust = 1)) +
+  xlab("Country")+ ylab(paste0("Deaths in ", params$year))+
+  scale_fill_manual(values = snapalette(snapal, length(unique(df$adm0)), "continuous")) +
+  scale_y_log10()
+```
+
+```{r plot_deaths_all_violin, fig.height=8, fig.width=16, fig.cap="Deaths in 2018 by country for all model variants. "}
+
+df %>% 
+  ggplot(aes(x = reorder(adm0, -deaths), 
+             y = deaths)) +
+  geom_violin(fill = snapalette(snapal, 5, "discrete")[5]) +
+  theme_bw() +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 45, hjust = 1)) +
+  xlab("Country")+ ylab(paste0("Deaths in ", params$year) )+
+  scale_y_log10()
+```
+
+
+
+
+
+# Compare burden between all variants in South America with PAHO data
+
+```{r load_paho}
+
+paho_dat = as.data.frame( data.table::fread("Z:/Data/LatinAmerica/Historic_data.csv", 
+                                            stringsAsFactors = FALSE))
+
+paho_dat %<>% spread(`Measure Names`, `Measure Values`)
+
+# filter to observation period
+paho_dat %<>% filter(Year>1983)
+```
+
+```{r calculate burden 2}
+
+infections_year = NULL
+
+fois = foi_out 
+
+inf_out = NULL
+
+for(s in 1:100){#nrow(fois)){
+  # take quantile
+  foi = fois[sample(1:nrow(fois),1),]
+  
+  
+  infections_df <- bind_rows(lapply(unique(paho_dat$Year), FUN = function(y) {
+    
+    infections_out = fun_calcBurden(foi, y, adm1 = names(foi), vc2d, pop1, ve) 
+    
+    inf_df = data.frame(infections = as.numeric(infections_out),
+                        adm0_adm1 = names(infections_out),
+                        year = y,
+                        adm0 = substr(names(infections_out), 1, 3))
+    
+    inf_df %<>% mutate(prob_severe = rbeta(nrow(inf_df),
+                                           6.367309,44.60736),
+                       prob_severe_death = rbeta(nrow(inf_df),
+                                                 16.43466, 18.49048))
+    
+    inf_df %<>% mutate(severe_infections = prob_severe*infections,
+                       deaths = prob_severe_death*severe_infections)
+    
+  }))
+  
+  
+  pop_df = data.frame(adm0_adm1 = pop1$adm0_adm1,
+                      year = pop1$year,
+                      pop = rowSums(pop1[, -c(1:2)], na.rm = TRUE))
+  
+  infections_df %<>% left_join(pop_df)
+  
+  infections_df %<>% mutate(severe_inci = severe_infections/pop,
+                            deaths_inci = deaths/pop)
+  
+  infections_df %<>% mutate(sample = s)
+  
+  inf_out %<>% bind_rows(infections_df)
+}
+infections_year %<>% bind_rows( inf_out)
+
+
+```
+
+```{r link_paho_data_and_model}
+# get paho iso
+translate = countrycode::countrycode(unique(paho_dat$Countries), 
+                                     "country.name", "iso3c")
+translate_df = data.frame(Countries = unique(paho_dat$Countries),
+                          adm0 = translate)
+
+paho_dat %<>% left_join(translate_df)
+
+# get reporting proportion
+#reporting_propn = Hmisc::binconf(416, 24000) #24000/416 #120000/805 
+# Dengue reporting https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6095627/
+reporting_propn = 1/c(mean(115, 21), 21, 115) 
+
+#filter(model out to paho countries)
+infections_year %<>% filter(adm0 %in% paho_dat$adm0)
+
+```
+
+```{r combine}
+
+inf_df = infections_year %>% 
+  group_by(adm0, year, sample) %>% 
+  summarise(infections = sum(infections, na.rm = T),
+            severe_infections = sum(severe_infections, na.rm = T),
+            deaths = sum(deaths, na.rm = T),
+            pop = sum(pop, na.rm = T))
+
+combined = left_join(paho_dat, inf_df, by = c("adm0" = "adm0", "Year" = "year"))
+
+
+combined %<>% mutate(sample = as.character(sample))
+
+```
+
+```{r compare_cases_paho_proportional, fig.height=10, fig.width=8}
+
+tmp <- combined %>% group_by(Countries, Year, Cases) %>% 
+  summarise(q0.025 = quantile(severe_infections, 0.025),
+            q0.5 = quantile(severe_infections, 0.5),
+            q0.975 = quantile(severe_infections, 0.975))
+
+ggplot(tmp, aes( x = Year)) + 
+  geom_line(aes(y = Cases)) +
+  geom_ribbon(aes(ymin = round(q0.025*reporting_propn[3]), 
+                  ymax = round(q0.975*reporting_propn[2])), 
+              fill = alpha(snapalette("Pop", 5, "discrete")[5], 0.4)) +
+  geom_line(aes(y = round(q0.5*reporting_propn[1]) ), 
+            color = snapalette("Pop", 5, "discrete")[5], size = 1)+
+  facet_wrap(~Countries, scales = "free_y")+ 
+  theme_bw()
+```
+
+```{r compare_cases_paho_BRA_proportional, fig.height=10, fig.width=8}
+
+
+tmp %>% filter(Countries == "Brazil")%>%
+ggplot( aes( x = Year)) + 
+  geom_ribbon(aes(ymin = round(q0.025*reporting_propn[3]), 
+                  ymax = round(q0.975*reporting_propn[2])), 
+              fill = alpha(snapalette("Pop", 5, "discrete")[5], 0.4)) +
+  geom_line(aes(y = Cases)) +
+  geom_line(aes(y = round(q0.5*reporting_propn[1]) ), 
+            color = snapalette("Pop", 5, "discrete")[5], size = 1)+
+  theme_bw() +
+  coord_cartesian(ylim = c(0, 1500)) 
+```

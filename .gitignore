@@ -9,3 +9,5 @@ GLM_MCMC_chain_*
 *images*
 contexts
 ARCHIVE
+R0_lookup_table.Rdata
+R0_lookup_table_coarse.Rdata

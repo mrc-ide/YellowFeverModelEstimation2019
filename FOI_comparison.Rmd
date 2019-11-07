@@ -118,3 +118,4 @@ image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1),
            legend.mar = 3.5)
 
 ```
+
