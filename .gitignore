@@ -11,3 +11,4 @@ contexts
 ARCHIVE
 R0_lookup_table.Rdata
 R0_lookup_table_coarse.Rdata
+*.zip

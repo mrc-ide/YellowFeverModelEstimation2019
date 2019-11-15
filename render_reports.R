@@ -74,3 +74,12 @@ rmarkdown::render(
   paste0("burden_compare", ".Rmd"), 
   output_file = paste0("burden_compare", ".pdf")
 )
+
+#-----------------------------------------------------------------------------
+for(y in c(2012, 2013, 2018)){
+  rmarkdown::render(
+    paste0("vaccine_impact_projections", ".Rmd"), 
+    params = list(year = y),
+    output_file = paste0("vaccine_impact_projections_",y , ".pdf")
+  )
+}

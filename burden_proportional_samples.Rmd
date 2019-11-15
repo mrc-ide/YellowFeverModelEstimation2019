@@ -200,7 +200,8 @@ burden_df %<>% bind_rows(infections_df)
 
 df <-  burden_df %>% 
   group_by(adm0,sample) %>% 
-  summarise(deaths = sum(deaths, na.rm = TRUE))
+  summarise(deaths = sum(deaths, na.rm = TRUE),
+            severe_infections = sum(severe_infections, na.rm = TRUE))
 
 df2 <- df %>% group_by(adm0) %>% 
   summarise(deaths_low = round(quantile(as.numeric(deaths), 
@@ -208,7 +209,14 @@ df2 <- df %>% group_by(adm0) %>%
             deaths_median = round(quantile(as.numeric(deaths), 
                                            probs = 0.5, na.rm = T)),
             deaths_high = round(quantile(as.numeric(deaths), 
-                                         probs = 0.975, na.rm = T)) ) %>%
+                                         probs = 0.975, na.rm = T)),
+            
+            severe_infections_low = round(quantile(as.numeric(severe_infections), 
+                                        probs = 0.025, na.rm = T)),
+            severe_infections_median = round(quantile(as.numeric(severe_infections), 
+                                           probs = 0.5, na.rm = T)),
+            severe_infections_high = round(quantile(as.numeric(severe_infections), 
+                                         probs = 0.975, na.rm = T))) %>%
   arrange(-deaths_median)
 
 df2
@@ -224,7 +232,11 @@ tmp2 %>% group_by(continent) %>% summarise(deaths_median = sum(deaths_median),
                                            deaths_low = sum(deaths_low),
                                            deaths_high = sum(deaths_high),
                                            percent_median = round(deaths_median/
-                                                                    sum(tmp2$deaths_median),2)*100
+                                                                    sum(tmp2$deaths_median),2)*100,
+                                           
+                                           severe_infections_median = sum(severe_infections_median),
+                                           severe_infections_low = sum(severe_infections_low),
+                                           severe_infections_high = sum(severe_infections_high)
                                            ) 
 
 write.csv(tmp2, paste0("Table_of_deaths_proportional_", params$year,  ".csv"), 
@@ -240,8 +252,15 @@ df %>% group_by(adm0) %>%
             deaths_median = round(quantile(as.numeric(deaths), 
                                            probs = 0.5, na.rm = T)),
             deaths_high = round(quantile(as.numeric(deaths), 
-                                         probs = 0.975, na.rm = T)) ) %>%
-  arrange(-deaths_median) %>%
+                                         probs = 0.975, na.rm = T)),
+            
+            severe_infections_low = round(quantile(as.numeric(severe_infections), 
+                                        probs = 0.025, na.rm = T)),
+            severe_infections_median = round(quantile(as.numeric(severe_infections), 
+                                           probs = 0.5, na.rm = T)),
+            severe_infections_high = round(quantile(as.numeric(severe_infections), 
+                                         probs = 0.975, na.rm = T))) %>%
+  arrange(-deaths_median)%>%
   ggplot(aes(x = reorder(adm0, -deaths_median), 
              ymin = deaths_low, 
              ymax = deaths_high, 

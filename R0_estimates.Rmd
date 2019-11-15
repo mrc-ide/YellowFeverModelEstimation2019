@@ -107,11 +107,6 @@ dat = adjust_env_dat(dat)
 
 dat %<>% mutate(adm0_adm1 = adm1)
 
-# fit to one continent
-#dat %<>% filter(continent == "Africa")
-# c34 = readr::read_csv("../Data/Countries.csv")$c34
-# dat %<>% filter(adm0 %in% c34)
-
 
 ### POPULATION AND VACCINATION DATA ###
 if(!exists("all_res_pop_3d")){
@@ -149,9 +144,13 @@ vc2d %<>% filter(!is.na(adm0_adm1))
 # filter vac and pop to match dat
 vc2d %<>% filter(adm0_adm1 %in% dat$adm1)
 pop1 %<>% filter(adm0_adm1 %in% dat$adm1)
+p_prop %<>% filter(adm1 %in% dat$adm1)
+P_tot %<>% filter(adm1 %in% dat$adm1)
+
+vc2d %<>% arrange(adm0_adm1)
+pop1 %<>% arrange(adm0_adm1)
 
 
-vc2d %<>% arrange( adm0_adm1)
 #-------------------------------------------------------
 #vc3d
 vc3d = transform_into_vc3d(vc2d %>% dplyr::select(-adm0)) 
@@ -176,9 +175,9 @@ p_prop_3d = array( data = p_prop$population,
 
 pop_moments_whole = calc_pop_moments(p_prop_3d, 
                                      t0_vac_africa,
-                                     dim_adm = dimnames(vc3d)[[1]],
-                                     dim_year = dimnames(vc3d)[[2]],
-                                     dim_age = dimnames(vc3d)[[3]])
+                                     dim_adm = unique(p_prop$adm1),
+                                     dim_year = unique(p_prop$year),
+                                     dim_age = unique(p_prop$age))
 
 #aggregate
 if(!exists("list_aggregate_pop_vc")){
@@ -213,6 +212,8 @@ P_tot_2d <- as.data.frame(P_tot_2d)
 P_tot_2d %<>% dplyr::select(-adm1)
 P_tot_2d <- as.matrix(P_tot_2d)
 class(P_tot_2d) <- "numeric"
+
+
 # CREATE R0 LOOKUP TABLE #
 if(!file.exists(paste0("R0_lookup_table.Rdata") )){
 
@@ -227,12 +228,12 @@ if(!file.exists(paste0("R0_lookup_table.Rdata") )){
                    P_tot_2d,
                    inc_v3d,
                    pop_moments_whole,
-                   vac_eff_arg = 0.975)
+                   vac_eff_arg = median(exp(mcmc_out$vac_eff)))
   proc.time()-ptm
 } else {
-  load(paste0("R0_lookup_table.Rdata") )
+  
 }
-
+load(paste0("R0_lookup_table.Rdata") )
 
 
 # pop at survey #
@@ -295,7 +296,7 @@ varsin_nc = grep("adm05|surv|posterior|acc|dtp", names(glm_mcmc_out), invert = T
 colours = snapalette("Pop", 100, type = "continuous")
 
 
-#order x by FOI_param
+#order x by param
 x = x[, names(R0_param[ii,2])]
 
 R0 = plot_transmission_intensity2(x,
@@ -310,7 +311,7 @@ R0 = plot_transmission_intensity2(x,
                                    P_tot_2d,
                                    inc_v3d,
                                    pop1,
-                                   vc2d=vc2d %>% dplyr::select(-adm0),
+                                   vc2d=vc2d %>% select(-adm0),
                                    varsin_nc,
                                    polydeg = 5,
                                    R0_lookup,
@@ -322,6 +323,31 @@ R0 = plot_transmission_intensity2(x,
 
 
 ```
+```{r map_R0_by_adm1, warning=FALSE}
+
+
+colours = snapalette("Pop", 100, type = "continuous")
+
+shp1$R0 = NA
+shp1$R0 = R0$R0[match(shp1$GID_1, R0$adm0_adm1)]
+
+mybreaks= seq(1-0.01, 
+              max(shp1$R0, na.rm = TRUE)+0.01, 
+              length.out=101)
+  
+vcols = findInterval((shp1$R0),mybreaks)
+  
+
+plot(shp1,col=colours[vcols], lty=0)
+plot(shp0, add=T)
+
+image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), horizontal = TRUE,
+             # axis.args = list(at = c(log10(c(0.1, 0.5, 1, 1.5, 2, 3, 4,  10) )), 
+             #                  labels =c(1.1, 1.5, 2, 2.5, 3, 4, 5,  11), las =2),
+             legend.mar = 3.5)
+
+```
+
 
 ```{r map_R0_by_country, warning=FALSE}
 
@@ -332,19 +358,18 @@ colours = snapalette("Pop", 100, type = "continuous")
 shp0$R0 = NA
 shp0$R0 = tmp$median_R0[match(shp0$GID_0, tmp$adm0)]
 
-mybreaks= seq(min(log10(shp0$R0), na.rm = TRUE), 
-              max(log10(shp0$R0), na.rm = TRUE)+0.01, 
+mybreaks= seq(min(log10(shp0$R0-1), na.rm = TRUE), 
+              max(log10(shp0$R0-1), na.rm = TRUE)+0.01, 
               length.out=101)
   
-vcols = findInterval(log10(shp0$R0),mybreaks)
+vcols = findInterval(log10(shp0$R0-1),mybreaks)
   
 plot(shp0)
 plot(shp0,col=colours[vcols], lty=2, add=T)
 
 image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), horizontal = TRUE,
-             axis.args = list(at = c(-7:1), 
-                              labels =c("1e-07","1e-06","1e-05","1e-04", 
-                                        "0.001", "0.01", "0.1","1","10"), las =2),
+             axis.args = list(at = c(log10(c(0.1, 0.5, 1, 1.5, 2, 3, 4,  10) )), 
+                              labels =c(1.1, 1.5, 2, 2.5, 3, 4, 5,  11), las =2),
              legend.mar = 3.5)
 
 ```
@@ -363,15 +388,15 @@ tmp_R0 = R0 %>% group_by(adm0) %>% summarise(weighted_mean = weighted.mean(R0, p
 shp0$R0 = NA
 shp0$R0 = tmp_R0$weighted_mean[match(shp0$GID_0, tmp_R0$adm0)]
 
-mybreaks= seq(min(log10(shp0$R0), na.rm = TRUE), max(log10(shp0$R0), na.rm = TRUE)+0.01, length.out=101)
+mybreaks= seq(min(log10(shp0$R0-1), na.rm = TRUE), max(log10(shp0$R0-1), na.rm = TRUE)+0.01, length.out=101)
   
-vcols = findInterval(log10(shp0$R0),mybreaks)
+vcols = findInterval(log10(shp0$R0-1),mybreaks)
   
 plot(shp0)
 plot(shp0,col=colours[vcols], lty=2, add=T)
 
 image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), horizontal = TRUE,
-             axis.args = list(at = c(-7:1), labels =c("1e-07","1e-06","1e-05","1e-04", "0.001", "0.01", "0.1","1","10"), las =2),
+             axis.args = list(at = c(-3:1), labels =c( "1.001", "1.01", "1.1","2","11"), las =2),
              legend.mar = 3.5)
 ```
 
@@ -392,39 +417,6 @@ ggplot(R0 %>%
 
 ```
 
-```{r R0_by_country2, fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10, eval = FALSE}
-
-
-
-ggplot(R0 %>% 
-         left_join(dat, by = c("adm0_adm1")), 
-       aes(x = reorder(adm0.x, -R0), y = log10(R0), fill = risk)) + 
-  geom_boxplot() + 
-  xlab("Country") + 
-  ylab("R0")+
-  theme_bw()+
-  scale_fill_viridis(option = "magma") +
-  theme(legend.position = "none", axis.text.x = element_text(angle = 90, hjust = 1))
-
-```
-
-```{r R0_by_risk, fig.align='center', fig.pos = 'h', strip.white=F, fig.height = 10, eval = FALSE}
-
-
-
-ggplot(R0 %>% 
-         left_join(dat, by = c("adm0_adm1")) %>%
-         mutate(risk = as.numeric(risk)), 
-       aes(x = risk, y = log10(R0), fill = risk)) + 
-  geom_point() + 
-  stat_smooth(method = "lm", col = "red")+
-  xlab("risk") + 
-  ylab("R0")+
-  theme_bw()+
-  scale_fill_viridis(option = "magma") +
-  theme(legend.position = "none", axis.text.x = element_text(angle = 90, hjust = 1))
-
-```
 
 ## Producing average model predictions
 

@@ -1,0 +1,439 @@
+---
+title: "Vaccine impact estimates"
+author: "Katy Gaythorpe"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+header-includes: 
+- \usepackage{placeins}
+output: 
+  pdf_document:
+    df_print: "kable"
+params:
+  year: 2018
+---
+
+```{r knitsetup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  dev = "png",
+  fig.path = paste0("images/", params$year, "_"),
+  dpi = 300,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+```{r setup}
+library(mcmcplots)
+library(ggmcmc)
+library(gridExtra)
+library(maptools)
+library(readr)
+library(fields)
+library(rgdal)
+library(R.utils)
+library(magrittr)
+library(pROC)
+library(dplyr)
+
+# homemade
+library(snapalette)
+library(YFestimation)
+library(KsetupR)
+
+R.utils::sourceDirectory("Functions")
+
+snapal = "Pop"
+```
+
+```{r read in foi}
+foi_out <- read.csv("sampled_foi_predictions.csv", stringsAsFactors = FALSE)
+
+# get in useful format
+foi_samples = foi_out %>% gather(adm1, foi)
+
+foi_samples %<>% mutate(adm0 = substr(adm1, 1,3))
+
+```
+
+```{r load_data}
+
+# ---------------------------------------------------------------------------
+### POPULATION DATA ###
+
+all_res_pop_3d = get_pop_data_3d() 
+
+pop1 = all_res_pop_3d$pop1                                      
+P_tot = all_res_pop_3d$P_tot                               
+p_prop = all_res_pop_3d$p_prop                                  
+
+pop1 %<>% rename(adm0_adm1 = adm1)
+
+pop1 %<>% arrange(year) %>% dplyr::select(-c(country_code, country))
+
+names(pop1)[3:ncol(pop1)] = paste0("a", 0:100)
+
+pop1 %<>% filter(year<2051)
+p_prop %<>% filter(year<2051)
+P_tot %<>% filter(year<2051)
+
+# ---------------------------------------------------------------------------
+# VACCINATION DATA #
+vc2d = readRDS("vacc_1940_1950.RDS")
+vc2d = as.data.frame(vc2d)
+
+vc2d %<>% mutate(year = as.numeric(as.character(year)))
+
+
+```
+
+
+```{r load_vac_wo_mass_vac}
+
+vac_in = readRDS("../Data/Vaccination/Outputs/vac_coverage_1940_2050_wo_mass_campaigns.RDS" )
+
+vc2d_wo_mass_vac <-  vac_in %>% spread(age, vac)
+
+names(vc2d_wo_mass_vac)[3:ncol(vc2d_wo_mass_vac)] = paste0("a", 0:100)
+
+vc2d_wo_mass_vac %<>% tibble::add_column(adm0 = substr(vc2d_wo_mass_vac$adm1, 1,3), .after = "year")                       
+vc2d_wo_mass_vac %<>% rename(adm0_adm1 = adm1)                        #renames adm1 as adm0_adm1
+
+vc2d_wo_mass_vac = as.data.frame(vc2d_wo_mass_vac)
+
+vc2d_wo_mass_vac %<>% mutate(year = as.numeric(as.character(year)))
+
+
+### crop pop, vc2d to match adm1 in vc2d_wo_mass_vacc
+
+vc2d %<>% filter(adm0_adm1 %in% vc2d_wo_mass_vac$adm0_adm1)
+pop1 %<>% filter(adm0_adm1 %in% vc2d_wo_mass_vac$adm0_adm1)
+
+```
+
+```{r load shapefiles}
+if(!exists("shp0")){
+  shp0 = rgdal::readOGR("../../shapefiles/Africa_America_0_smooth.shp",
+                        stringsAsFactors = FALSE,
+                        encoding = "UTF-8",
+                        use_iconv = TRUE)
+}
+if(!exists("shp1")){
+  shp1 = rgdal::readOGR("../../shapefiles/Africa_America_1_smooth.shp",
+                        stringsAsFactors = FALSE,
+                        encoding = "UTF-8",
+                        use_iconv = TRUE)
+}
+```
+
+```{r load_fve}
+
+ve = read.csv("vac_eff_samples.csv", stringsAsFactors = FALSE)$x
+
+ve = rep_len(ve, length.out = nrow(foi_out))
+
+#
+foi_out <- foi_out[, names(foi_out) %in% vc2d_wo_mass_vac$adm0_adm1]
+
+#arrange
+pop1 %<>% arrange(adm0_adm1)
+vc2d %<>% arrange(adm0_adm1)
+vc2d_wo_mass_vac %<>% arrange(adm0_adm1)
+
+```
+
+```{r calculate burden1}
+
+# ---------------------------------------------------------------------------
+fun_calcBurden = function(fois, year , adm1 = NA, vc2d, pop1, ve) { 
+  
+  if(anyNA(adm1)){
+    adm1 = names(fois)
+  }
+  
+  foi.mat = matrix(fois, nrow=length(fois), ncol=101, byrow=FALSE)
+  
+  class(foi.mat) = "numeric"
+  
+  a.mat = matrix(0:100, nrow=length(fois), ncol=101, byrow=TRUE)
+  
+  burden = fois * rowSums(exp(-foi.mat*a.mat) * 
+                            (1-ve*vc2d[vc2d$year==year & 
+                                         vc2d$adm0_adm1 %in% adm1,-(1:3)]) *
+                            pop1[pop1$year==year & 
+                                   pop1$adm0_adm1 %in% adm1, -(1:2)], na.rm=TRUE)
+  return(burden)
+}
+
+# ---------------------------------------------------------------------------
+year_out = params$year
+
+burden_df = NULL
+
+foi = foi_out
+
+foi = foi[unique(vc2d$adm0_adm1)] # order it in the same way
+
+infections_out <-  sapply(1:nrow(foi), FUN = function(i) fun_calcBurden(foi[i,], 
+                                                                        year_out, 
+                                                                        adm1 = names(foi), 
+                                                                        vc2d, 
+                                                                        pop1,
+                                                                        ve[i]))
+
+infections_df <-  as.data.frame(infections_out)
+infections_df %<>% mutate(adm0_adm1 = rownames(infections_out),
+                          year = year_out)
+
+infections_df %<>% gather(sample, infections, -c(adm0_adm1, year))
+
+infections_df %<>% mutate(adm0 = substr(adm0_adm1, 1, 3)) %>%
+  
+  mutate(infections = as.numeric(infections)) %>%
+  
+  mutate(prob_severe = rbeta(nrow(infections_df),
+                             6.367309,44.60736),
+         prob_severe_death = rbeta(nrow(infections_df),
+                                   16.43466, 18.49048))
+
+infections_df %<>% mutate(severe_infections = prob_severe*infections,
+                          deaths = prob_severe_death*severe_infections)
+
+burden_df %<>% bind_rows(infections_df)
+
+```
+
+```{r calculate burden2}
+
+burden_df_nomassvac = NULL
+
+infections_out <-  sapply(1:nrow(foi), FUN = function(i) fun_calcBurden(foi[i,], 
+                                                                        year_out, 
+                                                                        adm1 = names(foi), 
+                                                                        vc2d_wo_mass_vac, 
+                                                                        pop1,
+                                                                        ve[i]))
+
+infections_df <-  as.data.frame(infections_out)
+infections_df %<>% mutate(adm0_adm1 = rownames(infections_out),
+                          year = year_out)
+
+infections_df %<>% gather(sample, infections_nomassvac, -c(adm0_adm1, year))
+
+infections_df %<>% mutate(infections_nomassvac = as.numeric(infections_nomassvac))
+
+burden_df_nomassvac %<>% bind_rows(infections_df)
+
+burden_df %<>% bind_cols(burden_df_nomassvac)
+
+burden_df %<>% mutate(severe_infections_nomassvac = prob_severe*infections_nomassvac,
+                      deaths_nomassvac = prob_severe_death*severe_infections_nomassvac)
+
+```
+
+
+```{r table_deaths_compare_massvac}
+
+df <-  burden_df %>% 
+  group_by(adm0,sample) %>% 
+  summarise(deaths = sum(deaths, na.rm = TRUE),
+            deaths_nomassvac = sum(deaths_nomassvac, na.rm = TRUE))
+
+df2 <- df %>% group_by(adm0) %>% 
+  summarise(deaths_low = round(quantile(as.numeric(deaths), 
+                                        probs = 0.025, na.rm = T)),
+            deaths_median = round(quantile(as.numeric(deaths), 
+                                           probs = 0.5, na.rm = T)),
+            deaths_high = round(quantile(as.numeric(deaths), 
+                                         probs = 0.975, na.rm = T)),
+            
+            deaths_low_nomassvac = round(quantile(as.numeric(deaths_nomassvac), 
+                                        probs = 0.025, na.rm = T)),
+            deaths_median_nomassvac = round(quantile(as.numeric(deaths_nomassvac), 
+                                           probs = 0.5, na.rm = T)),
+            deaths_high_nomassvac = round(quantile(as.numeric(deaths_nomassvac), 
+                                         probs = 0.975, na.rm = T))) %>%
+  arrange(-deaths_median)
+
+df2
+
+tmp = data.frame(countries = unique(shp0$NAME_0), adm0 = unique(shp0$GID_0))
+tmp$continent <- countrycode::countrycode(sourcevar = tmp$countries,
+                            origin = "country.name",
+                            destination = "continent")
+
+tmp2 = left_join(df2, tmp)
+
+tmp2 %>% group_by(continent) %>% summarise(deaths_median = sum(deaths_median),
+                                           deaths_low = sum(deaths_low),
+                                           deaths_high = sum(deaths_high),
+                                           percent_median = round(deaths_median/
+                                                                    sum(tmp2$deaths_median),2)*100,
+                                           deaths_median_nomassvac = sum(deaths_median_nomassvac),
+                                           deaths_low_nomassvac = sum(deaths_low_nomassvac),
+                                           deaths_high_nomassvac = sum(deaths_high_nomassvac),
+                                           percent_median_nomassvac = round(deaths_median_nomassvac/
+                                                                    sum(tmp2$deaths_median_nomassvac),2)*100
+                                           ) 
+
+write.csv(tmp2, paste0("Table_of_massvac_deaths_", params$year,  ".csv"), 
+          row.names = FALSE)
+```
+
+
+```{r add country names}
+tmp = data.frame(countries = unique(shp0$NAME_0), adm0 = unique(shp0$GID_0))
+
+df %<>% left_join(tmp)
+```
+
+```{r plot_impact_vac, fig.height=8, fig.width=16, fig.cap="Deaths in 2018 by country for all model variants and two vaccination scenarios. Mid line denotes median whereas the box denotes the 95% Credible interval."}
+
+df_new <- df %>% group_by(countries) %>% 
+  summarise(deaths_low = round(quantile(as.numeric(deaths), 
+                                        probs = 0.025, na.rm = T)),
+            deaths_median = round(quantile(as.numeric(deaths), 
+                                           probs = 0.5, na.rm = T)),
+            deaths_high = round(quantile(as.numeric(deaths), 
+                                         probs = 0.975, na.rm = T)),
+            deaths_low_nomassvac = round(quantile(as.numeric(deaths_nomassvac), 
+                                        probs = 0.025, na.rm = T)),
+            deaths_median_nomassvac = round(quantile(as.numeric(deaths_nomassvac), 
+                                           probs = 0.5, na.rm = T)),
+            deaths_high_nomassvac = round(quantile(as.numeric(deaths_nomassvac), 
+                                         probs = 0.975, na.rm = T)))
+  
+df_new2 = bind_rows( data.frame(countries = df_new$countries,
+                                deaths_low = df_new$deaths_low,
+                                deaths_median = df_new$deaths_median,
+                                deaths_high = df_new$deaths_high,
+                                type = "Current"),
+                     data.frame(countries = df_new$countries,
+                                deaths_low = df_new$deaths_low_nomassvac,
+                                deaths_median = df_new$deaths_median_nomassvac,
+                                deaths_high = df_new$deaths_high_nomassvac,
+                                type = "No mass vaccination"))
+
+dodge <- position_dodge(width=0.5)
+
+  ggplot(df_new2) +
+  geom_pointrange(aes(x = reorder(countries, -deaths_median), 
+             ymin = deaths_low, 
+             ymax = deaths_high, 
+             y = deaths_median, 
+             colour = type),
+             position = dodge,
+             size = 2) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        text = element_text(size = 20)) +
+  xlab("Country")+ ylab(paste0("Deaths in ", params$year))+
+    scale_colour_manual(values = c(snapalette(snapal, 5, "discrete")[c(1,5)]))+
+ # scale_y_log10() +
+    labs(colour = "Scenario")
+
+```
+
+```{r diff_plot, fig.height=8, fig.width=16, fig.cap="."}
+
+df %<>% mutate(death_diff = deaths_nomassvac - deaths)
+
+df %>% group_by(countries) %>% 
+  summarise(diff_low = round(quantile(as.numeric(death_diff), 
+                                        probs = 0.025, na.rm = T)),
+            diff_median = round(quantile(as.numeric(death_diff), 
+                                           probs = 0.5, na.rm = T)),
+            diff_high = round(quantile(as.numeric(death_diff),
+                                       probs = 0.975, na.rm = T))) %>%
+  
+  arrange(-diff_median) %>%
+  ggplot() +
+  geom_crossbar(aes(x = reorder(countries, -diff_median), 
+             ymin = diff_low, 
+             ymax = diff_high, 
+             y = diff_median, 
+             fill = as.factor(diff_median)),
+             alpha = 0.5) +
+  theme_bw() +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 45, hjust = 1),
+        text = element_text(size = 20)) +
+  xlab("Country")+ ylab(paste0("Difference in deaths in ", params$year))+
+  scale_fill_manual(values = snapalette(snapal, length(unique(df$countries)), "continuous")) +
+  scale_y_log10()
+
+```
+
+```{r diff_plot_percent, fig.height=8, fig.width=16, fig.cap="."}
+
+df %<>% mutate(death_diff = deaths_nomassvac - deaths)
+
+df %>% group_by(countries) %>% 
+  summarise(diff_low = round(quantile(as.numeric(death_diff/deaths_nomassvac * 100), 
+                                        probs = 0.025, na.rm = T)),
+            diff_median = round(quantile(as.numeric(death_diff/deaths_nomassvac * 100), 
+                                           probs = 0.5, na.rm = T)),
+            diff_high = round(quantile(as.numeric(death_diff/deaths_nomassvac * 100),
+                                       probs = 0.975, na.rm = T))) %>%
+  
+  arrange(-diff_median) %>%
+  ggplot() +
+  geom_crossbar(aes(x = reorder(countries, -diff_median), 
+             ymin = diff_low, 
+             ymax = diff_high, 
+             y = diff_median, 
+             fill = as.factor(diff_median)),
+             alpha = 0.5) +
+  theme_bw() +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 45, hjust = 1),
+        text = element_text(size = 20)) +
+  xlab("Country")+ ylab(paste0("Percentage difference in deaths in ", params$year))+
+  scale_fill_manual(values = snapalette(snapal, length(unique(df$countries)), "continuous")) +
+  scale_y_log10()
+
+```
+
+```{r diff_table, fig.height=8, fig.width=16, fig.cap="."}
+
+
+df %>% group_by(countries) %>% 
+  summarise(diff_low = round(quantile(as.numeric(death_diff), 
+                                        probs = 0.025, na.rm = T)),
+            diff_median = round(quantile(as.numeric(death_diff), 
+                                           probs = 0.5, na.rm = T)),
+            diff_high = round(quantile(as.numeric(death_diff),
+                                       probs = 0.975, na.rm = T))) %>%
+  
+  arrange(-diff_median) %>%
+  write.csv( paste0("Table_of_massvac_impact_", params$year,  ".csv"), 
+          row.names = FALSE)
+
+```
+
+```{r diff_table_percent, fig.height=8, fig.width=16, fig.cap="."}
+
+
+df %>% group_by(countries) %>% 
+  summarise(diff_low = round(quantile(as.numeric(death_diff/deaths_nomassvac * 100), 
+                                        probs = 0.025, na.rm = T)),
+            diff_median = round(quantile(as.numeric(death_diff/deaths_nomassvac * 100), 
+                                           probs = 0.5, na.rm = T)),
+            diff_high = round(quantile(as.numeric(death_diff/deaths_nomassvac * 100),
+                                       probs = 0.975, na.rm = T))) %>%
+  
+  arrange(-diff_median) %>%
+  write.csv( paste0("Table_of_massvac_impact_", params$year,  "_percent.csv"), 
+          row.names = FALSE)
+
+df %>% ungroup() %>%
+  summarise(diff_low = round(quantile(as.numeric(death_diff/deaths_nomassvac * 100), 
+                                        probs = 0.025, na.rm = T)),
+            diff_median = round(quantile(as.numeric(death_diff/deaths_nomassvac * 100), 
+                                           probs = 0.5, na.rm = T)),
+            diff_high = round(quantile(as.numeric(death_diff/deaths_nomassvac * 100),
+                                       probs = 0.975, na.rm = T))) %>%
+  
+  arrange(-diff_median) %>%
+  write.csv( paste0("Table_of_massvac_impact_", params$year,  "_percent_all.csv"), 
+          row.names = FALSE)
+
+
+```
