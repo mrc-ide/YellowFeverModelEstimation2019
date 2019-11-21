@@ -62,11 +62,17 @@ run_estimation = function(run_id=1){
   #########################################################################################################
   
   if(!file.exists("vacc_1940_1950.RDS")){
-    vac_in = readRDS("../Data/Vaccination/Outputs/vac_coverage_1940_2050_all.RDS" )
+    vac_in = readRDS("../Data/Vaccination/Outputs/vac_coverage_1940_2050_all_gadm36.RDS" )
     
-    vc2d <-  vac_in %>% spread(age, vac)
+    vac_in %<>% as.data.frame()
+    
+    vac_in %<>% dplyr::select(-c(doses, population))
+    
+    vc2d <-  vac_in %>% spread(age, coverage)
     
     names(vc2d)[3:ncol(vc2d)] = paste0("a", 0:100)
+    
+    vc2d %<>% rename(adm1 = new_id)
     
     vc2d %<>% tibble::add_column(adm0 = substr(vc2d$adm1, 1,3), .after = "year")                       
 
