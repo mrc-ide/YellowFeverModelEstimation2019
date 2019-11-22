@@ -174,6 +174,12 @@ run_estimation = function(run_id=1){
   print("agg_pop_vc")
 
   #########################################################################################################
+  ### LOAD PREVIOUS ###
+  #########################################################################################################
+  old_foi_est <- read.csv("multi_model_MCMC_chain_20190903/sero_chain_46_output5.csv", stringsAsFactors = FALSE)
+  
+  old_foi_est <- colMeans(old_foi_est[, 2:(ncol(old_foi_est)-4)])
+  #########################################################################################################
   ### CREATE STATUS ###
   #########################################################################################################
   
@@ -200,17 +206,17 @@ run_estimation = function(run_id=1){
   
   ## filling the pars_in vector
   # vaccine efficacy 
-  pars_ini[1] =log(0.975) 
+  pars_ini[1] = as.numeric(old_foi_est[grep("vac_eff", names(old_foi_est))])  # log(0.975) 
   
   # foi for each survey 
-  pars_ini[grep("Foi", parnames)] = rep(log(0.01), seroout$no_sero_surveys)  #StartParamFoi[grep("Foi", StartParamFoi$X), "X.1"] #
+  pars_ini[grep("Foi", parnames)] = as.numeric(old_foi_est[grep("Foi", names(old_foi_est))]) #rep(log(0.01), seroout$no_sero_surveys)  
   
   # R0 for each survey KATY IS LOG TRANSFORMING THESE
   #this is the max post prob values of R0 from trial run
   pars_ini[grep("R0", parnames)] = rep(0.1, seroout$no_sero_surveys) 
   
   #vc.factor.CMRs 
-  pars_ini[length(pars_ini)]= -0.3 #
+  pars_ini[length(pars_ini)]= as.numeric(old_foi_est[grep("vc_factor", names(old_foi_est))]) #
   
   
   ## declare vector to identify different parameter types: vacc eff=1, Foi/R0=3, vc.factor.CMRs =4
@@ -239,7 +245,7 @@ run_estimation = function(run_id=1){
   posterior_distributions = rbind(FOI_posterior_distributions, R0_posterior_distributions)
   
   #tweak posterior distributions 
-  scale_factor =  setup_pseudoprior(pars_ini, posterior_distributions, "R0") # 0.3250546 # 
+  scale_factor =  0.3 #setup_pseudoprior(pars_ini, posterior_distributions, "R0")  
   # 
   posterior_distributions$sd[posterior_distributions$model_type == "R0"] = 
   scale_factor * posterior_distributions$sd[posterior_distributions$model_type == "R0"]
