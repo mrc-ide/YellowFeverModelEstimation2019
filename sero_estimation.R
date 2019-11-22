@@ -217,7 +217,7 @@ run_estimation = function(run_id=1){
   parameter_type = c(1,rep(3,2*seroout$no_sero_surveys), 4) # THIS NOW INDEXES THE DIFFERENT PARAMETER TYPES
   
   ## initial model 
-  model_type = "R0" # "Foi" #
+  model_type = "Foi" #"R0" # 
   
   print("set pars_ini")
   #########################################################################################################
@@ -252,10 +252,10 @@ run_estimation = function(run_id=1){
   
   ign = NA
   
-  prob_Foi = log(0) 
+  prob_Foi = log(1) 
   
   #create a directory to save the output in
-  name_dir = paste0("R0_multi_model_MCMC_chain", "_", 
+  name_dir = paste0("multi_model_MCMC_chain", "_", 
                     format(Sys.time(),"%Y%m%d"))
   dir.create(name_dir,  showWarnings = TRUE)
   
