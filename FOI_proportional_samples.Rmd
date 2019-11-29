@@ -466,9 +466,10 @@ write.csv(foi_out, "sampled_foi_predictions.csv", row.names = FALSE)
 
 ```{r coeff_of_var_proportional, fig.cap="Coefficient of variation between all model variants.", fig.width=12, fig.height=8}
 
+foi_out[is.infinite(as.matrix(foi_out))] <- NA
 
-coeff_of_var = sapply(1:ncol(foi_out), FUN = function(i) sd(foi_out[,i], na.rm = T)/
-                        mean(foi_out[,i], na.rm = T)) *100
+coeff_of_var = apply(foi_out,2, FUN = function(x) sd(x, na.rm = T)/mean(x, na.rm = T)) *100
+
 names(coeff_of_var) = colnames(foi_out)
 
 colours = snapalette("Space", 1000, type = "continuous")
