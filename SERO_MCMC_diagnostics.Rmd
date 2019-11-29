@@ -42,15 +42,20 @@ sourceDirectory("Functions", modifiedOnly = FALSE)
  
 snapal <- "Pop"
 
-mcmc_out <- get_chains("multi_model_MCMC_chain_20191121",
+filepath_to_use <- "multi_model_MCMC_chain_20191129"
+
+mcmc_out <- get_chains(filepath_to_use,
                        burnin = 1, thin = 1)
+
+saveRDS(filepath_to_use, "sero_filepath_to_use.RDS")
 
 # mcmc_out <- get_chains("R0_multi_model_MCMC_chain_20191022", 
 #                         burnin = 5e4, thin = 1)
 
 mcmc_out %<>% select(-starts_with("R0")) #select(-starts_with("Foi"))#
+```
 
-
+```{r posterior}
 plot(mcmc_out$posteriorProb, type="l", 
      ylab="Posterior")
 ```

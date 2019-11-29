@@ -3,7 +3,7 @@
 
 run_estimation = function(run_id=1){
   
-
+  
   library(dplyr)
   library(readr)
   library(reshape2)
@@ -36,8 +36,8 @@ run_estimation = function(run_id=1){
     seroout$adm1s[[s]] = paste(seroout$adm1s[[s]], "_1", sep = "")
   }
   
-
-
+  
+  
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
   ### POPULATION AND VACCINATION DATA ###
   
@@ -56,27 +56,21 @@ run_estimation = function(run_id=1){
   pop1 %<>% filter(year<2051)
   
   pop1 %<>% rename(adm0 = country_code)
-
+  
   #########################################################################################################
   ### VACCINATION DATA ###
   #########################################################################################################
   
   if(!file.exists("vacc_1940_1950.RDS")){
-    vac_in = readRDS("../Data/Vaccination/Outputs/vac_coverage_1940_2050_all_gadm36.RDS" )
+    vac_in = readRDS("../Data/Vaccination/Outputs/vac_coverage_1940_2050_all_gadm36.RDS")
     
-    vac_in %<>% as.data.frame()
-    
-    vac_in %<>% dplyr::select(-c(doses, population))
-    
-    vc2d <-  vac_in %>% spread(age, coverage)
+    vc2d <-  vac_in %>% select(-c(doses, population)) %>% spread(age, coverage)
     
     names(vc2d)[3:ncol(vc2d)] = paste0("a", 0:100)
     
-    vc2d %<>% rename(adm1 = new_id)
+    vc2d %<>% tibble::add_column(adm0 = substr(vc2d$new_id, 1,3), .after = "year")                         #rename countries as adm0
     
-    vc2d %<>% tibble::add_column(adm0 = substr(vc2d$adm1, 1,3), .after = "year")                       
-
-    vc2d %<>% rename(adm0_adm1 = adm1)                        #renames adm1 as adm0_adm1
+    vc2d %<>% rename(adm0_adm1 = new_id)                        #renames adm1 as adm0_adm1
     
     # formally "repair_vc_data" from FOI model in Kevin's folder
     for (colIndex in 4:ncol(vc2d)){                                      #before 1995, we have NA values for those aged >75
@@ -85,6 +79,8 @@ run_estimation = function(run_id=1){
     
     # restrict to lines in dat
     #vc2d %<>% filter(adm0_adm1 %in% dat$adm0_adm1)
+    
+    vc2d %<>% filter(!is.na(adm0))
     
     saveRDS(vc2d, "vacc_1940_1950.RDS")
   } else {
@@ -95,26 +91,16 @@ run_estimation = function(run_id=1){
   vc2d %<>% filter(!is.na(adm0_adm1))
   
   vc2d %<>% filter(adm0_adm1 %in% pop1$adm0_adm1)
-  vc2d %<>% ungroup()  %>% mutate(year = as.numeric(as.character(year)),
-                                  adm0 = as.character(adm0))
-  
-  # expand vc2d to match pop1
-  vc2d %<>% mutate(year = as.numeric(as.character(year)))
-  vc_tmp = pop1 %>% filter(!adm0_adm1 %in% vc2d$adm0_adm1)
-  vc_tmp[, grep("adm0_adm1|year|adm0", names(vc_tmp), invert = TRUE)] = 0
-  
-  vc2d %<>% bind_rows(vc_tmp)
-  vc2d %<>% filter(!is.na(adm0_adm1))
+  vc2d %<>% ungroup()  %>% mutate(year = as.numeric(as.character(year)))
   
   #########################################################################################################
   ### AGGREGATE POPULATION AND VACCINATION DATA ###
   #########################################################################################################
   
   if(!file.exists("agg_pop_vc.RData")){ 
-
+    
     #aggregate
-    agg=Make_aggregate_pop_vc(select(pop1, -adm0), select(vc2d, -adm0),
-                              seroout$sero_studies, seroout$adm1s)
+    agg=Make_aggregate_pop_vc(select(pop1, -adm0), select(vc2d, -adm0), seroout$sero_studies, seroout$adm1s)
     
     pop_agg=agg$pop_agg
     vc_agg=agg$vc_agg
@@ -143,7 +129,7 @@ run_estimation = function(run_id=1){
     dimnames(pop_agg3d)[[1]] = dimnames(vc_agg3d)[[1]] = dim_survey
     dimnames(pop_agg3d)[[2]] = dimnames(vc_agg3d)[[2]] = dim_year
     dimnames(pop_agg3d)[[3]] = dimnames(vc_agg3d)[[3]] = dim_age
-
+    
     
     pop_agg3d[is.na(pop_agg3d)] = 0
     vc_agg3d[is.na(vc_agg3d)] = 0
@@ -167,11 +153,12 @@ run_estimation = function(run_id=1){
     load("agg_pop_vc.RData")
   }
   
+  print("agg_pop_vc")
+  
+  
   dim_survey = seroout$sero_studies
   dim_year = as.numeric(unique(pop1$year))
   dim_age = names(pop1 %>% select(-c(adm0_adm1, year, adm0)))
-  
-  print("agg_pop_vc")
 
   #########################################################################################################
   ### LOAD PREVIOUS ###

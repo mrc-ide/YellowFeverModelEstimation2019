@@ -45,11 +45,13 @@ library(KsetupR)
 
 sourceDirectory("Functions", modifiedOnly = FALSE)
 
+filepath_to_use <- readRDS("sero_filepath_to_use.RDS")
+
 if(!exists("mcmc_out")){
-  mcmc_out = get_chains("multi_model_MCMC_chain_20190903", 
-                        burnin = 8e5, thin = 100)
+  mcmc_out <- get_chains(filepath_to_use,
+                         burnin = 1, thin = 1)
   
-  write.csv(sample(exp(mcmc_out$vac_eff), 100), "vac_eff_samples.csv", row.names = FALSE)
+  write.csv(sample(exp(mcmc_out$vac_eff), 1000), "vac_eff_samples.csv", row.names = FALSE)
 }
 
 glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20191016_bestglm_1_", params$model_variant),

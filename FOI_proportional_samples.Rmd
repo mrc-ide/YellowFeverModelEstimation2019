@@ -42,8 +42,10 @@ library(KsetupR)
 
 sourceDirectory("Functions", modifiedOnly = FALSE)
 
+filepath_to_use <- readRDS("sero_filepath_to_use.RDS")
+
 if(!exists("mcmc_out")){
-  mcmc_out = get_chains("multi_model_MCMC_chain_20190903", 
+  mcmc_out = get_chains(filepath_to_use, 
                         burnin = 8e5, thin = 100)
   
   write.csv(sample(exp(mcmc_out$vac_eff), 100), "vac_eff_samples.csv", row.names = FALSE)
@@ -465,8 +467,8 @@ write.csv(foi_out, "sampled_foi_predictions.csv", row.names = FALSE)
 ```{r coeff_of_var_proportional, fig.cap="Coefficient of variation between all model variants.", fig.width=12, fig.height=8}
 
 
-coeff_of_var = sapply(1:ncol(foi_out), FUN = function(i) sd(foi_out[,i])/
-                        mean(foi_out[,i])) *100
+coeff_of_var = sapply(1:ncol(foi_out), FUN = function(i) sd(foi_out[,i], na.rm = T)/
+                        mean(foi_out[,i], na.rm = T)) *100
 names(coeff_of_var) = colnames(foi_out)
 
 colours = snapalette("Space", 1000, type = "continuous")
