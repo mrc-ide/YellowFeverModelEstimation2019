@@ -15,3 +15,4 @@ R0_lookup_table_coarse.Rdata
 sero_filepath_to_use
 *.log
 old vac/
+*.RDS
