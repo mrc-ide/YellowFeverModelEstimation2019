@@ -9,7 +9,7 @@ output:
     df_print: "kable"
 params:
   model_variant: 
-    value: 1
+    value: 11
 ---
 
 ```{r knitsetup, include=FALSE}
@@ -48,7 +48,7 @@ R.utils::sourceDirectory("Functions")
 
 glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200115_bestglm_3_", 
                                                 params$model_variant),
-                          burnin =6e4, thin = 1)
+                          burnin =1e5, thin = 1)
 
 
 names(glm_mcmc_out) <- gsub("^log.", "", names(glm_mcmc_out))
