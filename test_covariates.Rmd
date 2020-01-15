@@ -76,6 +76,12 @@ covar_to_test <- covar_to_test[grep("adm05", covar_to_test, invert = TRUE)]
 covar_to_test <- covar_to_test[grep("continent", covar_to_test, invert = TRUE)]
 covar_to_test <- covar_to_test[grep("dtp", covar_to_test, invert = TRUE)]
 
+# remove max min 
+covar_to_test <- covar_to_test[grep("temp_max", covar_to_test, invert = TRUE)]
+covar_to_test <- covar_to_test[grep("temp_suit_max", covar_to_test, invert = TRUE)]
+# covar_to_test <- covar_to_test[grep("temp_min", covar_to_test, invert = TRUE)]
+# covar_to_test <- covar_to_test[grep("temp_suit_min", covar_to_test, invert = TRUE)]
+
 as.data.frame(covar_to_test)
 ```
 Now we remove those covariates that are not significantly associated with the data. This is done through fitting univariate models and examining the pvalues.
@@ -221,7 +227,7 @@ out = bestglm(Xy = dat_subs,
 
 out$BestModel
 
-write.csv(out$BestModels, "bestglm_1.csv", row.names = FALSE)
+write.csv(out$BestModels, "bestglm_3.csv", row.names = FALSE)
 ```
 
 # Land cover types

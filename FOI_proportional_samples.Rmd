@@ -13,7 +13,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = paste0("images/"),
+  fig.path = paste0("images_bestglm3/"),
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -51,7 +51,7 @@ if(!exists("mcmc_out")){
   write.csv(sample(exp(mcmc_out$vac_eff), 100), "vac_eff_samples.csv", row.names = FALSE)
 }
 
-glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20191016_bestglm_1_", 1),
+glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200115_bestglm_3_", 1),
                           burnin =6e4, thin = 1)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
@@ -82,7 +82,7 @@ filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
 dat <- read.csv(filename, stringsAsFactors = FALSE)
 
 #remove families of NHP that are not to be included
-model_form_whole = read.csv("bestglm_1.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
+model_form_whole = read.csv("bestglm_3.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
 
 covar_family = names(model_form_whole)[ which(model_form_whole[1, ] == TRUE) ] 
 

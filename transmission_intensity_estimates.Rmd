@@ -16,7 +16,7 @@ params:
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = paste0("images", params$model_variant, "/"),
+  fig.path = paste0("images3_", params$model_variant, "/"),
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -54,8 +54,8 @@ if(!exists("mcmc_out")){
   write.csv(sample(exp(mcmc_out$vac_eff), 1000), "vac_eff_samples.csv", row.names = FALSE)
 }
 
-glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20191016_bestglm_1_", params$model_variant),
-                          burnin =6e4, thin = 1)
+glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200115_bestglm_3_", params$model_variant),
+                          burnin =5e4, thin = 1)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
 
@@ -85,7 +85,7 @@ filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
 dat <- read.csv(filename, stringsAsFactors = FALSE)
 
 #remove families of NHP that are not to be included
-model_form_whole = read.csv("bestglm_1.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
+model_form_whole = read.csv("bestglm_3.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
 
 covar_family = names(model_form_whole)[ which(model_form_whole[params$model_variant, ] == TRUE) ] 
 
@@ -455,32 +455,32 @@ if(params$foi_sample){
   colnames(foi_out) = shp1$GID_1
   
   
-  write.csv(foi_out, paste0("FOI_samples_bestglm_1_", params$model_variant, ".csv"), row.names = FALSE)
+  write.csv(foi_out, paste0("FOI_samples_bestglm_3_", params$model_variant, ".csv"), row.names = FALSE)
 }
 ```
 
 
 ```{r coeff_of_var, eval = T}
 
-
-coeff_of_var = sapply(1:ncol(foi_out), FUN = function(i) sd(foi_out[,i])/
-                        mean(foi_out[,i])) *100
-names(coeff_of_var) = colnames(foi_out)
-
-colours = snapalette("Space", 100, type = "continuous")
-
-shp1$cv = NA
-shp1$cv = log10(coeff_of_var[match(shp1$GID_1, names(coeff_of_var))])
-
-mybreaks= seq(min(shp1$cv, na.rm = TRUE), max(shp1$cv, na.rm = TRUE)+0.01, length.out=101)
-
-vcols = findInterval(shp1$cv,mybreaks)
-
-plot(shp0)
-plot(shp1,col=colours[vcols], lty=2, add=T)
-
-image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), 
-           horizontal = TRUE,
-           legend.mar = 3.5)
-
+if(params$foi_sample){
+  coeff_of_var = sapply(1:ncol(foi_out), FUN = function(i) sd(foi_out[,i])/
+                          mean(foi_out[,i])) *100
+  names(coeff_of_var) = colnames(foi_out)
+  
+  colours = snapalette("Space", 100, type = "continuous")
+  
+  shp1$cv = NA
+  shp1$cv = log10(coeff_of_var[match(shp1$GID_1, names(coeff_of_var))])
+  
+  mybreaks= seq(min(shp1$cv, na.rm = TRUE), max(shp1$cv, na.rm = TRUE)+0.01, length.out=101)
+  
+  vcols = findInterval(shp1$cv,mybreaks)
+  
+  plot(shp0)
+  plot(shp1,col=colours[vcols], lty=2, add=T)
+  
+  image.plot(legend.only=TRUE, breaks=mybreaks, col=colours, zlim=c(0,1), 
+             horizontal = TRUE,
+             legend.mar = 3.5)
+}
 ```

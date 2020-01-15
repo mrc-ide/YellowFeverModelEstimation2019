@@ -15,7 +15,7 @@ params:
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = paste0("images", params$model_variant, "/"),
+  fig.path = paste0("images3_", params$model_variant, "/"),
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -93,7 +93,7 @@ vc2d %<>% filter(!is.na(adm0_adm1))
 ```{r load_foi}
 
 
-foi = read.csv( paste0("FOI_samples_bestglm_1_", params$model_variant, ".csv"), stringsAsFactors = FALSE)
+foi = read.csv( paste0("FOI_samples_bestglm_3_", params$model_variant, ".csv"), stringsAsFactors = FALSE)
 
 ve = read.csv("vac_eff_samples.csv", stringsAsFactors = FALSE)$x
 

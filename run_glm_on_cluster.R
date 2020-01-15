@@ -24,9 +24,9 @@ ctx <- context::context_save(root, packages = packages, sources = sources,
 obj <- didehpc::queue_didehpc(ctx)
 
 
-t <- obj$enqueue(run_estimation(1))
+#t <- obj$enqueue(run_estimation(1))
 
 #run for a number
-# 
-# run_id = 1:4
-# grp <- obj$lapply(run_id, run_estimation)
+
+model_var <-  1:20
+grp <- obj$lapply(model_var, run_estimation)
