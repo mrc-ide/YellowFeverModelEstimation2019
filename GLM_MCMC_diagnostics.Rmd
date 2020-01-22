@@ -43,7 +43,7 @@ library(snapalette)
 library(YFestimation)
 library(KsetupR)
 
-R.utils::sourceDirectory("Functions")
+R.utils::sourceDirectory("Functions", modifiedOnly = FALSE)
 
 
 glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200115_bestglm_3_", 

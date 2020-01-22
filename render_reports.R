@@ -7,6 +7,8 @@ render_report = function(model_variant,
                          filename = "GLM_MCMC_diagnostics", 
                          foi_sample = FALSE) {
 
+  rm()
+  
   if(filename !="transmission_intensity_estimates"){
   rmarkdown::render(
     paste0(filename, ".Rmd"), 

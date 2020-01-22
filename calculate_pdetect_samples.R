@@ -29,7 +29,7 @@ if(!exists("mcmc_out")){
   write.csv(sample(exp(mcmc_out$vac_eff), 1000), "vac_eff_samples.csv", row.names = FALSE)
 }
 
-glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20191016_bestglm_1_", 
+glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200115_bestglm_3_", 
                                                 1),
                                          burnin =6e4, thin = 1)
 
@@ -95,6 +95,13 @@ for(model_ind in 1:20){
   dat <- read.csv(filename, stringsAsFactors = FALSE)
   
   dat <- dat[, -which(!names(dat) %in% covar_family & grepl("family", names(dat)))] 
+  
+  
+  glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200115_bestglm_3_", 
+                                                  model_ind),
+                                           burnin =6e4, thin = 1)
+  
+  names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
   
   # get model covariates
   covar = names(glm_mcmc_out %>% dplyr::select(-c(Intercept, 

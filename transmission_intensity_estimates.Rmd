@@ -49,13 +49,13 @@ filepath_to_use <- readRDS("sero_filepath_to_use.RDS")
 
 if(!exists("mcmc_out")){
   mcmc_out <- get_chains(filepath_to_use,
-                         burnin = 1, thin = 1)
+                         burnin = 1, thin = 100)
   
   write.csv(sample(exp(mcmc_out$vac_eff), 1000), "vac_eff_samples.csv", row.names = FALSE)
 }
 
 glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200115_bestglm_3_", params$model_variant),
-                          burnin =1e5, thin = 1)
+                          burnin =1e5, thin = 100)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
 

@@ -38,7 +38,7 @@ library(snapalette)
 library(YFestimation)
 library(KsetupR)
 
-R.utils::sourceDirectory("Functions")
+R.utils::sourceDirectory("Functions", modifiedOnly=FALSE)
 
 snapal = "Pop"
 ```

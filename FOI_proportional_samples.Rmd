@@ -52,7 +52,7 @@ if(!exists("mcmc_out")){
 }
 
 glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200115_bestglm_3_", 1),
-                          burnin =6e4, thin = 1)
+                          burnin =1e5, thin = 100)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
 
@@ -286,7 +286,7 @@ for(i in 1:n_samples){
   dat <- read.csv(filename, stringsAsFactors = FALSE)
   
   #remove families of NHP that are not to be included
-  model_form_whole = read.csv("bestglm_1.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
+  model_form_whole = read.csv("bestglm_3.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
   
   covar_family = names(model_form_whole)[ which(model_form_whole[df_sample$variant[i], ] == TRUE) ] 
   
