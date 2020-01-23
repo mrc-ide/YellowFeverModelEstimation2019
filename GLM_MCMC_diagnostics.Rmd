@@ -9,14 +9,14 @@ output:
     df_print: "kable"
 params:
   model_variant: 
-    value: 11
+    value: 1
 ---
 
 ```{r knitsetup, include=FALSE}
 
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = paste0("images3_", params$model_variant, "/"),
+  fig.path = paste0("images4_", params$model_variant, "/"),
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -46,9 +46,9 @@ library(KsetupR)
 R.utils::sourceDirectory("Functions", modifiedOnly = FALSE)
 
 
-glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200115_bestglm_3_", 
+glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200122_bestglm_4_", 
                                                 params$model_variant),
-                          burnin =1e5, thin = 1)
+                          burnin =6e4, thin = 1)
 
 
 names(glm_mcmc_out) <- gsub("^log.", "", names(glm_mcmc_out))
@@ -168,12 +168,12 @@ ageVec <- c(0:maxAge)
 ### LOAD ENVIRONMENTAL DATA ###
 Env_Table_path <- "../Data/Environment/global_dat"
 
-filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
+filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito")
 
 dat <- read.csv(filename, stringsAsFactors = FALSE)
 
 #remove families of NHP that are not to be included
-model_form_whole = read.csv("bestglm_3.csv", stringsAsFactors = FALSE) %>% 
+model_form_whole = read.csv("bestglm_4.csv", stringsAsFactors = FALSE) %>% 
   dplyr::select(-Criterion)
 
 covar_family = names(model_form_whole)[ which(model_form_whole[params$model_variant, ] == TRUE) ] 

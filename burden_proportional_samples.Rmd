@@ -15,7 +15,7 @@ params:
 
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = paste0("images_bestglm3/", params$year, "_"),
+  fig.path = paste0("images_bestglm4/", params$year, "_"),
   dpi = 300,
   warning = FALSE,
   message = FALSE

@@ -13,7 +13,7 @@ output:
 
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = "images_bestglm3/",
+  fig.path = "images_bestglm4/",
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -43,7 +43,7 @@ R.utils::sourceDirectory("Functions", modifiedOnly=FALSE)
 
 glm_mcmc_out = NULL
 for(i in 1:20){
-  tmp <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200115_bestglm_3_", 
+  tmp <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200122_bestglm_4_", 
                                          i),
                                   burnin =1e5, thin = 100)
   
@@ -172,17 +172,17 @@ ageVec <- c(0:maxAge)
 ### LOAD ENVIRONMENTAL DATA ###
 Env_Table_path <- "../Data/Environment/global_dat"
 
-filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
+filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito")
 
 
 ```
 
 ```{r calc_auc}
-
+n_sample = 100
 df_AUC = NULL
 
 for(i in 1:20){
-  for(s in 1:100){
+  for(s in 1:n_sample){
   glm_tmp <-  glm_mcmc_out %>% filter(variant == i) %>% 
     dplyr::select(-c(posteriorProb, acceptRate, variant))
   Est_beta <- glm_tmp %>% sample_n(1)
@@ -190,7 +190,7 @@ for(i in 1:20){
   dat <- read.csv(filename, stringsAsFactors = FALSE)
   
   #remove families of NHP that are not to be included
-  model_form_whole = read.csv("bestglm_3.csv", stringsAsFactors = FALSE) %>% 
+  model_form_whole = read.csv("bestglm_4.csv", stringsAsFactors = FALSE) %>% 
     dplyr::select(-Criterion)
   
   covar_family = names(model_form_whole)[ which(model_form_whole[i, ] == TRUE) ] 
@@ -269,7 +269,7 @@ ggplot( aes(x = reorder(variant, -AUC), y = AUC, fill = variant)) +
 
 ```{r sample_proportionally, fig.cap="Histogram of model variant sampled according to AUC."}
 
-n_sample = 1000
+n_sample = 100
 
 tmp = df_AUC %>% group_by(variant) %>% summarise(median_AUC = median(AUC)) %>% ungroup()
 
@@ -288,7 +288,7 @@ for(i in 1:nrow(df_sample)){
   dat <- read.csv(filename, stringsAsFactors = FALSE)
   
   #remove families of NHP that are not to be included
-  model_form_whole = read.csv("bestglm_3.csv", stringsAsFactors = FALSE) %>% 
+  model_form_whole = read.csv("bestglm_4.csv", stringsAsFactors = FALSE) %>% 
     dplyr::select(-Criterion)
   
   covar_family = names(model_form_whole)[ 

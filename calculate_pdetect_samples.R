@@ -29,7 +29,7 @@ if(!exists("mcmc_out")){
   write.csv(sample(exp(mcmc_out$vac_eff), 1000), "vac_eff_samples.csv", row.names = FALSE)
 }
 
-glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200115_bestglm_3_", 
+glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200122_bestglm_4_", 
                                                 1),
                                          burnin =6e4, thin = 1)
 
@@ -49,7 +49,7 @@ for(s in 1:seroout$no_sero_surveys){
 for(model_ind in 1:20){
   
   #remove families of NHP that are not to be included
-  model_form_whole = read.csv("bestglm_3.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
+  model_form_whole = read.csv("bestglm_4.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
   
   ### POPULATION AND VACCINATION DATA ###
   if(!exists("all_res_pop_3d")){
@@ -97,7 +97,7 @@ for(model_ind in 1:20){
   dat <- dat[, -which(!names(dat) %in% covar_family & grepl("family", names(dat)))] 
   
   
-  glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200115_bestglm_3_", 
+  glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200122_bestglm_4_", 
                                                   model_ind),
                                            burnin =6e4, thin = 1)
   
@@ -230,7 +230,7 @@ for(model_ind in 1:20){
   #order x by FOI_param
   x = x[, names(Foi_param[ii,2])]
   
-  n_samples = 100
+  n_samples = 10
   pdetect_out = NULL
   
   for(i in 1:n_samples){
@@ -277,5 +277,5 @@ for(model_ind in 1:20){
     pdetect_out %<>% rbind(p_detect_link)
   }
   
-  saveRDS(pdetect_out, paste0("pdetect_", model_ind, ".RDS"))
+  saveRDS(pdetect_out, paste0("4" ,"_pdetect_", model_ind, ".RDS"))
 }

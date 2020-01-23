@@ -16,7 +16,7 @@ params:
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = paste0("images3_", params$model_variant, "/"),
+  fig.path = paste0("images4_", params$model_variant, "/"),
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -54,8 +54,8 @@ if(!exists("mcmc_out")){
   write.csv(sample(exp(mcmc_out$vac_eff), 1000), "vac_eff_samples.csv", row.names = FALSE)
 }
 
-glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200115_bestglm_3_", params$model_variant),
-                          burnin =1e5, thin = 100)
+glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200122_bestglm_4_", params$model_variant),
+                          burnin =6e4, thin = 1)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
 
@@ -80,12 +80,12 @@ for(s in 1:seroout$no_sero_surveys){
 # LOAD ENVIRONMENTAL DATA #
 Env_Table_path <- "../Data/Environment/global_dat"
 
-filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
+filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito")
 
 dat <- read.csv(filename, stringsAsFactors = FALSE)
 
 #remove families of NHP that are not to be included
-model_form_whole = read.csv("bestglm_3.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
+model_form_whole = read.csv("bestglm_4.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
 
 covar_family = names(model_form_whole)[ which(model_form_whole[params$model_variant, ] == TRUE) ] 
 
@@ -412,7 +412,7 @@ ggplot(foi %>%
 ```{r getting_samples}
 
 if(params$foi_sample){
-  n_samples = 100
+  n_samples = 10
   foi_out = NULL
   
   for(i in 1:n_samples){
@@ -455,7 +455,7 @@ if(params$foi_sample){
   colnames(foi_out) = shp1$GID_1
   
   
-  write.csv(foi_out, paste0("FOI_samples_bestglm_3_", params$model_variant, ".csv"), row.names = FALSE)
+  write.csv(foi_out, paste0("FOI_samples_bestglm_4_", params$model_variant, ".csv"), row.names = FALSE)
 }
 ```
 

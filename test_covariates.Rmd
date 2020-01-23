@@ -40,7 +40,7 @@ We begin by loading the data `dat` which consists of the outcome variable `cases
 Env_Table_path <- "../Data/Environment/global_dat"
 
 filename <- KsetupR::get_latest_file(path = Env_Table_path, 
-                                    pattern = "dat_wes")
+                                    pattern = "dat_wes_mosquito")
 
 dat <- read.csv(filename, stringsAsFactors = FALSE)
 
@@ -227,7 +227,7 @@ out = bestglm(Xy = dat_subs,
 
 out$BestModel
 
-write.csv(out$BestModels, "bestglm_3.csv", row.names = FALSE)
+write.csv(out$BestModels, "bestglm_5.csv", row.names = FALSE)
 ```
 
 # Land cover types
