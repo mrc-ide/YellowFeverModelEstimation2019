@@ -13,7 +13,7 @@ output:
 
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = "images_bestglm4/",
+  fig.path = "images_bestglm5/",
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -43,7 +43,7 @@ R.utils::sourceDirectory("Functions", modifiedOnly=FALSE)
 
 glm_mcmc_out = NULL
 for(i in 1:20){
-  tmp <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200122_bestglm_4_", 
+  tmp <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200122_bestglm_5_", 
                                          i),
                                   burnin =1e5, thin = 100)
   
@@ -190,7 +190,7 @@ for(i in 1:20){
   dat <- read.csv(filename, stringsAsFactors = FALSE)
   
   #remove families of NHP that are not to be included
-  model_form_whole = read.csv("bestglm_4.csv", stringsAsFactors = FALSE) %>% 
+  model_form_whole = read.csv("bestglm_5.csv", stringsAsFactors = FALSE) %>% 
     dplyr::select(-Criterion)
   
   covar_family = names(model_form_whole)[ which(model_form_whole[i, ] == TRUE) ] 

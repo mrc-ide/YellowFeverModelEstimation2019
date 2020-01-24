@@ -13,7 +13,7 @@ output:
 
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = "images_bestglm4/",
+  fig.path = "images_bestglm5/",
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -44,7 +44,7 @@ snapal = "Pop"
 ```{r read in foi}
 foi_out = NULL
 for(i in 1:20){
-  tmp <-  read.csv(paste0("FOI_samples_bestglm_4_", i, ".csv"), stringsAsFactors = FALSE)
+  tmp <-  read.csv(paste0("FOI_samples_bestglm_5_", i, ".csv"), stringsAsFactors = FALSE)
   tmp %<>% mutate(variant = i, sample = row.names(tmp))
   foi_out %<>% bind_rows(tmp)
 }
