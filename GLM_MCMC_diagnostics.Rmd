@@ -16,7 +16,7 @@ params:
 
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = paste0("images5_", params$model_variant, "/"),
+  fig.path = paste0("images6_", params$model_variant, "/"),
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -46,9 +46,9 @@ library(KsetupR)
 R.utils::sourceDirectory("Functions", modifiedOnly = FALSE)
 
 
-glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200122_bestglm_5_", 
+glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200124_bestglm_6_", 
                                                 params$model_variant),
-                          burnin =6e4, thin = 1)
+                          burnin =7e4, thin = 1)
 
 
 names(glm_mcmc_out) <- gsub("^log.", "", names(glm_mcmc_out))
@@ -173,7 +173,7 @@ filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_m
 dat <- read.csv(filename, stringsAsFactors = FALSE)
 
 #remove families of NHP that are not to be included
-model_form_whole = read.csv("bestglm_5.csv", stringsAsFactors = FALSE) %>% 
+model_form_whole = read.csv("bestglm_6.csv", stringsAsFactors = FALSE) %>% 
   dplyr::select(-Criterion)
 
 covar_family = names(model_form_whole)[ which(model_form_whole[params$model_variant, ] == TRUE) ] 

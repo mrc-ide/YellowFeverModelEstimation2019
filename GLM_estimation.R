@@ -29,7 +29,7 @@ run_estimation = function(model_var){
   dat = read.csv(filename, stringsAsFactors = FALSE)
   
   # remove families of NHP that are not to be included
-  model_form_whole = read.csv("bestglm_5.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
+  model_form_whole = read.csv("bestglm_6.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
   covar = names(model_form_whole)[ which(model_form_whole[model_var, ] == TRUE) ]
   
   dat = dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] # remove family which are not covariates
@@ -99,7 +99,7 @@ run_estimation = function(model_var){
   
   # create a directory to save the output in 
   
-  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_bestglm_5_", model_var)
+  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_bestglm_6_", model_var)
   
   dir.create(name_dir)
   
