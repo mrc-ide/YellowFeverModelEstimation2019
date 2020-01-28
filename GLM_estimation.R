@@ -42,8 +42,12 @@ run_estimation = function(model_var=1){
                                      "Africa", continent))
   
   
+  # adjust alt
+  dat %<>% mutate(altitude = ifelse(altitude>2100, 1, 0))
+  
   # make extra elements and normalise
   dat = adjust_env_dat(dat)
+
 
   
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -103,7 +107,7 @@ run_estimation = function(model_var=1){
   
   # create a directory to save the output in 
   
-  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_bestglm_6_", model_var)
+  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_bestglm_6_binaryalt_", model_var)
   
   dir.create(name_dir)
   

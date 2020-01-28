@@ -51,7 +51,7 @@ if(!exists("mcmc_out")){
   write.csv(sample(exp(mcmc_out$vac_eff), 100), "vac_eff_samples.csv", row.names = FALSE)
 }
 
-glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200124_bestglm_6_", 1),
+glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200128_bestglm_6_binaryalt", 1),
                           burnin =1e5, thin = 1)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
@@ -103,6 +103,9 @@ dat %<>% filter(!is.na(temp_mean))
 #dat %<>% tidyr::drop_na()
 dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
                                    "Africa", continent))
+ # adjust alt
+  dat %<>% mutate(altitude = ifelse(altitude>2100, 1, 0))
+  
 dat = adjust_env_dat(dat)
 
 dat %<>% mutate(adm0_adm1 = adm1)
@@ -303,6 +306,10 @@ for(i in 1:n_samples){
   #dat %<>% tidyr::drop_na()
   dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
                                      "Africa", continent))
+  
+   # adjust alt
+  dat %<>% mutate(altitude = ifelse(altitude>2100, 1, 0))
+  
   dat = adjust_env_dat(dat)
   
   dat %<>% mutate(adm0_adm1 = adm1)

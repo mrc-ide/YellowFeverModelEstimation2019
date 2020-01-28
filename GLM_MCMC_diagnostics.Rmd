@@ -9,7 +9,7 @@ output:
     df_print: "kable"
 params:
   model_variant: 
-    value: 1
+    value: 2
 ---
 
 ```{r knitsetup, include=FALSE}
@@ -46,9 +46,9 @@ library(KsetupR)
 R.utils::sourceDirectory("Functions", modifiedOnly = FALSE)
 
 
-glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200124_bestglm_6_", 
+glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200128_bestglm_6_binaryalt_", 
                                                 params$model_variant),
-                          burnin =1e5, thin = 1)
+                          burnin = 6e4, thin = 1)
 
 
 names(glm_mcmc_out) <- gsub("^log.", "", names(glm_mcmc_out))
@@ -195,7 +195,8 @@ dat %<>% filter(!is.na(temp_mean))
 dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
                                    "Africa", continent))
 
-#dat %<>% filter(risk %in% c("high", "moderate"))
+  # adjust alt
+  dat %<>% mutate(altitude = ifelse(altitude>2100, 1, 0))
 
 # make extra elements and normalise
 dat = adjust_env_dat(dat)

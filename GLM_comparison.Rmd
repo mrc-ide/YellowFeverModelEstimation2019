@@ -43,7 +43,7 @@ R.utils::sourceDirectory("Functions", modifiedOnly=FALSE)
 
 glm_mcmc_out = NULL
 for(i in 1:20){
-  tmp <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200124_bestglm_6_", 
+  tmp <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200128_bestglm_6_binaryalt_", 
                                          i),
                                   burnin =1e5, thin = 100)
   
@@ -225,7 +225,8 @@ for(i in 1:20){
   dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
                                      "Africa", continent))
   
-  #dat %<>% filter(risk %in% c("high", "moderate"))
+   # adjust alt
+  dat %<>% mutate(altitude = ifelse(altitude>2100, 1, 0))
   
   # make extra elements and normalise
   dat = adjust_env_dat(dat)
@@ -287,7 +288,7 @@ ggplot( aes(x = reorder(variant, -AUC), y = AUC, fill = variant)) +
 
 ```{r sample_proportionally, fig.cap="Histogram of model variant sampled according to AUC."}
 
-n_sample = 1000
+n_sample = 100
 
 tmp = df_AUC %>% group_by(variant) %>% summarise(median_AUC = median(AUC)) %>% ungroup()
 
@@ -324,7 +325,8 @@ for(i in 1:nrow(df_sample)){
   dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
                                      "Africa", continent))
   
-  #dat %<>% filter(risk %in% c("high", "moderate"))
+   # adjust alt
+  dat %<>% mutate(altitude = ifelse(altitude>2100, 1, 0))
   
   # make extra elements and normalise
   dat = adjust_env_dat(dat)

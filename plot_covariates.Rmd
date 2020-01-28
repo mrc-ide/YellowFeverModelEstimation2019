@@ -100,6 +100,9 @@ dat = dplyr::mutate(dat,
                     temp_suit_min = temp_suitability(dat$temp_min, parm2),
                     temp_suit_max = temp_suitability(dat$temp_max, parm2))
 
+  # adjust alt
+  dat %<>% mutate(altitude = ifelse(altitude>2100, 1, 0))
+  
 covar = c(covar, "aggregate_family")
 
 ```
