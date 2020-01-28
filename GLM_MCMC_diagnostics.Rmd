@@ -48,7 +48,7 @@ R.utils::sourceDirectory("Functions", modifiedOnly = FALSE)
 
 glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200124_bestglm_6_", 
                                                 params$model_variant),
-                          burnin =7e4, thin = 1)
+                          burnin =1e5, thin = 1)
 
 
 names(glm_mcmc_out) <- gsub("^log.", "", names(glm_mcmc_out))

@@ -13,7 +13,7 @@ output:
 
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = "images_bestglm5/",
+  fig.path = "images_bestglm6/",
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -43,7 +43,7 @@ R.utils::sourceDirectory("Functions", modifiedOnly=FALSE)
 
 glm_mcmc_out = NULL
 for(i in 1:20){
-  tmp <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200122_bestglm_5_", 
+  tmp <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200124_bestglm_6_", 
                                          i),
                                   burnin =1e5, thin = 100)
   
@@ -79,7 +79,9 @@ ggplot(glm_mcmc_out) +
 ```{r loglike, fig.cap = "Log likelihood from entire MCMC chain, thinned by a factor 100."}
 GLMprior_rename = function(param) {
   
-  Prior = rep(0,4)
+  param = param[!is.na(param)]
+  
+  Prior = rep(0,6)
   
   #GLM
   jj = grep("^adm05", names(param)) 
@@ -109,15 +111,31 @@ GLMprior_rename = function(param) {
                             sd = 30,
                             a = 0, b = Inf)), na.rm = T)
   
+  if(sum(grepl("altitude", names(param)))>0) {
+    Prior[5] = sum(log(dtrunc(param[grep("altitude", names(param))],
+                              "norm",
+                              mean = 0,
+                              sd = 30,
+                              a = -Inf, b = 0)), na.rm = T)# brute force the altitude coefficient to be negative
+  }
+  if(sum(grepl("temp_range", names(param)))>0) {
+    Prior[6] = sum(log(dtrunc(param[grep("temp_range", names(param))],
+                              "norm",
+                              mean = 0,
+                              sd = 30,
+                              a = -Inf, b = 0)), na.rm=T)# brute force the temp_range coefficient to be negative
+  }
   
   out = as.numeric( Prior )
-  return( sum(out) )
+  return( sum(out, na.rm=T) )
 }
 
+sample_ind <- sample(1:nrow(glm_mcmc_out), 1e4)
 
+glm_mcmc_out$prior <- NA
 
-glm_mcmc_out$prior <-  
-  sapply(1:nrow(glm_mcmc_out),
+glm_mcmc_out$prior[sample_ind] <-  
+  sapply(sample_ind,
          FUN = function(i){
            GLMprior_rename(dplyr::select(glm_mcmc_out, 
                                          -c(posteriorProb, acceptRate, variant))[i, ])
@@ -125,7 +143,7 @@ glm_mcmc_out$prior <-
 
 glm_mcmc_out %<>% mutate(like = posteriorProb - prior)
 
-ggplot(glm_mcmc_out) + 
+ggplot(glm_mcmc_out[sample_ind, ]) + 
   geom_violin(aes(x = reorder(variant, -like), y = like, fill = variant)) +
   theme_bw()+
   theme(legend.position = "none")+
@@ -138,7 +156,7 @@ ggplot(glm_mcmc_out) +
 ```{r individual_parameters, fig.height=12, fig.width=16}
 
 glm_mcmc_out %>% 
-  dplyr::select(-c(posteriorProb, acceptRate)) %>% 
+  dplyr::select(-c(posteriorProb, acceptRate, like, prior)) %>% 
   gather(parameter, estimates, -c(variant)) %>%
   ggplot(aes(x = variant, y = estimates, fill = variant)) +
   geom_violin()+
@@ -178,7 +196,7 @@ filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_m
 ```
 
 ```{r calc_auc}
-n_sample = 100
+n_sample = 1000
 df_AUC = NULL
 
 for(i in 1:20){
@@ -190,7 +208,7 @@ for(i in 1:20){
   dat <- read.csv(filename, stringsAsFactors = FALSE)
   
   #remove families of NHP that are not to be included
-  model_form_whole = read.csv("bestglm_5.csv", stringsAsFactors = FALSE) %>% 
+  model_form_whole = read.csv("bestglm_6.csv", stringsAsFactors = FALSE) %>% 
     dplyr::select(-Criterion)
   
   covar_family = names(model_form_whole)[ which(model_form_whole[i, ] == TRUE) ] 
@@ -269,7 +287,7 @@ ggplot( aes(x = reorder(variant, -AUC), y = AUC, fill = variant)) +
 
 ```{r sample_proportionally, fig.cap="Histogram of model variant sampled according to AUC."}
 
-n_sample = 100
+n_sample = 1000
 
 tmp = df_AUC %>% group_by(variant) %>% summarise(median_AUC = median(AUC)) %>% ungroup()
 
@@ -288,7 +306,7 @@ for(i in 1:nrow(df_sample)){
   dat <- read.csv(filename, stringsAsFactors = FALSE)
   
   #remove families of NHP that are not to be included
-  model_form_whole = read.csv("bestglm_4.csv", stringsAsFactors = FALSE) %>% 
+  model_form_whole = read.csv("bestglm_6.csv", stringsAsFactors = FALSE) %>% 
     dplyr::select(-Criterion)
   
   covar_family = names(model_form_whole)[ 

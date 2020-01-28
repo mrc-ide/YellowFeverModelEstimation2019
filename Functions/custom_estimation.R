@@ -92,7 +92,7 @@ GLM_MCMC = function(Niter, name_dir, pars_ini, x, y, plot_chain, run_id = 1){
 
 GLMprior = function(param) {
   
-  Prior = rep(0,4)
+  Prior = rep(0,6)
   
   #GLM
   jj = grep("^log.adm05", names(param)) # select country parameters (parameter_type=2) the sd.prior=2 is from Kevin's original code create status
@@ -109,11 +109,10 @@ GLMprior = function(param) {
                         log = TRUE))
   
   Prior[3] = sum(log(dtrunc(param[grep("family", names(param))],
-                        "norm",
-                       mean = 0,
-                       sd = 30,
-                       a = 0, b = Inf)))
-  # Prior[3] =  - 0.5 * sum((param[grep("family", names(param))] / 0.1) ^ 2) # collecting family priors in same way as adm05
+                            "norm",
+                            mean = 0,
+                            sd = 30,
+                            a = 0, b = Inf)))
   
   
   Prior[4] = sum(log(dtrunc(param[grep("low_risk", names(param))],
@@ -122,17 +121,21 @@ GLMprior = function(param) {
                             sd = 30,
                             a = 0, b = Inf)))# brute force the adm05 low risk to be positive
   
-  # Prior[5] =  sum(dnorm(param[grep("continent", names(param))],
-  #                       mean = 0,
-  #                       sd = 2,
-  #                       log = TRUE))
+  if(sum(grepl("altitude", names(param)))>0) {
+    Prior[5] = sum(log(dtrunc(param[grep("altitude", names(param))],
+                              "norm",
+                              mean = 0,
+                              sd = 30,
+                              a = -Inf, b = 0)))# brute force the altitude coefficient to be negative
+  }
   
-  # Prior[6] = sum(log(dtrunc(param[grep("BRA|COL", names(param))],
-  #                           "norm",
-  #                           mean = 10,
-  #                           sd = 1,
-  #                           a = 0, b = Inf)))
-  
+  if(sum(grepl("temp_range", names(param)))>0) {
+    Prior[6] = sum(log(dtrunc(param[grep("temp_range", names(param))],
+                              "norm",
+                              mean = 0,
+                              sd = 30,
+                              a = -Inf, b = 0)))# brute force the temp_range coefficient to be negative
+  }
   # this term is for normally distributed non-country parameters : normal distrib with high sd (flat distrib)
   out = as.numeric( Prior )
   return( out )

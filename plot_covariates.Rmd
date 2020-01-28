@@ -53,13 +53,13 @@ shp1 = rgdal::readOGR("../../shapefiles/Africa_America_1_smooth.shp",
 ### LOAD ENVIRONMENTAL DATA ###
 Env_Table_path <- "../Data/Environment/global_dat"
 
-filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
+filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito")
 
 dat <- read.csv(filename, stringsAsFactors = FALSE)
 
 
 #remove families of NHP that are not to be included
-model_form_whole = read.csv("bestglm_1.csv", stringsAsFactors = FALSE) %>% 
+model_form_whole = read.csv("bestglm_6.csv", stringsAsFactors = FALSE) %>% 
   dplyr::select(-Criterion)
 
 covar_family = names(model_form_whole)

@@ -29,9 +29,9 @@ if(!exists("mcmc_out")){
   write.csv(sample(exp(mcmc_out$vac_eff), 1000), "vac_eff_samples.csv", row.names = FALSE)
 }
 
-glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200122_bestglm_4_", 
+glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200124_bestglm_6_", 
                                                 1),
-                                         burnin =6e4, thin = 1)
+                                         burnin =6e4, thin = 100)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
 
@@ -49,7 +49,7 @@ for(s in 1:seroout$no_sero_surveys){
 for(model_ind in 1:20){
   
   #remove families of NHP that are not to be included
-  model_form_whole = read.csv("bestglm_4.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
+  model_form_whole = read.csv("bestglm_6.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
   
   ### POPULATION AND VACCINATION DATA ###
   if(!exists("all_res_pop_3d")){
@@ -90,16 +90,16 @@ for(model_ind in 1:20){
   # LOAD ENVIRONMENTAL DATA #
   Env_Table_path <- "../Data/Environment/global_dat"
   
-  filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
+  filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito")
   
   dat <- read.csv(filename, stringsAsFactors = FALSE)
   
   dat <- dat[, -which(!names(dat) %in% covar_family & grepl("family", names(dat)))] 
   
   
-  glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200122_bestglm_4_", 
+  glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200124_bestglm_6_", 
                                                   model_ind),
-                                           burnin =6e4, thin = 1)
+                                           burnin =6e4, thin = 100)
   
   names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
   
@@ -277,5 +277,5 @@ for(model_ind in 1:20){
     pdetect_out %<>% rbind(p_detect_link)
   }
   
-  saveRDS(pdetect_out, paste0("4" ,"_pdetect_", model_ind, ".RDS"))
+  saveRDS(pdetect_out, paste0("6" ,"_pdetect_", model_ind, ".RDS"))
 }

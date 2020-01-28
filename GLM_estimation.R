@@ -1,6 +1,6 @@
 #mcmc for estimating glm
 
-run_estimation = function(model_var){
+run_estimation = function(model_var=1){
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
   # LIBRARIES FOR PACKAGES USED #
   
@@ -80,6 +80,10 @@ run_estimation = function(model_var){
   pars_ini[grep("low_risk", names(pars_ini))] = 1
   
   pars_ini[grep("family", names(pars_ini))] = 1
+  
+  pars_ini[grep("altitude", names(pars_ini))] = -1
+  
+  pars_ini[grep("temp_range", names(pars_ini))] = -1
   
   pars_ini[is.na(pars_ini)] = 0
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
