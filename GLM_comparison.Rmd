@@ -45,7 +45,7 @@ glm_mcmc_out = NULL
 for(i in 1:20){
   tmp <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200128_bestglm_6_binaryalt_", 
                                          i),
-                                  burnin =1e5, thin = 100)
+                                  burnin =6e4, thin = 100)
   
   
   names(tmp) <- gsub("^log.", "", names(tmp))
@@ -196,7 +196,7 @@ filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_m
 ```
 
 ```{r calc_auc}
-n_sample = 1000
+n_sample = 100
 df_AUC = NULL
 
 for(i in 1:20){

@@ -1,0 +1,152 @@
+---
+title: "Data"
+author: "Katy Gaythorpe"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+header-includes: 
+- \usepackage{placeins}
+output: 
+  pdf_document:
+    df_print: "kable"
+---
+
+```{r knitsetup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(
+  dev = "png",
+  fig.path = "data_images_genus/",
+  dpi = 300,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+```{r setup}
+library(mcmcplots)
+library(ggmcmc)
+library(gridExtra)
+library(maptools)
+library(readr)
+library(fields)
+library(rgdal)
+library(R.utils)
+library(magrittr)
+library(viridis)
+library(ggsci)
+
+library(snapalette)
+library(YFestimation)
+library(KsetupR)
+
+R.utils::sourceDirectory("Functions", modifiedOnly = FALSE)
+
+
+#read shapefiles in
+shp0 = rgdal::readOGR("../../shapefiles/Africa_America_0_smooth.shp",
+                          stringsAsFactors = FALSE,
+                          encoding = "UTF-8",
+                          use_iconv = TRUE)
+shp1 = rgdal::readOGR("../../shapefiles/Africa_America_1_smooth.shp",
+                          stringsAsFactors = FALSE,
+                          encoding = "UTF-8",
+                          use_iconv = TRUE)
+
+### LOAD ENVIRONMENTAL DATA ###
+Env_Table_path <- "../Data/Environment/global_dat"
+
+filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito_genus")
+
+dat <- read.csv(filename, stringsAsFactors = FALSE)
+
+
+#remove families of NHP that are not to be included
+model_form_whole = read.csv("bestglm_8.csv", stringsAsFactors = FALSE) %>% 
+  dplyr::select(-Criterion)
+
+covar_family = names(model_form_whole)
+
+dat <- dat[, -which(!names(dat) %in% covar_family & grepl("family", names(dat)))] 
+
+dat <-  dat[, -which(!names(dat) %in% covar_family & grepl("genus", names(dat)))]
+
+# change to just read covariates from mcmc
+covar = covar_family
+   
+dat %<>% dplyr::select(-year)
+dat %<>% filter( is.finite(MIR.max))
+dat %<>% filter(!is.na(temp_mean))
+#dat %<>% tidyr::drop_na()
+dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
+                                   "Africa", continent))
+
+
+# make extra elements and normalise
+dat = dplyr::mutate(dat,
+                    aggregate_family = rowSums(dat[, grep("family", names(dat))]))
+dat = dplyr::mutate(dat,
+                    aggregate_genus = rowSums(dat[, grep("genus", names(dat))]))
+
+# add ranges
+dat = dplyr::mutate(dat,
+                    EVI.range = EVI.max - EVI.min,
+                    temp_range = temp_max - temp_min)
+
+#continent factor
+dat = dplyr::mutate(dat,
+                    continent_factor = ifelse(continent=="Africa",
+                                              1,
+                                              0))
+# add simple temp suitability
+parm = read.csv("temp_suit_parm.csv", stringsAsFactors = F)
+parm2 = as.numeric(parm$x)
+names(parm2) = parm$X
+dat = dplyr::mutate(dat,
+                    temp_suit_mean = temp_suitability(dat$temp_mean, parm2),
+                    temp_suit_min = temp_suitability(dat$temp_min, parm2),
+                    temp_suit_max = temp_suitability(dat$temp_max, parm2))
+
+  # adjust alt
+  dat %<>% mutate(altitude = ifelse(altitude>2100, 1, 0))
+  
+covar = c(covar, "aggregate_genus")
+
+```
+
+
+```{r plot_data}
+
+shp1@data %<>% left_join(dat, by = c("GID_1" = "adm1"))
+colours = snapalette::snapalette("Pop", 1000, type = "continuous")#magma(1000)
+
+for(c in covar){
+  parm = shp1@data[, c]
+  mybreaks = seq(min(parm, na.rm = TRUE) - 1e-5, 
+                 max(parm, na.rm = TRUE) + 1e-5, length.out=1001)
+  
+  mycols =  colours
+  vcols = findInterval(shp1@data[, c], mybreaks)
+  
+  plot(shp0, main = c)
+  plot(shp1, col=mycols[vcols] , lty=0, add=TRUE)
+  plot(shp0, add=TRUE)
+  fields::image.plot(legend.only=TRUE, breaks=mybreaks, col=mycols, zlim=c(0,1), horizontal = TRUE)
+  
+}
+
+```
+
+```{r plot_occ}
+
+  parm = shp1@data[, "cases_or_outbreaks"]
+  mybreaks = seq(min(parm, na.rm = TRUE) - 1e-5, 
+                 max(parm, na.rm = TRUE) + 1e-5, length.out=1001)
+  
+  mycols =  colours
+  vcols = findInterval(shp1@data[, "cases_or_outbreaks"], mybreaks)
+  
+  plot(shp0)
+  plot(shp1, col=mycols[vcols] , lty=0, add=TRUE)
+  plot(shp0, add=TRUE)
+  
+
+
+```

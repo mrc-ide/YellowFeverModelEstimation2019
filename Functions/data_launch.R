@@ -46,6 +46,11 @@ adjust_env_dat = function(dat) {
   dat = dplyr::mutate(dat,
                       aggregate_family = rowSums(dat[, grep("family", names(dat))]))
   
+  # aggregate monkeys
+  dat = dplyr::mutate(dat,
+                      aggregate_genus = rowSums(dat[, grep("genus", names(dat))]))
+  
+  
   
   # add ranges
   dat = dplyr::mutate(dat,
