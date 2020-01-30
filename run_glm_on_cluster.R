@@ -10,7 +10,7 @@ context::context_log_start()
 
 root = "contexts"
 
-packages <- list( attached = c("dplyr", "readr", "reshape2", "mvtnorm", "R.utils",  "YFestimation", "magrittr"))
+packages <- list( attached = c("dplyr", "readr", "reshape2", "mvtnorm", "R.utils",  "YFestimation", "magrittr", "KsetupR"))
 
 sources <- c("Functions/custom_estimation.R", 
              "Functions/data_launch.R", 
@@ -18,15 +18,17 @@ sources <- c("Functions/custom_estimation.R",
              "GLM_estimation.R")
 
 ctx <- context::context_save(root, packages = packages, sources = sources,
-                             package_sources = provisionr::package_sources(local = c( "Z:/YFestimation", "Z:/Burden_package/YFburden") ))
+                             package_sources = provisionr::package_sources(local = c( "Z:/YFestimation", 
+                                                                                      "Z:/Burden_package/YFburden",
+                                                                                      "Z:/KsetupR") ))
 
 
 obj <- didehpc::queue_didehpc(ctx)
 
 
-t <- obj$enqueue(run_estimation(1))
+#t <- obj$enqueue(run_estimation(1))
 
 #run for a number
-# 
-# run_id = 1:4
-# grp <- obj$lapply(run_id, run_estimation)
+
+model_var <-  1:20
+grp <- obj$lapply(model_var, run_estimation)

@@ -13,7 +13,7 @@ output:
 
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = "images/",
+  fig.path = "images_bestglmA/",
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -38,7 +38,7 @@ library(snapalette)
 library(YFestimation)
 library(KsetupR)
 
-R.utils::sourceDirectory("Functions")
+R.utils::sourceDirectory("Functions", modifiedOnly=FALSE)
 
 snapal = "Pop"
 ```
@@ -46,7 +46,7 @@ snapal = "Pop"
 ```{r read in foi}
 foi_out = NULL
 for(i in 1:20){
-  tmp <-  read.csv(paste0("FOI_samples_bestglm_1_", i, ".csv"), stringsAsFactors = FALSE)
+  tmp <-  read.csv(paste0("FOI_samples_bestglm_A_", i, ".csv"), stringsAsFactors = FALSE)
   tmp %<>% mutate(variant = i, sample = row.names(tmp))
   foi_out %<>% bind_rows(tmp)
 }

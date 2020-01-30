@@ -3,6 +3,6 @@ library(parallelsugar)
 
 source("GLM_estimation.R")
 
-run_id = 1:4
+model_var <- 1:20
 
-mclapply(run_id, run_estimation, mc.cores = 4)
+mclapply(model_var, run_estimation, mc.cores = 4)

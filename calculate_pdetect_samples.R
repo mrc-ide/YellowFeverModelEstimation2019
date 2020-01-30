@@ -29,9 +29,9 @@ if(!exists("mcmc_out")){
   write.csv(sample(exp(mcmc_out$vac_eff), 1000), "vac_eff_samples.csv", row.names = FALSE)
 }
 
-glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20191016_bestglm_1_", 
+glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200129_bestglm_A_", 
                                                 1),
-                                         burnin =6e4, thin = 1)
+                                         burnin =1e5, thin = 10)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
 
@@ -47,54 +47,61 @@ for(s in 1:seroout$no_sero_surveys){
 }
 
 for(model_ind in 1:20){
-
-#remove families of NHP that are not to be included
-model_form_whole = read.csv("bestglm_1.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
-
-### POPULATION AND VACCINATION DATA ###
-if(!exists("all_res_pop_3d")){
-  all_res_pop_3d = get_pop_data_3d() 
-}
-pop1 = all_res_pop_3d$pop1                                      
-P_tot = all_res_pop_3d$P_tot                                   
-p_prop = all_res_pop_3d$p_prop                                   
-
-pop1 %<>% rename(adm0_adm1 = adm1)
-
-pop1 %<>% arrange(year) %>% dplyr::select(-c(country_code, country))
-
-names(pop1)[3:ncol(pop1)] = paste0("a", 0:100)
-
-pop1 %<>% filter(year<2051)
-p_prop %<>% filter(year<2051)
-P_tot %<>% filter(year<2051)
-
-# VACCINATION DATA #
-vc2d = readRDS("../YellowFeverModelEstimation2019/vacc_1940_1950.RDS")
-vc2d = as.data.frame(vc2d)
-
-# expand vc2d to match pop1
-vc2d %<>% mutate(year = as.numeric(as.character(year)))
-vc_tmp = pop1 %>% filter(!adm0_adm1 %in% vc2d$adm0_adm1)
-vc_tmp[, grep("adm0_adm1|year", names(vc_tmp), invert = TRUE)] = 0
-
-vc2d %<>% bind_rows(vc_tmp)
-vc2d %<>% unique()
-vc2d %<>% filter(!is.na(adm0_adm1))
-
-
-
+  
+  #remove families of NHP that are not to be included
+  model_form_whole = read.csv("bestglm_A.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
+  
+  ### POPULATION AND VACCINATION DATA ###
+  if(!exists("all_res_pop_3d")){
+    all_res_pop_3d = get_pop_data_3d() 
+  }
+  pop1 = all_res_pop_3d$pop1                                      
+  P_tot = all_res_pop_3d$P_tot                                   
+  p_prop = all_res_pop_3d$p_prop                                   
+  
+  pop1 %<>% rename(adm0_adm1 = adm1)
+  
+  pop1 %<>% arrange(year) %>% dplyr::select(-c(country_code, country))
+  
+  names(pop1)[3:ncol(pop1)] = paste0("a", 0:100)
+  
+  pop1 %<>% filter(year<2051)
+  p_prop %<>% filter(year<2051)
+  P_tot %<>% filter(year<2051)
+  
+  # VACCINATION DATA #
+  vc2d = readRDS("../YellowFeverModelEstimation2019/vacc_1940_1950.RDS")
+  vc2d = as.data.frame(vc2d)
+  
+  # expand vc2d to match pop1
+  vc2d %<>% mutate(year = as.numeric(as.character(year)))
+  vc_tmp = pop1 %>% filter(!adm0_adm1 %in% vc2d$adm0_adm1)
+  vc_tmp[, grep("adm0_adm1|year", names(vc_tmp), invert = TRUE)] = 0
+  
+  vc2d %<>% bind_rows(vc_tmp)
+  vc2d %<>% unique()
+  vc2d %<>% filter(!is.na(adm0_adm1))
+  
+  
+  
   
   covar_family = names(model_form_whole)[ which(model_form_whole[model_ind, ] == TRUE) ] 
   
   # LOAD ENVIRONMENTAL DATA #
   Env_Table_path <- "../Data/Environment/global_dat"
   
-  filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
+  filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito")
   
   dat <- read.csv(filename, stringsAsFactors = FALSE)
   
   dat <- dat[, -which(!names(dat) %in% covar_family & grepl("family", names(dat)))] 
+  
+  
+  glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200129_bestglm_A_", 
+                                                  model_ind),
+                                           burnin =1e5, thin = 10)
+  
+  names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
   
   # get model covariates
   covar = names(glm_mcmc_out %>% dplyr::select(-c(Intercept, 
@@ -223,7 +230,7 @@ vc2d %<>% filter(!is.na(adm0_adm1))
   #order x by FOI_param
   x = x[, names(Foi_param[ii,2])]
   
-  n_samples = 100
+  n_samples = 10
   pdetect_out = NULL
   
   for(i in 1:n_samples){
@@ -270,5 +277,5 @@ vc2d %<>% filter(!is.na(adm0_adm1))
     pdetect_out %<>% rbind(p_detect_link)
   }
   
-  saveRDS(pdetect_out, paste0("pdetect_", model_ind, ".RDS"))
+  saveRDS(pdetect_out, paste0("A" ,"_pdetect_", model_ind, ".RDS"))
 }

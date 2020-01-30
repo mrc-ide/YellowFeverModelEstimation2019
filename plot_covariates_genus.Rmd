@@ -13,7 +13,7 @@ output:
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = "data_images/",
+  fig.path = "data_images_genus/",
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -53,18 +53,20 @@ shp1 = rgdal::readOGR("../../shapefiles/Africa_America_1_smooth.shp",
 ### LOAD ENVIRONMENTAL DATA ###
 Env_Table_path <- "../Data/Environment/global_dat"
 
-filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito")
+filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito_genus")
 
 dat <- read.csv(filename, stringsAsFactors = FALSE)
 
 
 #remove families of NHP that are not to be included
-model_form_whole = read.csv("bestglm_A.csv", stringsAsFactors = FALSE) %>% 
+model_form_whole = read.csv("bestglm_8.csv", stringsAsFactors = FALSE) %>% 
   dplyr::select(-Criterion)
 
 covar_family = names(model_form_whole)
 
 dat <- dat[, -which(!names(dat) %in% covar_family & grepl("family", names(dat)))] 
+
+dat <-  dat[, -which(!names(dat) %in% covar_family & grepl("genus", names(dat)))]
 
 # change to just read covariates from mcmc
 covar = covar_family
@@ -80,6 +82,8 @@ dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
 # make extra elements and normalise
 dat = dplyr::mutate(dat,
                     aggregate_family = rowSums(dat[, grep("family", names(dat))]))
+dat = dplyr::mutate(dat,
+                    aggregate_genus = rowSums(dat[, grep("genus", names(dat))]))
 
 # add ranges
 dat = dplyr::mutate(dat,
@@ -100,9 +104,10 @@ dat = dplyr::mutate(dat,
                     temp_suit_min = temp_suitability(dat$temp_min, parm2),
                     temp_suit_max = temp_suitability(dat$temp_max, parm2))
 
-
+  # adjust alt
+  dat %<>% mutate(altitude = ifelse(altitude>2100, 1, 0))
   
-covar = c(covar, "aggregate_family")
+covar = c(covar, "aggregate_genus")
 
 ```
 

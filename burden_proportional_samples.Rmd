@@ -15,7 +15,7 @@ params:
 
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = paste0("images/", params$year, "_"),
+  fig.path = paste0("images_bestglmA/", params$year, "_"),
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -40,7 +40,7 @@ library(snapalette)
 library(YFestimation)
 library(KsetupR)
 
-R.utils::sourceDirectory("Functions")
+R.utils::sourceDirectory("Functions", modifiedOnly=FALSE)
 
 snapal = "Pop"
 ```

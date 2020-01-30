@@ -15,7 +15,7 @@ params:
 
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = paste0("images", params$model_variant, "/"),
+  fig.path = paste0("images3_", params$model_variant, "/"),
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -65,7 +65,7 @@ old_foi %<>% mutate(Country = gsub("FOI_", "", Country))
 
 ```{r read_new_foi}
 
-foi <- read.csv( paste0("FOI_samples_bestglm_1_", params$model_variant, ".csv"), 
+foi <- read.csv( paste0("FOI_samples_bestglm_3_", params$model_variant, ".csv"), 
                  stringsAsFactors = FALSE)
 
 foi %<>% mutate(sample = rownames(foi))

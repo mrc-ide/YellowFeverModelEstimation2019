@@ -1,6 +1,6 @@
 #mcmc for estimating glm
 
-run_estimation = function(run_id =1){
+run_estimation = function(model_var=1){
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
   # LIBRARIES FOR PACKAGES USED #
   
@@ -17,20 +17,20 @@ run_estimation = function(run_id =1){
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
   # NEW FUNCTIONS #
   sourceDirectory("Functions", modifiedOnly = FALSE)
-  
+
   
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
   # LOAD ENVIRONMENTAL DATA #
   
   Env_Table_path = "../Data/Environment/global_dat"
   
-  filename = get_latest_file(path = Env_Table_path, pattern = "dat_wes")
+  filename = get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito")
   
   dat = read.csv(filename, stringsAsFactors = FALSE)
   
   # remove families of NHP that are not to be included
-  model_form_whole = read.csv("bestglm_1.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
-  covar = names(model_form_whole)[ which(model_form_whole[1, ] == TRUE) ]
+  model_form_whole = read.csv("bestglm_A.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
+  covar = names(model_form_whole)[ which(model_form_whole[model_var, ] == TRUE) ]
   
   dat = dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] # remove family which are not covariates
   
@@ -41,9 +41,11 @@ run_estimation = function(run_id =1){
   dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
                                      "Africa", continent))
   
+
   
   # make extra elements and normalise
   dat = adjust_env_dat(dat)
+
 
   
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -81,6 +83,10 @@ run_estimation = function(run_id =1){
   
   pars_ini[grep("family", names(pars_ini))] = 1
   
+  pars_ini[grep("altitude", names(pars_ini))] = -1
+  
+  pars_ini[grep("temp_range", names(pars_ini))] = -1
+  
   pars_ini[is.na(pars_ini)] = 0
   # ------------------------------------------------------------------------------------------------------------------------------------------------------------
   # SET SEED #
@@ -99,13 +105,13 @@ run_estimation = function(run_id =1){
   
   # create a directory to save the output in 
   
-  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_bestglm_1_1")
+  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_bestglm_A_", model_var)
   
   dir.create(name_dir)
   
-  Niter = 1e6
+  Niter = 2e5
   
   # MCMC #
-  GLM_MCMC(Niter, name_dir, pars_ini, x, y, plot_chain, run_id)
+  GLM_MCMC(Niter, name_dir, pars_ini, x, y, plot_chain, run_id=1)
   
 }

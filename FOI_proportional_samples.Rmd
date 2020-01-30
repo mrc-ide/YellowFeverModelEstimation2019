@@ -13,7 +13,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = paste0("images/"),
+  fig.path = paste0("images_bestglmA/"),
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -51,8 +51,8 @@ if(!exists("mcmc_out")){
   write.csv(sample(exp(mcmc_out$vac_eff), 100), "vac_eff_samples.csv", row.names = FALSE)
 }
 
-glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20191016_bestglm_1_", 1),
-                          burnin =6e4, thin = 1)
+glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200129_bestglm_A_", 1),
+                          burnin =1e5, thin = 1)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
 
@@ -77,12 +77,12 @@ for(s in 1:seroout$no_sero_surveys){
 # LOAD ENVIRONMENTAL DATA #
 Env_Table_path <- "../Data/Environment/global_dat"
 
-filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
+filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito")
 
 dat <- read.csv(filename, stringsAsFactors = FALSE)
 
 #remove families of NHP that are not to be included
-model_form_whole = read.csv("bestglm_1.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
+model_form_whole = read.csv("bestglm_A.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
 
 covar_family = names(model_form_whole)[ which(model_form_whole[1, ] == TRUE) ] 
 
@@ -103,6 +103,8 @@ dat %<>% filter(!is.na(temp_mean))
 #dat %<>% tidyr::drop_na()
 dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
                                    "Africa", continent))
+
+  
 dat = adjust_env_dat(dat)
 
 dat %<>% mutate(adm0_adm1 = adm1)
@@ -261,7 +263,7 @@ colours = snapalette("Pop", 100, type = "continuous")
 
 Env_Table_path <- "../Data/Environment/global_dat"
 
-filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes")
+filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito")
 
 
 n_samples = nrow(df_sample)
@@ -286,7 +288,7 @@ for(i in 1:n_samples){
   dat <- read.csv(filename, stringsAsFactors = FALSE)
   
   #remove families of NHP that are not to be included
-  model_form_whole = read.csv("bestglm_1.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
+  model_form_whole = read.csv("bestglm_A.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
   
   covar_family = names(model_form_whole)[ which(model_form_whole[df_sample$variant[i], ] == TRUE) ] 
   
@@ -303,6 +305,10 @@ for(i in 1:n_samples){
   #dat %<>% tidyr::drop_na()
   dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
                                      "Africa", continent))
+  
+   # adjust alt
+  dat %<>% mutate(altitude = ifelse(altitude>2100, 1, 0))
+  
   dat = adjust_env_dat(dat)
   
   dat %<>% mutate(adm0_adm1 = adm1)
