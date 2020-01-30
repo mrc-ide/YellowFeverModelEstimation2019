@@ -59,7 +59,7 @@ dat <- read.csv(filename, stringsAsFactors = FALSE)
 
 
 #remove families of NHP that are not to be included
-model_form_whole = read.csv("bestglm_6.csv", stringsAsFactors = FALSE) %>% 
+model_form_whole = read.csv("bestglm_A.csv", stringsAsFactors = FALSE) %>% 
   dplyr::select(-Criterion)
 
 covar_family = names(model_form_whole)

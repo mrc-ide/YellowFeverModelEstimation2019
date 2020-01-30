@@ -227,7 +227,7 @@ out = bestglm(Xy = dat_subs,
 
 out$BestModel
 
-write.csv(out$BestModels, "bestglm_6.csv", row.names = FALSE)
+write.csv(out$BestModels, "bestglm_A.csv", row.names = FALSE)
 ```
 
 # Land cover types

@@ -13,7 +13,7 @@ output:
 
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = "images_bestglm6/",
+  fig.path = "images_bestglmA/",
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -43,9 +43,9 @@ R.utils::sourceDirectory("Functions", modifiedOnly=FALSE)
 
 glm_mcmc_out = NULL
 for(i in 1:20){
-  tmp <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200128_bestglm_6_binaryalt_", 
+  tmp <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200129_bestglm_A_", 
                                          i),
-                                  burnin =6e4, thin = 100)
+                                  burnin =1e5, thin = 1)
   
   
   names(tmp) <- gsub("^log.", "", names(tmp))
@@ -208,7 +208,7 @@ for(i in 1:20){
   dat <- read.csv(filename, stringsAsFactors = FALSE)
   
   #remove families of NHP that are not to be included
-  model_form_whole = read.csv("bestglm_6.csv", stringsAsFactors = FALSE) %>% 
+  model_form_whole = read.csv("bestglm_A.csv", stringsAsFactors = FALSE) %>% 
     dplyr::select(-Criterion)
   
   covar_family = names(model_form_whole)[ which(model_form_whole[i, ] == TRUE) ] 
@@ -307,7 +307,7 @@ for(i in 1:nrow(df_sample)){
   dat <- read.csv(filename, stringsAsFactors = FALSE)
   
   #remove families of NHP that are not to be included
-  model_form_whole = read.csv("bestglm_6.csv", stringsAsFactors = FALSE) %>% 
+  model_form_whole = read.csv("bestglm_A.csv", stringsAsFactors = FALSE) %>% 
     dplyr::select(-Criterion)
   
   covar_family = names(model_form_whole)[ 

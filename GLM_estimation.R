@@ -29,7 +29,7 @@ run_estimation = function(model_var=1){
   dat = read.csv(filename, stringsAsFactors = FALSE)
   
   # remove families of NHP that are not to be included
-  model_form_whole = read.csv("bestglm_6.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
+  model_form_whole = read.csv("bestglm_A.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
   covar = names(model_form_whole)[ which(model_form_whole[model_var, ] == TRUE) ]
   
   dat = dat[, -which(!names(dat) %in% covar & grepl("family", names(dat)))] # remove family which are not covariates
@@ -41,9 +41,7 @@ run_estimation = function(model_var=1){
   dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
                                      "Africa", continent))
   
-  
-  # adjust alt
-  dat %<>% mutate(altitude = ifelse(altitude>2100, 1, 0))
+
   
   # make extra elements and normalise
   dat = adjust_env_dat(dat)
@@ -107,11 +105,11 @@ run_estimation = function(model_var=1){
   
   # create a directory to save the output in 
   
-  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_bestglm_6_binaryalt_", model_var)
+  name_dir = paste0("GLM_MCMC_chain", "_", format(Sys.time(),"%Y%m%d"), "_bestglm_A_", model_var)
   
   dir.create(name_dir)
   
-  Niter = 5e5
+  Niter = 2e5
   
   # MCMC #
   GLM_MCMC(Niter, name_dir, pars_ini, x, y, plot_chain, run_id=1)
