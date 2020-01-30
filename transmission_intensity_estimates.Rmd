@@ -107,8 +107,7 @@ dat %<>% filter(!is.na(temp_mean))
 dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
                                    "Africa", continent))
 
- # adjust alt
-  dat %<>% mutate(altitude = ifelse(altitude>2100, 1, 0))
+
 
 dat = adjust_env_dat(dat)
 

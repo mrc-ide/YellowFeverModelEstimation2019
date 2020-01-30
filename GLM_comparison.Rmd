@@ -225,9 +225,7 @@ for(i in 1:20){
   dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
                                      "Africa", continent))
   
-   # adjust alt
-  dat %<>% mutate(altitude = ifelse(altitude>2100, 1, 0))
-  
+
   # make extra elements and normalise
   dat = adjust_env_dat(dat)
   
