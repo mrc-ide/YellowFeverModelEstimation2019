@@ -196,7 +196,7 @@ filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_m
 ```
 
 ```{r calc_auc}
-n_sample = 100
+n_sample = 500
 df_AUC = NULL
 
 for(i in 1:20){
@@ -286,7 +286,7 @@ ggplot( aes(x = reorder(variant, -AUC), y = AUC, fill = variant)) +
 
 ```{r sample_proportionally, fig.cap="Histogram of model variant sampled according to AUC."}
 
-n_sample = 100
+n_sample = 500
 
 tmp = df_AUC %>% group_by(variant) %>% summarise(median_AUC = median(AUC)) %>% ungroup()
 
@@ -323,8 +323,7 @@ for(i in 1:nrow(df_sample)){
   dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
                                      "Africa", continent))
   
-   # adjust alt
-  dat %<>% mutate(altitude = ifelse(altitude>2100, 1, 0))
+
   
   # make extra elements and normalise
   dat = adjust_env_dat(dat)
