@@ -15,7 +15,7 @@ params:
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = paste0("images_bestglmA/", params$year, "_"),
+  fig.path = paste0("new_images_bestglmA/", params$year, "_"),
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -46,7 +46,7 @@ snapal = "Pop"
 ```
 
 ```{r read in foi}
-foi_out <- read.csv("sampled_foi_predictions.csv", stringsAsFactors = FALSE)
+foi_out <- read.csv("new_sampled_foi_predictions.csv", stringsAsFactors = FALSE)
 
 # get in useful format
 foi_samples = foi_out %>% gather(adm1, foi)
@@ -223,7 +223,7 @@ infections_df %<>% mutate(infections_nomassvac = as.numeric(infections_nomassvac
 
 burden_df_nomassvac %<>% bind_rows(infections_df)
 
-burden_df %<>% bind_cols(burden_df_nomassvac)
+burden_df %<>% left_join(burden_df_nomassvac)
 
 burden_df %<>% mutate(severe_infections_nomassvac = prob_severe*infections_nomassvac,
                       deaths_nomassvac = prob_severe_death*severe_infections_nomassvac)
@@ -275,7 +275,7 @@ tmp2 %>% group_by(continent) %>% summarise(deaths_median = sum(deaths_median),
                                                                     sum(tmp2$deaths_median_nomassvac),2)*100
                                            ) 
 
-write.csv(tmp2, paste0("Table_of_massvac_deaths_", params$year,  ".csv"), 
+write.csv(tmp2, paste0("new_Table_of_massvac_deaths_", params$year,  ".csv"), 
           row.names = FALSE)
 ```
 
@@ -403,7 +403,7 @@ df %>% group_by(countries) %>%
                                        probs = 0.975, na.rm = T))) %>%
   
   arrange(-diff_median) %>%
-  write.csv( paste0("Table_of_massvac_impact_", params$year,  ".csv"), 
+  write.csv( paste0("new_Table_of_massvac_impact_", params$year,  ".csv"), 
           row.names = FALSE)
 
 ```
@@ -420,7 +420,7 @@ df %>% group_by(countries) %>%
                                        probs = 0.975, na.rm = T))) %>%
   
   arrange(-diff_median) %>%
-  write.csv( paste0("Table_of_massvac_impact_", params$year,  "_percent.csv"), 
+  write.csv( paste0("new_Table_of_massvac_impact_", params$year,  "_percent.csv"), 
           row.names = FALSE)
 
 df %>% ungroup() %>%
@@ -432,7 +432,7 @@ df %>% ungroup() %>%
                                        probs = 0.975, na.rm = T))) %>%
   
   arrange(-diff_median) %>%
-  write.csv( paste0("Table_of_massvac_impact_", params$year,  "_percent_all.csv"), 
+  write.csv( paste0("new_Table_of_massvac_impact_", params$year,  "_percent_all.csv"), 
           row.names = FALSE)
 
 

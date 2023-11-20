@@ -39,10 +39,12 @@ We begin by loading the data `dat` which consists of the outcome variable `cases
 
 Env_Table_path <- "../Data/Environment/global_dat"
 
-filename <- KsetupR::get_latest_file(path = Env_Table_path, 
-                                    pattern = "dat_wes_mosquito")
-
-dat <- read.csv(filename, stringsAsFactors = FALSE)
+  filename = get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito_daniel")
+  
+  dat = read.csv(filename, stringsAsFactors = FALSE)
+  
+  dat %<>% mutate_at(.vars = c(5,6,8:18, 20:ncol(dat)), as.numeric)
+  
 
 # remove missing entries and year column
 dat %<>% dplyr::select(-year)
@@ -83,6 +85,7 @@ covar_to_test <- covar_to_test[grep("temp_suit_max", covar_to_test, invert = TRU
 covar_to_test <- covar_to_test[grep("genus", covar_to_test, invert = TRUE)]
 
 as.data.frame(covar_to_test)
+saveRDS(covar_to_test, "covariates.rds")
 ```
 Now we remove those covariates that are not significantly associated with the data. This is done through fitting univariate models and examining the pvalues.
 

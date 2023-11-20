@@ -13,7 +13,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = paste0("images_bestglmA/"),
+  fig.path = paste0("new_images_bestglmA/"),
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -48,10 +48,10 @@ if(!exists("mcmc_out")){
   mcmc_out = get_chains(filepath_to_use, 
                         burnin = 8e5, thin = 100)
   
-  write.csv(sample(exp(mcmc_out$vac_eff), 100), "vac_eff_samples.csv", row.names = FALSE)
+  write.csv(sample(exp(mcmc_out$vac_eff), 200), "vac_eff_samples.csv", row.names = FALSE)
 }
 
-glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200129_bestglm_A_", 1),
+glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200903_bestglm_A_", 1),
                           burnin =1e5, thin = 1)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
@@ -77,9 +77,11 @@ for(s in 1:seroout$no_sero_surveys){
 # LOAD ENVIRONMENTAL DATA #
 Env_Table_path <- "../Data/Environment/global_dat"
 
-filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito")
+filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito_daniel")
 
 dat <- read.csv(filename, stringsAsFactors = FALSE)
+
+dat %<>% mutate_at(.vars = c(5,6,8:18, 20:ncol(dat)), as.numeric)
 
 #remove families of NHP that are not to be included
 model_form_whole = read.csv("bestglm_A.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
@@ -257,13 +259,15 @@ Foi_param = out$Foi_param
 
 ```{r samples, message=F, warning=F}
 
-df_sample <- read.csv("Sampled_glm_parameters.csv", stringsAsFactors = FALSE)
+df_sample <- read.csv("new_Sampled_glm_parameters.csv", stringsAsFactors = FALSE)
 
 colours = snapalette("Pop", 100, type = "continuous")
 
 Env_Table_path <- "../Data/Environment/global_dat"
 
-filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito")
+filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito_daniel")
+
+
 
 
 n_samples = nrow(df_sample)
@@ -286,6 +290,8 @@ for(i in 1:n_samples){
   # ---------------------#
   #for each we need a new x
   dat <- read.csv(filename, stringsAsFactors = FALSE)
+
+dat %<>% mutate_at(.vars = c(5,6,8:18, 20:ncol(dat)), as.numeric)
   
   #remove families of NHP that are not to be included
   model_form_whole = read.csv("bestglm_A.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
@@ -466,7 +472,7 @@ ggplot(foi_df %>%
 
 ```{r save_samples}
 
-write.csv(foi_out, "sampled_foi_predictions.csv", row.names = FALSE)
+write.csv(foi_out, "new_sampled_foi_predictions.csv", row.names = FALSE)
 
 ```
 

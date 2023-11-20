@@ -16,3 +16,4 @@ sero_filepath_to_use
 *.log
 old vac/
 *.RDS
+new_contexts

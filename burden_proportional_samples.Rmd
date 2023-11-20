@@ -15,7 +15,7 @@ params:
 
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = paste0("images_bestglmA/", params$year, "_"),
+  fig.path = paste0("new_images_bestglmA/", params$year, "_"),
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -46,7 +46,7 @@ snapal = "Pop"
 ```
 
 ```{r read in foi}
-foi_out <- read.csv("sampled_foi_predictions.csv", stringsAsFactors = FALSE)
+foi_out <- read.csv("new_sampled_foi_predictions.csv", stringsAsFactors = FALSE)
 
 # get in useful format
 foi_samples = foi_out %>% gather(adm1, foi)
@@ -239,7 +239,17 @@ tmp2 %>% group_by(continent) %>% summarise(deaths_median = sum(deaths_median),
                                            severe_infections_high = sum(severe_infections_high)
                                            ) 
 
-write.csv(tmp2, paste0("Table_of_deaths_proportional_", params$year,  ".csv"), 
+write.csv(tmp2, paste0("new_Table_of_deaths_proportional_", params$year,  ".csv"), 
+          row.names = FALSE)
+
+
+tmp3 <- left_join(df, tmp)
+
+tmp3 <- tmp3 %>% group_by(continent,sample) %>% 
+  summarise(deaths = sum(deaths, na.rm = TRUE),
+            severe_infections = sum(severe_infections, na.rm = TRUE))
+
+write.csv(tmp3,  paste0("new_Continent_Table_of_deaths_proportional_", params$year,  ".csv"), 
           row.names = FALSE)
 ```
 

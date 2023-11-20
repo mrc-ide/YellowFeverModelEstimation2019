@@ -248,7 +248,7 @@ run_estimation = function(run_id=1){
   prob_Foi = log(1) 
   
   #create a directory to save the output in
-  name_dir = paste0("multi_model_MCMC_chain", "_", 
+  name_dir = paste0("new_prior_multi_model_MCMC_chain", "_", 
                     format(Sys.time(),"%Y%m%d"))
   dir.create(name_dir,  showWarnings = TRUE)
   

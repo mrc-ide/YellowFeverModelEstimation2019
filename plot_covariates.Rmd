@@ -32,6 +32,7 @@ library(R.utils)
 library(magrittr)
 library(viridis)
 library(ggsci)
+library(dplyr)
 
 library(snapalette)
 library(YFestimation)
@@ -45,7 +46,7 @@ shp0 = rgdal::readOGR("../../shapefiles/Africa_America_0_smooth.shp",
                           stringsAsFactors = FALSE,
                           encoding = "UTF-8",
                           use_iconv = TRUE)
-shp1 = rgdal::readOGR("../../shapefiles/Africa_America_1_smooth.shp",
+shp1 = rgdal::readOGR("../../shapefiles/Africa_America_1.shp",
                           stringsAsFactors = FALSE,
                           encoding = "UTF-8",
                           use_iconv = TRUE)
@@ -53,7 +54,7 @@ shp1 = rgdal::readOGR("../../shapefiles/Africa_America_1_smooth.shp",
 ### LOAD ENVIRONMENTAL DATA ###
 Env_Table_path <- "../Data/Environment/global_dat"
 
-filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito")
+filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito_daniel")
 
 dat <- read.csv(filename, stringsAsFactors = FALSE)
 
@@ -70,7 +71,7 @@ dat <- dat[, -which(!names(dat) %in% covar_family & grepl("family", names(dat)))
 covar = covar_family
    
 dat %<>% dplyr::select(-year)
-dat %<>% filter( is.finite(MIR.max))
+dat %<>% filter( is.finite(as.numeric(MIR.max) ))
 dat %<>% filter(!is.na(temp_mean))
 #dat %<>% tidyr::drop_na()
 dat %<>% mutate(continent = ifelse(adm0 %in% c("CIV", "STP"),
@@ -83,7 +84,7 @@ dat = dplyr::mutate(dat,
 
 # add ranges
 dat = dplyr::mutate(dat,
-                    EVI.range = EVI.max - EVI.min,
+                    EVI.range = as.numeric(EVI.max) - as.numeric(EVI.min),
                     temp_range = temp_max - temp_min)
 
 #continent factor
@@ -114,8 +115,8 @@ colours = snapalette::snapalette("Pop", 1000, type = "continuous")#magma(1000)
 
 for(c in covar){
   parm = shp1@data[, c]
-  mybreaks = seq(min(parm, na.rm = TRUE) - 1e-5, 
-                 max(parm, na.rm = TRUE) + 1e-5, length.out=1001)
+  mybreaks = seq(min(as.numeric(parm), na.rm = TRUE) - 1e-5, 
+                 max(as.numeric(parm), na.rm = TRUE) + 1e-5, length.out=1001)
   
   mycols =  colours
   vcols = findInterval(shp1@data[, c], mybreaks)
@@ -132,8 +133,8 @@ for(c in covar){
 ```{r plot_occ}
 
   parm = shp1@data[, "cases_or_outbreaks"]
-  mybreaks = seq(min(parm, na.rm = TRUE) - 1e-5, 
-                 max(parm, na.rm = TRUE) + 1e-5, length.out=1001)
+  mybreaks = seq(min(as.numeric(parm), na.rm = TRUE) - 1e-5, 
+                 max(as.numeric(parm), na.rm = TRUE) + 1e-5, length.out=1001)
   
   mycols =  colours
   vcols = findInterval(shp1@data[, "cases_or_outbreaks"], mybreaks)
@@ -146,15 +147,15 @@ for(c in covar){
 
 ```
 
-```{r Combined}
+```{r Combined, dpi = 600}
 covar <- covar[grep("^family", covar, invert = T)]
 
 par(mfrow=c(3,4), mar= c(2, 0, 3, 0), oma=c(2,0,0,0))
 
 for(c in covar){
   parm = shp1@data[, c]
-  mybreaks = seq(min(parm, na.rm = TRUE) - 1e-5, 
-                 max(parm, na.rm = TRUE) + 1e-5, length.out=1001)
+  mybreaks = seq(min(as.numeric(parm), na.rm = TRUE) - 1e-5, 
+                 max(as.numeric(parm), na.rm = TRUE) + 1e-5, length.out=1001)
   
   mycols =  colours
   vcols = findInterval(shp1@data[, c], mybreaks)

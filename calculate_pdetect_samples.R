@@ -1,5 +1,5 @@
 
-# script to calcualte p_detect for Asia
+# script to calcualte p_detect 
 
 library(mcmcplots)
 library(ggmcmc)
@@ -90,14 +90,16 @@ for(model_ind in 1:20){
   # LOAD ENVIRONMENTAL DATA #
   Env_Table_path <- "../Data/Environment/global_dat"
   
-  filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito")
+  filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito_daniel")
   
   dat <- read.csv(filename, stringsAsFactors = FALSE)
+  
+  dat %<>% mutate_at(.vars = c(5,6,8:18, 20:ncol(dat)), as.numeric)
   
   dat <- dat[, -which(!names(dat) %in% covar_family & grepl("family", names(dat)))] 
   
   
-  glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200129_bestglm_A_", 
+  glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200903_bestglm_A_", 
                                                   model_ind),
                                            burnin =1e5, thin = 10)
   

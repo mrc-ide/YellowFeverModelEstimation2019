@@ -31,7 +31,7 @@ lapply(1:20, FUN = function(x) render_report(x, "GLM_MCMC_diagnostics"))
 
 #-----------------------------------------------------------------------------
 # transmission
-lapply(1:20, FUN = function(x) render_report(x, "transmission_intensity_estimates", 
+lapply(1:20, FUN = function(x) render_report(x, "transmission_intensity_estimates",
                                             foi_sample = TRUE))
 
 #-----------------------------------------------------------------------------

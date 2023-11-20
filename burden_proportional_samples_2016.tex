@@ -1,0 +1,682 @@
+\PassOptionsToPackage{unicode=true}{hyperref} % options for packages loaded elsewhere
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provides euro and other symbols
+\else % if luatex or xelatex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={Burden proportional samples},
+  pdfauthor={Katy Gaythorpe},
+  pdfborder={0 0 0},
+  breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{longtable,booktabs}
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-2}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+  \let\oldparagraph\paragraph
+  \renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+  \let\oldsubparagraph\subparagraph
+  \renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+% set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+
+\usepackage{placeins}
+
+\title{Burden proportional samples}
+\author{Katy Gaythorpe}
+\date{05 June, 2020}
+
+\begin{document}
+\maketitle
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(mcmcplots)}
+\KeywordTok{library}\NormalTok{(ggmcmc)}
+\KeywordTok{library}\NormalTok{(gridExtra)}
+\KeywordTok{library}\NormalTok{(maptools)}
+\KeywordTok{library}\NormalTok{(readr)}
+\KeywordTok{library}\NormalTok{(fields)}
+\KeywordTok{library}\NormalTok{(rgdal)}
+\KeywordTok{library}\NormalTok{(R.utils)}
+\KeywordTok{library}\NormalTok{(magrittr)}
+\KeywordTok{library}\NormalTok{(pROC)}
+\KeywordTok{library}\NormalTok{(dplyr)}
+
+\CommentTok{# homemade}
+\KeywordTok{library}\NormalTok{(snapalette)}
+\KeywordTok{library}\NormalTok{(YFestimation)}
+\KeywordTok{library}\NormalTok{(KsetupR)}
+
+\NormalTok{R.utils}\OperatorTok{::}\KeywordTok{sourceDirectory}\NormalTok{(}\StringTok{"Functions"}\NormalTok{, }\DataTypeTok{modifiedOnly=}\OtherTok{FALSE}\NormalTok{)}
+
+\NormalTok{snapal =}\StringTok{ "Pop"}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{foi_out <-}\StringTok{ }\KeywordTok{read.csv}\NormalTok{(}\StringTok{"sampled_foi_predictions.csv"}\NormalTok{, }\DataTypeTok{stringsAsFactors =} \OtherTok{FALSE}\NormalTok{)}
+
+\CommentTok{# get in useful format}
+\NormalTok{foi_samples =}\StringTok{ }\NormalTok{foi_out }\OperatorTok{%>%}\StringTok{ }\KeywordTok{gather}\NormalTok{(adm1, foi)}
+
+\NormalTok{foi_samples }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{adm0 =} \KeywordTok{substr}\NormalTok{(adm1, }\DecValTok{1}\NormalTok{,}\DecValTok{3}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# ---------------------------------------------------------------------------}
+\CommentTok{### POPULATION DATA }\AlertTok{###}
+
+\NormalTok{all_res_pop_3d =}\StringTok{ }\KeywordTok{get_pop_data_3d}\NormalTok{() }
+
+\NormalTok{pop1 =}\StringTok{ }\NormalTok{all_res_pop_3d}\OperatorTok{$}\NormalTok{pop1                                      }
+\NormalTok{P_tot =}\StringTok{ }\NormalTok{all_res_pop_3d}\OperatorTok{$}\NormalTok{P_tot                               }
+\NormalTok{p_prop =}\StringTok{ }\NormalTok{all_res_pop_3d}\OperatorTok{$}\NormalTok{p_prop                                  }
+
+\NormalTok{pop1 }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{rename}\NormalTok{(}\DataTypeTok{adm0_adm1 =}\NormalTok{ adm1)}
+
+\NormalTok{pop1 }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{arrange}\NormalTok{(year) }\OperatorTok{%>%}\StringTok{ }\NormalTok{dplyr}\OperatorTok{::}\KeywordTok{select}\NormalTok{(}\OperatorTok{-}\KeywordTok{c}\NormalTok{(country_code, country))}
+
+\KeywordTok{names}\NormalTok{(pop1)[}\DecValTok{3}\OperatorTok{:}\KeywordTok{ncol}\NormalTok{(pop1)] =}\StringTok{ }\KeywordTok{paste0}\NormalTok{(}\StringTok{"a"}\NormalTok{, }\DecValTok{0}\OperatorTok{:}\DecValTok{100}\NormalTok{)}
+
+\NormalTok{pop1 }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{filter}\NormalTok{(year}\OperatorTok{<}\DecValTok{2051}\NormalTok{)}
+\NormalTok{p_prop }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{filter}\NormalTok{(year}\OperatorTok{<}\DecValTok{2051}\NormalTok{)}
+\NormalTok{P_tot }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{filter}\NormalTok{(year}\OperatorTok{<}\DecValTok{2051}\NormalTok{)}
+
+\CommentTok{# ---------------------------------------------------------------------------}
+\CommentTok{# VACCINATION DATA #}
+\NormalTok{vc2d =}\StringTok{ }\KeywordTok{readRDS}\NormalTok{(}\StringTok{"vacc_1940_1950.RDS"}\NormalTok{)}
+\NormalTok{vc2d =}\StringTok{ }\KeywordTok{as.data.frame}\NormalTok{(vc2d)}
+
+\CommentTok{# expand vc2d to match pop1}
+\NormalTok{vc2d }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{year =} \KeywordTok{as.numeric}\NormalTok{(}\KeywordTok{as.character}\NormalTok{(year)))}
+\NormalTok{vc_tmp =}\StringTok{ }\NormalTok{pop1 }\OperatorTok{%>%}\StringTok{ }\KeywordTok{filter}\NormalTok{(}\OperatorTok{!}\NormalTok{adm0_adm1 }\OperatorTok{%in%}\StringTok{ }\NormalTok{vc2d}\OperatorTok{$}\NormalTok{adm0_adm1)}
+\NormalTok{vc_tmp[, }\KeywordTok{grep}\NormalTok{(}\StringTok{"adm0_adm1|year"}\NormalTok{, }\KeywordTok{names}\NormalTok{(vc_tmp), }\DataTypeTok{invert =} \OtherTok{TRUE}\NormalTok{)] =}\StringTok{ }\DecValTok{0}
+
+\NormalTok{vc2d }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{bind_rows}\NormalTok{(vc_tmp)}
+\NormalTok{vc2d }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{unique}\NormalTok{()}
+\NormalTok{vc2d }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{filter}\NormalTok{(}\OperatorTok{!}\KeywordTok{is.na}\NormalTok{(adm0_adm1))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\ControlFlowTok{if}\NormalTok{(}\OperatorTok{!}\KeywordTok{exists}\NormalTok{(}\StringTok{"shp0"}\NormalTok{))\{}
+\NormalTok{  shp0 =}\StringTok{ }\NormalTok{rgdal}\OperatorTok{::}\KeywordTok{readOGR}\NormalTok{(}\StringTok{"../../shapefiles/Africa_America_0_smooth.shp"}\NormalTok{,}
+                        \DataTypeTok{stringsAsFactors =} \OtherTok{FALSE}\NormalTok{,}
+                        \DataTypeTok{encoding =} \StringTok{"UTF-8"}\NormalTok{,}
+                        \DataTypeTok{use_iconv =} \OtherTok{TRUE}\NormalTok{)}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## OGR data source with driver: ESRI Shapefile 
+## Source: "Z:\shapefiles\Africa_America_0_smooth.shp", layer: "Africa_America_0_smooth"
+## with 86 features
+## It has 2 fields
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\ControlFlowTok{if}\NormalTok{(}\OperatorTok{!}\KeywordTok{exists}\NormalTok{(}\StringTok{"shp1"}\NormalTok{))\{}
+\NormalTok{  shp1 =}\StringTok{ }\NormalTok{rgdal}\OperatorTok{::}\KeywordTok{readOGR}\NormalTok{(}\StringTok{"../../shapefiles/Africa_America_1_smooth.shp"}\NormalTok{,}
+                        \DataTypeTok{stringsAsFactors =} \OtherTok{FALSE}\NormalTok{,}
+                        \DataTypeTok{encoding =} \StringTok{"UTF-8"}\NormalTok{,}
+                        \DataTypeTok{use_iconv =} \OtherTok{TRUE}\NormalTok{)}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## OGR data source with driver: ESRI Shapefile 
+## Source: "Z:\shapefiles\Africa_America_1_smooth.shp", layer: "Africa_America_1_smooth"
+## with 1400 features
+## It has 10 fields
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{ve =}\StringTok{ }\KeywordTok{read.csv}\NormalTok{(}\StringTok{"vac_eff_samples.csv"}\NormalTok{, }\DataTypeTok{stringsAsFactors =} \OtherTok{FALSE}\NormalTok{)}\OperatorTok{$}\NormalTok{x}
+
+\NormalTok{ve =}\StringTok{ }\KeywordTok{rep_len}\NormalTok{(ve, }\DataTypeTok{length.out =} \KeywordTok{nrow}\NormalTok{(foi_out))}
+
+\CommentTok{# sort pop and vc to included adm1}
+\NormalTok{pop1 }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{filter}\NormalTok{(adm0_adm1 }\OperatorTok{%in%}\StringTok{ }\KeywordTok{names}\NormalTok{(foi_out))}
+\NormalTok{vc2d }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{filter}\NormalTok{(adm0_adm1 }\OperatorTok{%in%}\StringTok{ }\KeywordTok{names}\NormalTok{(foi_out))}
+
+\CommentTok{#arrange}
+\NormalTok{pop1 }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{arrange}\NormalTok{(adm0_adm1)}
+\NormalTok{vc2d }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{arrange}\NormalTok{(adm0_adm1)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# ---------------------------------------------------------------------------}
+\NormalTok{fun_calcBurden =}\StringTok{ }\ControlFlowTok{function}\NormalTok{(fois, year , }\DataTypeTok{adm1 =} \OtherTok{NA}\NormalTok{, vc2d, pop1, ve) \{ }
+  
+  \ControlFlowTok{if}\NormalTok{(}\KeywordTok{anyNA}\NormalTok{(adm1))\{}
+\NormalTok{    adm1 =}\StringTok{ }\KeywordTok{names}\NormalTok{(fois)}
+\NormalTok{  \}}
+  
+\NormalTok{  foi.mat =}\StringTok{ }\KeywordTok{matrix}\NormalTok{(fois, }\DataTypeTok{nrow=}\KeywordTok{length}\NormalTok{(fois), }\DataTypeTok{ncol=}\DecValTok{101}\NormalTok{, }\DataTypeTok{byrow=}\OtherTok{FALSE}\NormalTok{)}
+  
+  \KeywordTok{class}\NormalTok{(foi.mat) =}\StringTok{ "numeric"}
+  
+\NormalTok{  a.mat =}\StringTok{ }\KeywordTok{matrix}\NormalTok{(}\DecValTok{0}\OperatorTok{:}\DecValTok{100}\NormalTok{, }\DataTypeTok{nrow=}\KeywordTok{length}\NormalTok{(fois), }\DataTypeTok{ncol=}\DecValTok{101}\NormalTok{, }\DataTypeTok{byrow=}\OtherTok{TRUE}\NormalTok{)}
+  
+\NormalTok{  burden =}\StringTok{ }\NormalTok{fois }\OperatorTok{*}\StringTok{ }\KeywordTok{rowSums}\NormalTok{(}\KeywordTok{exp}\NormalTok{(}\OperatorTok{-}\NormalTok{foi.mat}\OperatorTok{*}\NormalTok{a.mat) }\OperatorTok{*}\StringTok{ }
+\StringTok{                            }\NormalTok{(}\DecValTok{1}\OperatorTok{-}\NormalTok{ve}\OperatorTok{*}\NormalTok{vc2d[vc2d}\OperatorTok{$}\NormalTok{year}\OperatorTok{==}\NormalTok{year }\OperatorTok{&}\StringTok{ }
+\StringTok{                                         }\NormalTok{vc2d}\OperatorTok{$}\NormalTok{adm0_adm1 }\OperatorTok{%in%}\StringTok{ }\NormalTok{adm1,}\OperatorTok{-}\NormalTok{(}\DecValTok{1}\OperatorTok{:}\DecValTok{3}\NormalTok{)]) }\OperatorTok{*}
+\StringTok{                            }\NormalTok{pop1[pop1}\OperatorTok{$}\NormalTok{year}\OperatorTok{==}\NormalTok{year }\OperatorTok{&}\StringTok{ }
+\StringTok{                                   }\NormalTok{pop1}\OperatorTok{$}\NormalTok{adm0_adm1 }\OperatorTok{%in%}\StringTok{ }\NormalTok{adm1, }\OperatorTok{-}\NormalTok{(}\DecValTok{1}\OperatorTok{:}\DecValTok{2}\NormalTok{)], }\DataTypeTok{na.rm=}\OtherTok{TRUE}\NormalTok{)}
+  \KeywordTok{return}\NormalTok{(burden)}
+\NormalTok{\}}
+
+\CommentTok{# ---------------------------------------------------------------------------}
+\NormalTok{year_out =}\StringTok{ }\NormalTok{params}\OperatorTok{$}\NormalTok{year}
+
+\NormalTok{burden_df =}\StringTok{ }\OtherTok{NULL}
+
+\NormalTok{foi =}\StringTok{ }\NormalTok{foi_out}
+
+\NormalTok{foi =}\StringTok{ }\NormalTok{foi[}\KeywordTok{unique}\NormalTok{(vc2d}\OperatorTok{$}\NormalTok{adm0_adm1)] }\CommentTok{# order it in the same way}
+
+\NormalTok{infections_out <-}\StringTok{  }\KeywordTok{sapply}\NormalTok{(}\DecValTok{1}\OperatorTok{:}\KeywordTok{nrow}\NormalTok{(foi), }\DataTypeTok{FUN =} \ControlFlowTok{function}\NormalTok{(i) }\KeywordTok{fun_calcBurden}\NormalTok{(foi[i,], }
+\NormalTok{                                                                        year_out, }
+                                                                        \DataTypeTok{adm1 =} \KeywordTok{names}\NormalTok{(foi), }
+\NormalTok{                                                                        vc2d, }
+\NormalTok{                                                                        pop1,}
+\NormalTok{                                                                        ve[i]))}
+
+\NormalTok{infections_df <-}\StringTok{  }\KeywordTok{as.data.frame}\NormalTok{(infections_out)}
+\NormalTok{infections_df }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{adm0_adm1 =} \KeywordTok{rownames}\NormalTok{(infections_out),}
+                          \DataTypeTok{year =}\NormalTok{ year_out)}
+
+\NormalTok{infections_df }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{gather}\NormalTok{(sample, infections, }\OperatorTok{-}\KeywordTok{c}\NormalTok{(adm0_adm1, year))}
+
+\NormalTok{infections_df }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{adm0 =} \KeywordTok{substr}\NormalTok{(adm0_adm1, }\DecValTok{1}\NormalTok{, }\DecValTok{3}\NormalTok{)) }\OperatorTok{%>%}
+\StringTok{  }
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{infections =} \KeywordTok{as.numeric}\NormalTok{(infections)) }\OperatorTok{%>%}
+\StringTok{  }
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{prob_severe =} \KeywordTok{rbeta}\NormalTok{(}\KeywordTok{nrow}\NormalTok{(infections_df),}
+                             \FloatTok{6.367309}\NormalTok{,}\FloatTok{44.60736}\NormalTok{),}
+         \DataTypeTok{prob_severe_death =} \KeywordTok{rbeta}\NormalTok{(}\KeywordTok{nrow}\NormalTok{(infections_df),}
+                                   \FloatTok{16.43466}\NormalTok{, }\FloatTok{18.49048}\NormalTok{))}
+
+\NormalTok{infections_df }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{severe_infections =}\NormalTok{ prob_severe}\OperatorTok{*}\NormalTok{infections,}
+                          \DataTypeTok{deaths =}\NormalTok{ prob_severe_death}\OperatorTok{*}\NormalTok{severe_infections)}
+
+\NormalTok{pop_df =}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(}\DataTypeTok{adm0_adm1 =}\NormalTok{ pop1}\OperatorTok{$}\NormalTok{adm0_adm1,}
+                    \DataTypeTok{year =}\NormalTok{ pop1}\OperatorTok{$}\NormalTok{year,}
+                    \DataTypeTok{pop =} \KeywordTok{rowSums}\NormalTok{(pop1[, }\OperatorTok{-}\KeywordTok{c}\NormalTok{(}\DecValTok{1}\OperatorTok{:}\DecValTok{2}\NormalTok{)], }\DataTypeTok{na.rm =} \OtherTok{TRUE}\NormalTok{))}
+
+\NormalTok{infections_df }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{left_join}\NormalTok{(pop_df)}
+
+\NormalTok{infections_df }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{severe_inci =}\NormalTok{ severe_infections}\OperatorTok{/}\NormalTok{pop,}
+                          \DataTypeTok{deaths_inci =}\NormalTok{ deaths}\OperatorTok{/}\NormalTok{pop)}
+
+\NormalTok{burden_df }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{bind_rows}\NormalTok{(infections_df)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{df <-}\StringTok{  }\NormalTok{burden_df }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{group_by}\NormalTok{(adm0,sample) }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{summarise}\NormalTok{(}\DataTypeTok{deaths =} \KeywordTok{sum}\NormalTok{(deaths, }\DataTypeTok{na.rm =} \OtherTok{TRUE}\NormalTok{),}
+            \DataTypeTok{severe_infections =} \KeywordTok{sum}\NormalTok{(severe_infections, }\DataTypeTok{na.rm =} \OtherTok{TRUE}\NormalTok{))}
+
+\NormalTok{df2 <-}\StringTok{ }\NormalTok{df }\OperatorTok{%>%}\StringTok{ }\KeywordTok{group_by}\NormalTok{(adm0) }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{summarise}\NormalTok{(}\DataTypeTok{deaths_low =} \KeywordTok{round}\NormalTok{(}\KeywordTok{quantile}\NormalTok{(}\KeywordTok{as.numeric}\NormalTok{(deaths), }
+                                        \DataTypeTok{probs =} \FloatTok{0.025}\NormalTok{, }\DataTypeTok{na.rm =}\NormalTok{ T)),}
+            \DataTypeTok{deaths_median =} \KeywordTok{round}\NormalTok{(}\KeywordTok{quantile}\NormalTok{(}\KeywordTok{as.numeric}\NormalTok{(deaths), }
+                                           \DataTypeTok{probs =} \FloatTok{0.5}\NormalTok{, }\DataTypeTok{na.rm =}\NormalTok{ T)),}
+            \DataTypeTok{deaths_high =} \KeywordTok{round}\NormalTok{(}\KeywordTok{quantile}\NormalTok{(}\KeywordTok{as.numeric}\NormalTok{(deaths), }
+                                         \DataTypeTok{probs =} \FloatTok{0.975}\NormalTok{, }\DataTypeTok{na.rm =}\NormalTok{ T)),}
+            
+            \DataTypeTok{severe_infections_low =} \KeywordTok{round}\NormalTok{(}\KeywordTok{quantile}\NormalTok{(}\KeywordTok{as.numeric}\NormalTok{(severe_infections), }
+                                        \DataTypeTok{probs =} \FloatTok{0.025}\NormalTok{, }\DataTypeTok{na.rm =}\NormalTok{ T)),}
+            \DataTypeTok{severe_infections_median =} \KeywordTok{round}\NormalTok{(}\KeywordTok{quantile}\NormalTok{(}\KeywordTok{as.numeric}\NormalTok{(severe_infections), }
+                                           \DataTypeTok{probs =} \FloatTok{0.5}\NormalTok{, }\DataTypeTok{na.rm =}\NormalTok{ T)),}
+            \DataTypeTok{severe_infections_high =} \KeywordTok{round}\NormalTok{(}\KeywordTok{quantile}\NormalTok{(}\KeywordTok{as.numeric}\NormalTok{(severe_infections), }
+                                         \DataTypeTok{probs =} \FloatTok{0.975}\NormalTok{, }\DataTypeTok{na.rm =}\NormalTok{ T))) }\OperatorTok{%>%}
+\StringTok{  }\KeywordTok{arrange}\NormalTok{(}\OperatorTok{-}\NormalTok{deaths_median)}
+
+\NormalTok{df2}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{longtable}[]{@{}lrrrrrr@{}}
+\toprule
+adm0 & deaths\_low & deaths\_median & deaths\_high &
+severe\_infections\_low & severe\_infections\_median &
+severe\_infections\_high\tabularnewline
+\midrule
+\endhead
+COD & 13387 & 20236 & 28915 & 29730 & 43209 & 59804\tabularnewline
+NGA & 2519 & 3871 & 5458 & 5475 & 8233 & 11554\tabularnewline
+CMR & 1557 & 2840 & 4871 & 3342 & 6048 & 10262\tabularnewline
+BRA & 1342 & 2381 & 4044 & 2811 & 5116 & 8451\tabularnewline
+GHA & 1441 & 2341 & 3890 & 3083 & 5083 & 8265\tabularnewline
+ETH & 1102 & 2075 & 4041 & 2401 & 4426 & 8073\tabularnewline
+CIV & 773 & 1563 & 2985 & 1732 & 3300 & 6567\tabularnewline
+UGA & 899 & 1491 & 2300 & 1941 & 3190 & 4975\tabularnewline
+KEN & 874 & 1334 & 2034 & 1889 & 2835 & 4289\tabularnewline
+SSD & 717 & 1190 & 1962 & 1541 & 2510 & 4080\tabularnewline
+TZA & 747 & 1120 & 1704 & 1620 & 2416 & 3607\tabularnewline
+GIN & 398 & 746 & 1479 & 885 & 1569 & 2998\tabularnewline
+TCD & 452 & 656 & 918 & 987 & 1407 & 1981\tabularnewline
+AGO & 387 & 596 & 926 & 821 & 1274 & 1960\tabularnewline
+BFA & 326 & 557 & 926 & 713 & 1195 & 1946\tabularnewline
+GAB & 292 & 497 & 864 & 628 & 1061 & 1772\tabularnewline
+SEN & 258 & 468 & 755 & 569 & 979 & 1590\tabularnewline
+COG & 255 & 434 & 663 & 547 & 930 & 1400\tabularnewline
+SLE & 207 & 426 & 980 & 457 & 931 & 2008\tabularnewline
+CAF & 233 & 388 & 621 & 512 & 823 & 1314\tabularnewline
+SDN & 218 & 349 & 531 & 481 & 750 & 1098\tabularnewline
+MLI & 173 & 308 & 559 & 374 & 658 & 1194\tabularnewline
+NER & 178 & 306 & 471 & 387 & 656 & 1008\tabularnewline
+GNB & 177 & 303 & 522 & 375 & 643 & 1102\tabularnewline
+MOZ & 178 & 302 & 509 & 395 & 647 & 1064\tabularnewline
+SOM & 180 & 302 & 483 & 392 & 647 & 1006\tabularnewline
+LBR & 141 & 255 & 501 & 294 & 541 & 1061\tabularnewline
+GNQ & 106 & 218 & 438 & 235 & 462 & 932\tabularnewline
+BEN & 115 & 206 & 357 & 245 & 438 & 756\tabularnewline
+ZMB & 122 & 206 & 328 & 264 & 435 & 713\tabularnewline
+ZAF & 96 & 192 & 387 & 212 & 402 & 804\tabularnewline
+PER & 92 & 183 & 363 & 200 & 391 & 753\tabularnewline
+MWI & 112 & 173 & 257 & 238 & 366 & 553\tabularnewline
+VEN & 74 & 157 & 338 & 162 & 330 & 721\tabularnewline
+MEX & 85 & 154 & 304 & 182 & 332 & 652\tabularnewline
+RWA & 73 & 141 & 272 & 154 & 298 & 552\tabularnewline
+MRT & 76 & 135 & 216 & 167 & 287 & 457\tabularnewline
+TGO & 60 & 122 & 256 & 130 & 259 & 533\tabularnewline
+COL & 51 & 118 & 328 & 109 & 253 & 652\tabularnewline
+BDI & 63 & 117 & 191 & 140 & 247 & 404\tabularnewline
+MDG & 42 & 89 & 202 & 94 & 191 & 426\tabularnewline
+ECU & 42 & 85 & 167 & 90 & 182 & 344\tabularnewline
+GMB & 46 & 83 & 150 & 96 & 176 & 312\tabularnewline
+ZWE & 45 & 76 & 132 & 96 & 164 & 273\tabularnewline
+ARG & 29 & 65 & 138 & 64 & 137 & 290\tabularnewline
+BOL & 33 & 63 & 124 & 72 & 135 & 259\tabularnewline
+PAN & 19 & 52 & 128 & 44 & 110 & 264\tabularnewline
+EGY & 21 & 44 & 85 & 44 & 93 & 180\tabularnewline
+DZA & 21 & 42 & 82 & 45 & 91 & 180\tabularnewline
+GTM & 19 & 40 & 90 & 42 & 85 & 194\tabularnewline
+DOM & 17 & 38 & 92 & 38 & 81 & 191\tabularnewline
+NIC & 17 & 37 & 83 & 36 & 78 & 169\tabularnewline
+ERI & 19 & 35 & 61 & 43 & 74 & 128\tabularnewline
+HND & 16 & 34 & 84 & 36 & 74 & 182\tabularnewline
+CUB & 17 & 32 & 60 & 37 & 70 & 128\tabularnewline
+NAM & 14 & 30 & 62 & 29 & 64 & 134\tabularnewline
+PRY & 16 & 30 & 65 & 35 & 63 & 142\tabularnewline
+HTI & 12 & 24 & 51 & 25 & 50 & 105\tabularnewline
+BWA & 10 & 22 & 46 & 24 & 47 & 96\tabularnewline
+CRI & 8 & 21 & 55 & 19 & 44 & 116\tabularnewline
+PRI & 9 & 21 & 46 & 18 & 44 & 99\tabularnewline
+TTO & 9 & 21 & 53 & 19 & 44 & 108\tabularnewline
+MAR & 9 & 19 & 35 & 19 & 40 & 76\tabularnewline
+SLV & 9 & 19 & 42 & 20 & 41 & 90\tabularnewline
+SUR & 8 & 18 & 40 & 17 & 39 & 83\tabularnewline
+GUY & 7 & 17 & 41 & 15 & 37 & 87\tabularnewline
+CHL & 8 & 16 & 30 & 17 & 33 & 65\tabularnewline
+LSO & 6 & 13 & 26 & 14 & 28 & 57\tabularnewline
+DJI & 6 & 12 & 27 & 12 & 27 & 57\tabularnewline
+URY & 6 & 12 & 25 & 12 & 25 & 54\tabularnewline
+GUF & 3 & 11 & 35 & 8 & 23 & 73\tabularnewline
+JAM & 5 & 11 & 29 & 10 & 24 & 60\tabularnewline
+TUN & 5 & 11 & 23 & 10 & 22 & 47\tabularnewline
+LBY & 3 & 9 & 22 & 7 & 19 & 48\tabularnewline
+SWZ & 4 & 8 & 15 & 8 & 17 & 32\tabularnewline
+BLZ & 2 & 6 & 15 & 5 & 13 & 32\tabularnewline
+BHS & 1 & 4 & 9 & 3 & 8 & 19\tabularnewline
+BRB & 1 & 3 & 8 & 3 & 7 & 18\tabularnewline
+LCA & 1 & 3 & 8 & 2 & 6 & 17\tabularnewline
+MTQ & 1 & 3 & 9 & 3 & 7 & 18\tabularnewline
+ATG & 1 & 2 & 6 & 2 & 5 & 14\tabularnewline
+ESH & 1 & 2 & 5 & 1 & 3 & 10\tabularnewline
+GLP & 1 & 2 & 6 & 2 & 4 & 12\tabularnewline
+GRD & 1 & 2 & 6 & 1 & 4 & 12\tabularnewline
+STP & 1 & 2 & 5 & 1 & 4 & 11\tabularnewline
+VCT & 1 & 1 & 4 & 1 & 3 & 8\tabularnewline
+\bottomrule
+\end{longtable}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{tmp =}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(}\DataTypeTok{countries =} \KeywordTok{unique}\NormalTok{(shp0}\OperatorTok{$}\NormalTok{NAME_}\DecValTok{0}\NormalTok{), }\DataTypeTok{adm0 =} \KeywordTok{unique}\NormalTok{(shp0}\OperatorTok{$}\NormalTok{GID_}\DecValTok{0}\NormalTok{))}
+\NormalTok{tmp}\OperatorTok{$}\NormalTok{continent <-}\StringTok{ }\NormalTok{countrycode}\OperatorTok{::}\KeywordTok{countrycode}\NormalTok{(}\DataTypeTok{sourcevar =}\NormalTok{ tmp}\OperatorTok{$}\NormalTok{countries,}
+                            \DataTypeTok{origin =} \StringTok{"country.name"}\NormalTok{,}
+                            \DataTypeTok{destination =} \StringTok{"continent"}\NormalTok{)}
+
+\NormalTok{tmp2 =}\StringTok{ }\KeywordTok{left_join}\NormalTok{(df2, tmp)}
+
+\NormalTok{tmp2 }\OperatorTok{%>%}\StringTok{ }\KeywordTok{group_by}\NormalTok{(continent) }\OperatorTok{%>%}\StringTok{ }\KeywordTok{summarise}\NormalTok{(}\DataTypeTok{deaths_median =} \KeywordTok{sum}\NormalTok{(deaths_median),}
+                                           \DataTypeTok{deaths_low =} \KeywordTok{sum}\NormalTok{(deaths_low),}
+                                           \DataTypeTok{deaths_high =} \KeywordTok{sum}\NormalTok{(deaths_high),}
+                                           \DataTypeTok{percent_median =} \KeywordTok{round}\NormalTok{(deaths_median}\OperatorTok{/}
+\StringTok{                                                                    }\KeywordTok{sum}\NormalTok{(tmp2}\OperatorTok{$}\NormalTok{deaths_median),}\DecValTok{2}\NormalTok{)}\OperatorTok{*}\DecValTok{100}\NormalTok{,}
+                                           
+                                           \DataTypeTok{severe_infections_median =} \KeywordTok{sum}\NormalTok{(severe_infections_median),}
+                                           \DataTypeTok{severe_infections_low =} \KeywordTok{sum}\NormalTok{(severe_infections_low),}
+                                           \DataTypeTok{severe_infections_high =} \KeywordTok{sum}\NormalTok{(severe_infections_high)}
+\NormalTok{                                           ) }
+\end{Highlighting}
+\end{Shaded}
+
+\begin{longtable}[]{@{}lrrrrrrr@{}}
+\toprule
+continent & deaths\_median & deaths\_low & deaths\_high &
+percent\_median & severe\_infections\_median & severe\_infections\_low &
+severe\_infections\_high\tabularnewline
+\midrule
+\endhead
+Africa & 46961 & 29145 & 73548 & 93 & 100215 & 63899 &
+153749\tabularnewline
+Americas & 3686 & 1963 & 6926 & 7 & 7898 & 4160 & 14482\tabularnewline
+\bottomrule
+\end{longtable}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{write.csv}\NormalTok{(tmp2, }\KeywordTok{paste0}\NormalTok{(}\StringTok{"Table_of_deaths_proportional_"}\NormalTok{, params}\OperatorTok{$}\NormalTok{year,  }\StringTok{".csv"}\NormalTok{), }
+          \DataTypeTok{row.names =} \OtherTok{FALSE}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{df }\OperatorTok{%>%}\StringTok{ }\KeywordTok{group_by}\NormalTok{(adm0) }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{summarise}\NormalTok{(}\DataTypeTok{deaths_low =} \KeywordTok{round}\NormalTok{(}\KeywordTok{quantile}\NormalTok{(}\KeywordTok{as.numeric}\NormalTok{(deaths), }
+                                        \DataTypeTok{probs =} \FloatTok{0.025}\NormalTok{, }\DataTypeTok{na.rm =}\NormalTok{ T)),}
+            \DataTypeTok{deaths_median =} \KeywordTok{round}\NormalTok{(}\KeywordTok{quantile}\NormalTok{(}\KeywordTok{as.numeric}\NormalTok{(deaths), }
+                                           \DataTypeTok{probs =} \FloatTok{0.5}\NormalTok{, }\DataTypeTok{na.rm =}\NormalTok{ T)),}
+            \DataTypeTok{deaths_high =} \KeywordTok{round}\NormalTok{(}\KeywordTok{quantile}\NormalTok{(}\KeywordTok{as.numeric}\NormalTok{(deaths), }
+                                         \DataTypeTok{probs =} \FloatTok{0.975}\NormalTok{, }\DataTypeTok{na.rm =}\NormalTok{ T)),}
+            
+            \DataTypeTok{severe_infections_low =} \KeywordTok{round}\NormalTok{(}\KeywordTok{quantile}\NormalTok{(}\KeywordTok{as.numeric}\NormalTok{(severe_infections), }
+                                        \DataTypeTok{probs =} \FloatTok{0.025}\NormalTok{, }\DataTypeTok{na.rm =}\NormalTok{ T)),}
+            \DataTypeTok{severe_infections_median =} \KeywordTok{round}\NormalTok{(}\KeywordTok{quantile}\NormalTok{(}\KeywordTok{as.numeric}\NormalTok{(severe_infections), }
+                                           \DataTypeTok{probs =} \FloatTok{0.5}\NormalTok{, }\DataTypeTok{na.rm =}\NormalTok{ T)),}
+            \DataTypeTok{severe_infections_high =} \KeywordTok{round}\NormalTok{(}\KeywordTok{quantile}\NormalTok{(}\KeywordTok{as.numeric}\NormalTok{(severe_infections), }
+                                         \DataTypeTok{probs =} \FloatTok{0.975}\NormalTok{, }\DataTypeTok{na.rm =}\NormalTok{ T))) }\OperatorTok{%>%}
+\StringTok{  }\KeywordTok{arrange}\NormalTok{(}\OperatorTok{-}\NormalTok{deaths_median)}\OperatorTok{%>%}
+\StringTok{  }\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x =} \KeywordTok{reorder}\NormalTok{(adm0, }\OperatorTok{-}\NormalTok{deaths_median), }
+             \DataTypeTok{ymin =}\NormalTok{ deaths_low, }
+             \DataTypeTok{ymax =}\NormalTok{ deaths_high, }
+             \DataTypeTok{y =}\NormalTok{ deaths_median, }
+             \DataTypeTok{fill =} \KeywordTok{as.factor}\NormalTok{(deaths_median))) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_crossbar}\NormalTok{() }\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme_bw}\NormalTok{() }\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{legend.position =} \StringTok{"none"}\NormalTok{, }\DataTypeTok{axis.text.x =} \KeywordTok{element_text}\NormalTok{(}\DataTypeTok{angle =} \DecValTok{45}\NormalTok{, }\DataTypeTok{hjust =} \DecValTok{1}\NormalTok{)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{xlab}\NormalTok{(}\StringTok{"Country"}\NormalTok{)}\OperatorTok{+}\StringTok{ }\KeywordTok{ylab}\NormalTok{(}\KeywordTok{paste0}\NormalTok{(}\StringTok{"Deaths in "}\NormalTok{, params}\OperatorTok{$}\NormalTok{year))}\OperatorTok{+}
+\StringTok{  }\KeywordTok{scale_fill_manual}\NormalTok{(}\DataTypeTok{values =} \KeywordTok{snapalette}\NormalTok{(snapal, }\KeywordTok{length}\NormalTok{(}\KeywordTok{unique}\NormalTok{(df}\OperatorTok{$}\NormalTok{adm0)), }\StringTok{"continuous"}\NormalTok{)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{scale_y_log10}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{figure}
+\centering
+\includegraphics{images_bestglmA/2016_plot_deaths_all-1.png}
+\caption{Deaths in 2018 by country for all model variants. Mid line
+denotes median whereas the box denotes the 95\% Credible interval.}
+\end{figure}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{df }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x =} \KeywordTok{reorder}\NormalTok{(adm0, }\OperatorTok{-}\NormalTok{deaths), }
+             \DataTypeTok{y =}\NormalTok{ deaths)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_violin}\NormalTok{(}\DataTypeTok{fill =} \KeywordTok{snapalette}\NormalTok{(snapal, }\DecValTok{5}\NormalTok{, }\StringTok{"discrete"}\NormalTok{)[}\DecValTok{5}\NormalTok{]) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme_bw}\NormalTok{() }\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{legend.position =} \StringTok{"none"}\NormalTok{, }\DataTypeTok{axis.text.x =} \KeywordTok{element_text}\NormalTok{(}\DataTypeTok{angle =} \DecValTok{45}\NormalTok{, }\DataTypeTok{hjust =} \DecValTok{1}\NormalTok{)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{xlab}\NormalTok{(}\StringTok{"Country"}\NormalTok{)}\OperatorTok{+}\StringTok{ }\KeywordTok{ylab}\NormalTok{(}\KeywordTok{paste0}\NormalTok{(}\StringTok{"Deaths in "}\NormalTok{, params}\OperatorTok{$}\NormalTok{year) )}\OperatorTok{+}
+\StringTok{  }\KeywordTok{scale_y_log10}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{figure}
+\centering
+\includegraphics{images_bestglmA/2016_plot_deaths_all_violin-1.png}
+\caption{Deaths in 2018 by country for all model variants.}
+\end{figure}
+
+\hypertarget{compare-burden-between-all-variants-in-south-america-with-paho-data}{%
+\section{Compare burden between all variants in South America with PAHO
+data}\label{compare-burden-between-all-variants-in-south-america-with-paho-data}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{paho_dat =}\StringTok{ }\KeywordTok{as.data.frame}\NormalTok{( data.table}\OperatorTok{::}\KeywordTok{fread}\NormalTok{(}\StringTok{"Z:/Data/LatinAmerica/Historic_data.csv"}\NormalTok{, }
+                                            \DataTypeTok{stringsAsFactors =} \OtherTok{FALSE}\NormalTok{))}
+
+\NormalTok{paho_dat }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{spread}\NormalTok{(}\StringTok{`}\DataTypeTok{Measure Names}\StringTok{`}\NormalTok{, }\StringTok{`}\DataTypeTok{Measure Values}\StringTok{`}\NormalTok{)}
+
+\CommentTok{# filter to observation period}
+\NormalTok{paho_dat }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{filter}\NormalTok{(Year}\OperatorTok{>}\DecValTok{1983}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{infections_year =}\StringTok{ }\OtherTok{NULL}
+
+\NormalTok{fois =}\StringTok{ }\NormalTok{foi_out }
+
+\NormalTok{inf_out =}\StringTok{ }\OtherTok{NULL}
+
+\ControlFlowTok{for}\NormalTok{(s }\ControlFlowTok{in} \DecValTok{1}\OperatorTok{:}\DecValTok{100}\NormalTok{)\{}\CommentTok{#nrow(fois))\{}
+  \CommentTok{# take quantile}
+\NormalTok{  foi =}\StringTok{ }\NormalTok{fois[}\KeywordTok{sample}\NormalTok{(}\DecValTok{1}\OperatorTok{:}\KeywordTok{nrow}\NormalTok{(fois),}\DecValTok{1}\NormalTok{),]}
+  
+  
+\NormalTok{  infections_df <-}\StringTok{ }\KeywordTok{bind_rows}\NormalTok{(}\KeywordTok{lapply}\NormalTok{(}\KeywordTok{unique}\NormalTok{(paho_dat}\OperatorTok{$}\NormalTok{Year), }\DataTypeTok{FUN =} \ControlFlowTok{function}\NormalTok{(y) \{}
+    
+\NormalTok{    infections_out =}\StringTok{ }\KeywordTok{fun_calcBurden}\NormalTok{(foi, y, }\DataTypeTok{adm1 =} \KeywordTok{names}\NormalTok{(foi), vc2d, pop1, ve) }
+    
+\NormalTok{    inf_df =}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(}\DataTypeTok{infections =} \KeywordTok{as.numeric}\NormalTok{(infections_out),}
+                        \DataTypeTok{adm0_adm1 =} \KeywordTok{names}\NormalTok{(infections_out),}
+                        \DataTypeTok{year =}\NormalTok{ y,}
+                        \DataTypeTok{adm0 =} \KeywordTok{substr}\NormalTok{(}\KeywordTok{names}\NormalTok{(infections_out), }\DecValTok{1}\NormalTok{, }\DecValTok{3}\NormalTok{))}
+    
+\NormalTok{    inf_df }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{prob_severe =} \KeywordTok{rbeta}\NormalTok{(}\KeywordTok{nrow}\NormalTok{(inf_df),}
+                                           \FloatTok{6.367309}\NormalTok{,}\FloatTok{44.60736}\NormalTok{),}
+                       \DataTypeTok{prob_severe_death =} \KeywordTok{rbeta}\NormalTok{(}\KeywordTok{nrow}\NormalTok{(inf_df),}
+                                                 \FloatTok{16.43466}\NormalTok{, }\FloatTok{18.49048}\NormalTok{))}
+    
+\NormalTok{    inf_df }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{severe_infections =}\NormalTok{ prob_severe}\OperatorTok{*}\NormalTok{infections,}
+                       \DataTypeTok{deaths =}\NormalTok{ prob_severe_death}\OperatorTok{*}\NormalTok{severe_infections)}
+    
+\NormalTok{  \}))}
+  
+  
+\NormalTok{  pop_df =}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(}\DataTypeTok{adm0_adm1 =}\NormalTok{ pop1}\OperatorTok{$}\NormalTok{adm0_adm1,}
+                      \DataTypeTok{year =}\NormalTok{ pop1}\OperatorTok{$}\NormalTok{year,}
+                      \DataTypeTok{pop =} \KeywordTok{rowSums}\NormalTok{(pop1[, }\OperatorTok{-}\KeywordTok{c}\NormalTok{(}\DecValTok{1}\OperatorTok{:}\DecValTok{2}\NormalTok{)], }\DataTypeTok{na.rm =} \OtherTok{TRUE}\NormalTok{))}
+  
+\NormalTok{  infections_df }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{left_join}\NormalTok{(pop_df)}
+  
+\NormalTok{  infections_df }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{severe_inci =}\NormalTok{ severe_infections}\OperatorTok{/}\NormalTok{pop,}
+                            \DataTypeTok{deaths_inci =}\NormalTok{ deaths}\OperatorTok{/}\NormalTok{pop)}
+  
+\NormalTok{  infections_df }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{sample =}\NormalTok{ s)}
+  
+\NormalTok{  inf_out }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{bind_rows}\NormalTok{(infections_df)}
+\NormalTok{\}}
+\NormalTok{infections_year }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{bind_rows}\NormalTok{( inf_out)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# get paho iso}
+\NormalTok{translate =}\StringTok{ }\NormalTok{countrycode}\OperatorTok{::}\KeywordTok{countrycode}\NormalTok{(}\KeywordTok{unique}\NormalTok{(paho_dat}\OperatorTok{$}\NormalTok{Countries), }
+                                     \StringTok{"country.name"}\NormalTok{, }\StringTok{"iso3c"}\NormalTok{)}
+\NormalTok{translate_df =}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(}\DataTypeTok{Countries =} \KeywordTok{unique}\NormalTok{(paho_dat}\OperatorTok{$}\NormalTok{Countries),}
+                          \DataTypeTok{adm0 =}\NormalTok{ translate)}
+
+\NormalTok{paho_dat }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{left_join}\NormalTok{(translate_df)}
+
+\CommentTok{# get reporting proportion}
+\CommentTok{#reporting_propn = Hmisc::binconf(416, 24000) #24000/416 #120000/805 }
+\CommentTok{# Dengue reporting https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6095627/}
+\NormalTok{reporting_propn =}\StringTok{ }\DecValTok{1}\OperatorTok{/}\KeywordTok{c}\NormalTok{(}\KeywordTok{mean}\NormalTok{(}\DecValTok{115}\NormalTok{, }\DecValTok{21}\NormalTok{), }\DecValTok{21}\NormalTok{, }\DecValTok{115}\NormalTok{) }
+
+\CommentTok{#filter(model out to paho countries)}
+\NormalTok{infections_year }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{filter}\NormalTok{(adm0 }\OperatorTok{%in%}\StringTok{ }\NormalTok{paho_dat}\OperatorTok{$}\NormalTok{adm0)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{inf_df =}\StringTok{ }\NormalTok{infections_year }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{group_by}\NormalTok{(adm0, year, sample) }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{summarise}\NormalTok{(}\DataTypeTok{infections =} \KeywordTok{sum}\NormalTok{(infections, }\DataTypeTok{na.rm =}\NormalTok{ T),}
+            \DataTypeTok{severe_infections =} \KeywordTok{sum}\NormalTok{(severe_infections, }\DataTypeTok{na.rm =}\NormalTok{ T),}
+            \DataTypeTok{deaths =} \KeywordTok{sum}\NormalTok{(deaths, }\DataTypeTok{na.rm =}\NormalTok{ T),}
+            \DataTypeTok{pop =} \KeywordTok{sum}\NormalTok{(pop, }\DataTypeTok{na.rm =}\NormalTok{ T))}
+
+\NormalTok{combined =}\StringTok{ }\KeywordTok{left_join}\NormalTok{(paho_dat, inf_df, }\DataTypeTok{by =} \KeywordTok{c}\NormalTok{(}\StringTok{"adm0"}\NormalTok{ =}\StringTok{ "adm0"}\NormalTok{, }\StringTok{"Year"}\NormalTok{ =}\StringTok{ "year"}\NormalTok{))}
+
+
+\NormalTok{combined }\OperatorTok{%<>%}\StringTok{ }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{sample =} \KeywordTok{as.character}\NormalTok{(sample))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{tmp <-}\StringTok{ }\NormalTok{combined }\OperatorTok{%>%}\StringTok{ }\KeywordTok{group_by}\NormalTok{(Countries, Year, Cases) }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{summarise}\NormalTok{(}\DataTypeTok{q0.025 =} \KeywordTok{quantile}\NormalTok{(severe_infections, }\FloatTok{0.025}\NormalTok{),}
+            \DataTypeTok{q0.5 =} \KeywordTok{quantile}\NormalTok{(severe_infections, }\FloatTok{0.5}\NormalTok{),}
+            \DataTypeTok{q0.975 =} \KeywordTok{quantile}\NormalTok{(severe_infections, }\FloatTok{0.975}\NormalTok{))}
+
+\KeywordTok{ggplot}\NormalTok{(tmp, }\KeywordTok{aes}\NormalTok{( }\DataTypeTok{x =}\NormalTok{ Year)) }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{geom_line}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{y =}\NormalTok{ Cases)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_ribbon}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{ymin =} \KeywordTok{round}\NormalTok{(q0}\FloatTok{.025}\OperatorTok{*}\NormalTok{reporting_propn[}\DecValTok{3}\NormalTok{]), }
+                  \DataTypeTok{ymax =} \KeywordTok{round}\NormalTok{(q0}\FloatTok{.975}\OperatorTok{*}\NormalTok{reporting_propn[}\DecValTok{2}\NormalTok{])), }
+              \DataTypeTok{fill =} \KeywordTok{alpha}\NormalTok{(}\KeywordTok{snapalette}\NormalTok{(}\StringTok{"Pop"}\NormalTok{, }\DecValTok{5}\NormalTok{, }\StringTok{"discrete"}\NormalTok{)[}\DecValTok{5}\NormalTok{], }\FloatTok{0.4}\NormalTok{)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_line}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{y =} \KeywordTok{round}\NormalTok{(q0}\FloatTok{.5}\OperatorTok{*}\NormalTok{reporting_propn[}\DecValTok{1}\NormalTok{]) ), }
+            \DataTypeTok{color =} \KeywordTok{snapalette}\NormalTok{(}\StringTok{"Pop"}\NormalTok{, }\DecValTok{5}\NormalTok{, }\StringTok{"discrete"}\NormalTok{)[}\DecValTok{5}\NormalTok{], }\DataTypeTok{size =} \DecValTok{1}\NormalTok{)}\OperatorTok{+}
+\StringTok{  }\KeywordTok{facet_wrap}\NormalTok{(}\OperatorTok{~}\NormalTok{Countries, }\DataTypeTok{scales =} \StringTok{"free_y"}\NormalTok{)}\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{theme_bw}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{images_bestglmA/2016_compare_cases_paho_proportional-1.png}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{tmp }\OperatorTok{%>%}\StringTok{ }\KeywordTok{filter}\NormalTok{(Countries }\OperatorTok{==}\StringTok{ "Brazil"}\NormalTok{)}\OperatorTok{%>%}
+\KeywordTok{ggplot}\NormalTok{( }\KeywordTok{aes}\NormalTok{( }\DataTypeTok{x =}\NormalTok{ Year)) }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{geom_ribbon}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{ymin =} \KeywordTok{round}\NormalTok{(q0}\FloatTok{.025}\OperatorTok{*}\NormalTok{reporting_propn[}\DecValTok{3}\NormalTok{]), }
+                  \DataTypeTok{ymax =} \KeywordTok{round}\NormalTok{(q0}\FloatTok{.975}\OperatorTok{*}\NormalTok{reporting_propn[}\DecValTok{2}\NormalTok{])), }
+              \DataTypeTok{fill =} \KeywordTok{alpha}\NormalTok{(}\KeywordTok{snapalette}\NormalTok{(}\StringTok{"Pop"}\NormalTok{, }\DecValTok{5}\NormalTok{, }\StringTok{"discrete"}\NormalTok{)[}\DecValTok{5}\NormalTok{], }\FloatTok{0.4}\NormalTok{)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_line}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{y =}\NormalTok{ Cases)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_line}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{y =} \KeywordTok{round}\NormalTok{(q0}\FloatTok{.5}\OperatorTok{*}\NormalTok{reporting_propn[}\DecValTok{1}\NormalTok{]) ), }
+            \DataTypeTok{color =} \KeywordTok{snapalette}\NormalTok{(}\StringTok{"Pop"}\NormalTok{, }\DecValTok{5}\NormalTok{, }\StringTok{"discrete"}\NormalTok{)[}\DecValTok{5}\NormalTok{], }\DataTypeTok{size =} \DecValTok{1}\NormalTok{)}\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme_bw}\NormalTok{() }\OperatorTok{+}
+\StringTok{  }\KeywordTok{coord_cartesian}\NormalTok{(}\DataTypeTok{ylim =} \KeywordTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{, }\DecValTok{1500}\NormalTok{)) }
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{images_bestglmA/2016_compare_cases_paho_BRA_proportional-1.png}
+
+\end{document}

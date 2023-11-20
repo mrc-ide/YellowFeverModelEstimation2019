@@ -13,7 +13,7 @@ output:
 
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = "images_bestglmA/",
+  fig.path = "new_images_bestglmA/",
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -43,7 +43,7 @@ R.utils::sourceDirectory("Functions", modifiedOnly=FALSE)
 
 glm_mcmc_out = NULL
 for(i in 1:20){
-  tmp <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200129_bestglm_A_", 
+  tmp <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200903_bestglm_A_", 
                                          i),
                                   burnin =1e5, thin = 1)
   
@@ -66,7 +66,7 @@ snapal <- "Pop"
 
 glm_mcmc_out %<>% mutate(variant = as.factor(variant))
 ggplot(glm_mcmc_out) + 
-  geom_violin(aes(x = reorder(variant, -posteriorProb), 
+  geom_violin(aes(x = variant, 
                   y = posteriorProb, fill = variant)) +
   theme_bw()+
   theme(legend.position = "none")+
@@ -144,7 +144,7 @@ glm_mcmc_out$prior[sample_ind] <-
 glm_mcmc_out %<>% mutate(like = posteriorProb - prior)
 
 ggplot(glm_mcmc_out[sample_ind, ]) + 
-  geom_violin(aes(x = reorder(variant, -like), y = like, fill = variant)) +
+  geom_violin(aes(x = variant, y = like, fill = variant)) +
   theme_bw()+
   theme(legend.position = "none")+
   xlab("Variant") +
@@ -190,7 +190,9 @@ ageVec <- c(0:maxAge)
 ### LOAD ENVIRONMENTAL DATA ###
 Env_Table_path <- "../Data/Environment/global_dat"
 
-filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito")
+filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito_daniel")
+
+
 
 
 ```
@@ -206,6 +208,8 @@ for(i in 1:20){
   Est_beta <- glm_tmp %>% sample_n(1)
   
   dat <- read.csv(filename, stringsAsFactors = FALSE)
+
+dat %<>% mutate_at(.vars = c(5,6,8:18, 20:ncol(dat)), as.numeric)
   
   #remove families of NHP that are not to be included
   model_form_whole = read.csv("bestglm_A.csv", stringsAsFactors = FALSE) %>% 
@@ -271,7 +275,7 @@ for(i in 1:20){
 
 ```{r plot_AUC, fig.cap="AUC for 100 samples of posterior for each model variant."}
 df_AUC %>% mutate(variant = as.factor(variant)) %>%
-ggplot( aes(x = reorder(variant, -AUC), y = AUC, fill = variant)) +
+ggplot( aes(x = variant, y = AUC, fill = variant)) +
   geom_violin() +
   theme_bw()+
   theme(legend.position = "none") +
@@ -303,6 +307,8 @@ for(i in 1:nrow(df_sample)){
   Est_beta <- df_sample[i, ] %>% select(-c(variant, sample, AUC))
   
   dat <- read.csv(filename, stringsAsFactors = FALSE)
+
+dat %<>% mutate_at(.vars = c(5,6,8:18, 20:ncol(dat)), as.numeric)
   
   #remove families of NHP that are not to be included
   model_form_whole = read.csv("bestglm_A.csv", stringsAsFactors = FALSE) %>% 
@@ -359,8 +365,8 @@ for(i in 1:nrow(df_sample)){
   
 }
 
-write.csv(df_sample, "Sampled_glm_parameters.csv", row.names = FALSE)
-write.csv(df_glm, "Sampled_glm_predictions.csv", row.names = FALSE)
+write.csv(df_sample, "new_Sampled_glm_parameters.csv", row.names = FALSE)
+write.csv(df_glm, "new_Sampled_glm_predictions.csv", row.names = FALSE)
 
 ```
 

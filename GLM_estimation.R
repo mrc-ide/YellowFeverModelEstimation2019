@@ -24,9 +24,11 @@ run_estimation = function(model_var=1){
   
   Env_Table_path = "../Data/Environment/global_dat"
   
-  filename = get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito")
+  filename = get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito_daniel")
   
   dat = read.csv(filename, stringsAsFactors = FALSE)
+  
+  dat %<>% mutate_at(.vars = c(5,6,8:18, 20:ncol(dat)), as.numeric)
   
   # remove families of NHP that are not to be included
   model_form_whole = read.csv("bestglm_A.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)

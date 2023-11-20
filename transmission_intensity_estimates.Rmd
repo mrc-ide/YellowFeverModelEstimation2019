@@ -16,7 +16,7 @@ params:
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(
   dev = "png",
-  fig.path = paste0("imagesA_", params$model_variant, "/"),
+  fig.path = paste0("new_imagesA_", params$model_variant, "/"),
   dpi = 300,
   warning = FALSE,
   message = FALSE
@@ -54,7 +54,7 @@ if(!exists("mcmc_out")){
   write.csv(sample(exp(mcmc_out$vac_eff), 1000), "vac_eff_samples.csv", row.names = FALSE)
 }
 
-glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200129_bestglm_A_", params$model_variant),
+glm_mcmc_out <- YFestimation::get_chains(paste0("GLM_MCMC_chain_20200903_bestglm_A_", params$model_variant),
                           burnin =1e5, thin = 1)
 
 names(glm_mcmc_out) = gsub("^log.", "", names(glm_mcmc_out))
@@ -80,9 +80,11 @@ for(s in 1:seroout$no_sero_surveys){
 # LOAD ENVIRONMENTAL DATA #
 Env_Table_path <- "../Data/Environment/global_dat"
 
-filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito")
+filename <- KsetupR::get_latest_file(path = Env_Table_path, pattern = "dat_wes_mosquito_daniel")
 
 dat <- read.csv(filename, stringsAsFactors = FALSE)
+
+dat %<>% mutate_at(.vars = c(5,6,8:18, 20:ncol(dat)), as.numeric)
 
 #remove families of NHP that are not to be included
 model_form_whole = read.csv("bestglm_A.csv", stringsAsFactors = FALSE) %>% dplyr::select(-Criterion)
@@ -455,7 +457,7 @@ if(params$foi_sample){
   colnames(foi_out) = shp1$GID_1
   
   
-  write.csv(foi_out, paste0("FOI_samples_bestglm_A_", params$model_variant, ".csv"), row.names = FALSE)
+  write.csv(foi_out, paste0("new_FOI_samples_bestglm_A_", params$model_variant, ".csv"), row.names = FALSE)
 }
 ```
 
